@@ -1,11 +1,14 @@
 '''
-@package PKD_Tools.libFile
+@package libFile
 @brief Common OS methods encapsulated in a user friendly method.
 '''
+import inspect
 
 import pymel.core as pm
 from maya import mel
 import os
+import shutil
+
 
 def linux_path(windowsPath):
     """Convert Windows Path to Linux Path
@@ -18,7 +21,8 @@ def linux_path(windowsPath):
     @return maya compliant file path
 
     """
-    return str(windowsPath.replace("\\","/"))
+    return str(windowsPath.replace("\\", "/"))
+
 
 def windows_path(linuxPath):
     """Convert Linux Path to Windows Path
@@ -30,7 +34,8 @@ def windows_path(linuxPath):
     @param linuxPath (string) folder or file path
     @return return a windows based file path
     """
-    return str(linuxPath.replace("/","\\"))
+    return str(linuxPath.replace("/", "\\"))
+
 
 def importFile(filePath):
     """
@@ -44,25 +49,33 @@ def importFile(filePath):
     @attention Watch out for clashing names with existing nodes.
     """
     extension = None
-    #Determine what kind of maya file are we dealing with
-    if filePath.split(".")[-1] == "mb":
+    # Determine what kind of maya file are we dealing with
+    if has_extension(filePath, "mb"):
         extension = "mayaBinary"
+    elif has_extension(filePath, "obj"):
+        pm.loadPlugin("objExport")
+        extension = "OBJ"
     else:
         extension = "mayaAscii"
-    #Make sure the filepath is maya compliant filepath
+    # Make sure the filepath is maya compliant filepath
     filePath = linux_path(filePath)
 
-    #Import the file
-    evalLine = 'file -import -type "%s" -ra true -rpr "PKDTemp" -options "v=0" -pr -loadReferenceDepth "all" "%s";'%(extension,filePath)
+    # Import the file
+    evalLine = 'file -import -type "%s" -ra true -rpr "PKDTemp" -options "v=0" -pr -loadReferenceDepth "all" "%s";' % (
+        extension, filePath)
 
-    #Print out the file debug statement
-    print  evalLine
+    # Print out the file debug statement
+    print evalLine
     mel.eval(evalLine)
 
-    #Remove the namespace from the nodes.
+    # Remove the namespace from the nodes.
     for node in pm.ls("PKDTemp*"):
         node.unlock()
-        node.rename(str(node).replace("PKDTemp_",""))
+        newName = str(node).replace("PKDTemp_", "")
+        node.rename(newName)
+        if ":" in node.name():
+            print
+            "Unable to rename: " + node
 
 
 def safePath(path):
@@ -78,36 +91,60 @@ def safePath(path):
     @return Maya compliant path with the '/' at the end
 
     '''
-    path=linux_path(path)
+    path = linux_path(path)
     if path[-1] != "/":
-        path=path+"/"
+        path += "/"
     return path
 
+
 def folder_check(dirPath):
-    """Check the existence of a folder. If not, create the necessary folder tree
+    """
+    Check the existence of a folder. If not, create the necessary folder tree
     @param dirPath (string) folder path
     @return same folder path with the '/' at the end
     """
-    dirPath=linux_path(dirPath)
+    dirPath = linux_path(dirPath)
     if not os.path.exists(dirPath):
         os.makedirs(dirPath)
     return safePath(dirPath)
 
+
+def folder_check_advanced(folder):
+    """
+    Advanced Folder Checking. Raise exception in case an folder type is not given or it does not exists
+    @param folder (string) folder path
+    @return folder (string) maya compliant path
+    """
+    # Get the root folder from the user
+    # Make sure it exists
+    if exists(folder):
+        # Make sure that it is not a file
+        if isdir(folder):
+            # Save as maya compliant path
+            return safePath(folder)
+        else:
+            raise Exception("Not a folder: " + folder)
+    else:
+        raise Exception("Folder does not exists: " + folder)
+
+
 def get_parent_folder(filePath):
-    """Get Parent Folder
+    """Get the parent folder for the path.
     @param filePath (string)
     @return The parent folder of the path
 
     """
     return os.path.dirname(filePath)
 
-def join(folder,fileName):
+
+def join(folder, fileName):
     """Return a Maya Compliant File Path
     @param folder (string) The target folder
     @param fileName (string) the File name
     @return Joined maya compliant path
     """
-    return linux_path(os.path.join(folder,fileName))
+    return linux_path(os.path.join(folder, fileName))
+
 
 def exists(path):
     """Check if a path exists
@@ -116,16 +153,94 @@ def exists(path):
     """
     return os.path.exists(path)
 
+
 def isdir(path):
     """Return bool if path is a folder
     @param path (string) Path that is used for checking
     @return bool status of whether it is a directory"""
     return os.path.isdir(path)
 
-def has_extension(path,extension):
+
+def has_extension(path, extension):
     """Return bool if a path ends with certain extension
     @param path (string) Path that is used for checking
     @param extension (string) Extension that is being checked. No need to add a '.' in front
     @return bool status whether it ends with the extension
     """
-    return path.lower().endswith('.%s'%extension)
+    return path.lower().endswith('.%s' % extension)
+
+
+def listfolders(path):
+    """
+    @param path (string) Path that is queried for folders
+    @return list of folders for this path
+    """
+    res = [d for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
+    return res
+
+
+def listfiles(path, extension=''):
+    """
+    @param path (string) Path that is queried for files
+    @param path (string) Filter result based on certain extension
+    @return list of files in that folder
+    """
+    res = [d for d in os.listdir(path) if os.path.isfile(os.path.join(path, d))]
+    if extension:
+        extRes = [f for f in res if has_extension(f, extension)]
+        return extRes
+    else:
+        return res
+
+
+def ma_export(path):
+    """Export a maya file
+    @param path (string) Path where the maya selection will be exported to
+    """
+    mel.eval('file -force -options "v=0;" -typ "mayaAscii" -es "%s";' % path)
+
+
+def get_file_folder_extension(path):
+    """Return a tuple of split paths
+    @type path (string) path which needs to be evaluated
+    """
+    fileName = os.path.basename(path).split(".")[0]
+    folder = get_parent_folder(path)
+    extension = fileName.split(".")[-1]
+    return fileName, folder, extension
+
+
+def copyfile(source, target):
+    """Convenience method tp copy file from one location to another
+    @param source(string)for the source file
+    @param target(string) path for the destination file
+    """
+    shutil.copy(source, target)
+
+
+def delete_folder_content(folderPath):
+    """Delete all the contents in folder path
+    @param folderPath (string) folder whose content needs to be deleted
+    """
+    if exists(folderPath):
+        for root, dirs, files in os.walk(folderPath):
+            for f in files:
+                os.unlink(os.path.join(root, f))
+            for d in dirs:
+                shutil.rmtree(os.path.join(root, d))
+
+
+def open_folder_in_windows_explorer(path):
+    """
+    Open a path in windows explorer
+    @param path(string) Path to open in windows explorer
+    """
+    os.startfile(linux_path(path))
+
+
+def current_working_directory():
+    """
+    @return (string) returns the location where this module is being excecuted.
+    """
+    currentPath = os.path.normpath(os.path.dirname(inspect.getfile(inspect.currentframe())))
+    return currentPath

@@ -1,5 +1,4 @@
 '''
-@ingroup PKD_Tools
 @package PKD_Tools.libXml
 @brief This package allows you to convert from XML to a dictionary and vice versa
 @details Copied from the following link along with some more custom methods
@@ -17,6 +16,8 @@ myDict= libXml.ConvertXmlToDict("c:/test/myXml.xml")["Root"]
 
 '''
 from xml.etree import ElementTree
+# @cond DOXYGEN_SHOULD_SKIP_THIS
+
 
 def main():
     configdict = ConvertXmlToDict('config.xml')
@@ -26,23 +27,31 @@ def main():
     print configdict['settings']['color']
     configdict['settings']['color'] = 'red'
 
-    # or you can access it like object attributes
-    print configdict.settings.color
+    # or you can access iings.color
     configdict.settings.color = 'red'
 
     root = ConvertDictToXml(configdict)
 
     tree = ElementTree.ElementTree(root)
     tree.write('config.new.xml')
+# @endcond
 
-def write_xml(path,to_xml_dict):
+
+def write_xml(path, to_xml_dict):
+    '''
+    Write a dictonary to an xml file
+    @param path (string) Target path of the xml file
+    @param to_xml_dict (dict) Dictionary which will be converted
+    '''
     root = ConvertDictToXml(to_xml_dict)
     tree = ElementTree.ElementTree(root)
     tree.write(path)
 
-#@cond DOXYGEN_SHOULD_SKIP_THIS
-# Module Code:
+# @cond DOXYGEN_SHOULD_SKIP_THIS
+
+
 class XmlDictObject(dict):
+
     """
     Adds object like functionality to the standard dictionary.
     """
@@ -93,6 +102,8 @@ class XmlDictObject(dict):
 
         return XmlDictObject._UnWrap(self)
 #@endcond
+
+
 def _ConvertDictToXmlRecurse(parent, dictitem):
     assert type(dictitem) is not type([])
 
@@ -113,6 +124,7 @@ def _ConvertDictToXmlRecurse(parent, dictitem):
     else:
         parent.text = str(dictitem)
 
+
 def ConvertDictToXml(xmldict):
     """
     Converts a dictionary to an XML ElementTree Element
@@ -122,6 +134,7 @@ def ConvertDictToXml(xmldict):
     root = ElementTree.Element(roottag)
     _ConvertDictToXmlRecurse(root, xmldict[roottag])
     return root
+
 
 def _ConvertXmlToDictRecurse(node, dictclass):
     nodedict = dictclass()
@@ -134,8 +147,8 @@ def _ConvertXmlToDictRecurse(node, dictclass):
         # recursively add the element's children
         newitem = _ConvertXmlToDictRecurse(child, dictclass)
         if type(newitem) == type(""):
-            #Convert to a float item if string is a number
-            if newitem.replace('e-','',1).replace("-","",1).replace('.','',1).isdigit():
+            # Convert to a float item if string is a number
+            if newitem.replace('e-', '', 1).replace("-", "", 1).replace('.', '', 1).isdigit():
                 newitem = float(newitem)
         if nodedict.has_key(child.tag):
             # found duplicate tag, force a list
@@ -155,7 +168,8 @@ def _ConvertXmlToDictRecurse(node, dictclass):
         text = node.text.strip()
 
     if len(nodedict) > 0:
-        # if we have a dictionary add the text as a dictionary value (if there is any)
+        # if we have a dictionary add the text as a dictionary value (if there
+        # is any)
         if len(text) > 0:
             nodedict['_text'] = text
     else:
@@ -163,6 +177,7 @@ def _ConvertXmlToDictRecurse(node, dictclass):
         nodedict = text
 
     return nodedict
+
 
 def ConvertXmlToDict(root, dictclass=XmlDictObject):
     """
