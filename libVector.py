@@ -2,7 +2,6 @@ import operator
 
 import maya.mel as mm
 
-
 class vector:
   #Vector class to do basic vector maths
   def __init__(self, data):
