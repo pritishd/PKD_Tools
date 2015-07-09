@@ -325,9 +325,6 @@ class ObjExportGUI(ManagerGUI):
         congratWin.setWindowTitle("All Clear")
         congratWin.exec_()
 
-
-
-
     def _cleanse_geo_(self):
         objManager = self._initialise_manager_class_()
         objManager.cleansing_mode = True
