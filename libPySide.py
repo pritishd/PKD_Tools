@@ -21,11 +21,9 @@ AppLabel = libFile.join(libFile.current_working_directory(), r"Icons/WinLabel.pn
 # This is a function that is run from your class object to get a handle
 # to the main Maya window, it uses a combination of the Maya API as well as the SIP module
 
-
 def getMayaMainWindow():
     accessMainWindow = OpenMayaUI.MQtUtil.mainWindow()
     return wrapInstance(long(accessMainWindow), QtGui.QMainWindow)
-
 
 class QMessageBox(QtGui.QMessageBox):
     """ Setup up convience message boxes"""

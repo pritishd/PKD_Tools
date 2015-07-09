@@ -9,7 +9,8 @@ class vector:
     self.data[0] = round(data[0],3)
     self.data[1] = round(data[1],3)
     self.data[2] = round(data[2],3)
-    
+
+
   def __repr__(self):
     return repr(self.data)
 

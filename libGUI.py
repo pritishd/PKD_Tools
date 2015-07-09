@@ -13,7 +13,6 @@ for module in libUtilities, libPySide, libFile, libGeo:
 
 reload(libPySide)
 
-
 class TangentSwapper(libPySide.QDockableWindow):
     """A PySide based tangent swapper"""
 
