@@ -1,5 +1,5 @@
 '''
-@package PKD_Tools.libXml
+@package libXml
 @brief This package allows you to convert from XML to a dictionary and vice versa
 @details Copied from the following link along with some more custom methods
 
@@ -17,8 +17,6 @@ myDict= libXml.ConvertXmlToDict("c:/test/myXml.xml")["Root"]
 '''
 from xml.etree import ElementTree
 # @cond DOXYGEN_SHOULD_SKIP_THIS
-
-
 def main():
     configdict = ConvertXmlToDict('config.xml')
     print(configdict)
@@ -34,8 +32,9 @@ def main():
 
     tree = ElementTree.ElementTree(root)
     tree.write('config.new.xml')
-# @endcond
 
+
+# @endcond
 
 def write_xml(path, to_xml_dict):
     '''
@@ -47,11 +46,10 @@ def write_xml(path, to_xml_dict):
     tree = ElementTree.ElementTree(root)
     tree.write(path)
 
+
 # @cond DOXYGEN_SHOULD_SKIP_THIS
-
-
+# Module Code:
 class XmlDictObject(dict):
-
     """
     Adds object like functionality to the standard dictionary.
     """
@@ -102,8 +100,6 @@ class XmlDictObject(dict):
 
         return XmlDictObject._UnWrap(self)
 #@endcond
-
-
 def _ConvertDictToXmlRecurse(parent, dictitem):
     assert type(dictitem) is not type([])
 
@@ -124,7 +120,6 @@ def _ConvertDictToXmlRecurse(parent, dictitem):
     else:
         parent.text = str(dictitem)
 
-
 def ConvertDictToXml(xmldict):
     """
     Converts a dictionary to an XML ElementTree Element
@@ -134,7 +129,6 @@ def ConvertDictToXml(xmldict):
     root = ElementTree.Element(roottag)
     _ConvertDictToXmlRecurse(root, xmldict[roottag])
     return root
-
 
 def _ConvertXmlToDictRecurse(node, dictclass):
     nodedict = dictclass()
@@ -168,8 +162,7 @@ def _ConvertXmlToDictRecurse(node, dictclass):
         text = node.text.strip()
 
     if len(nodedict) > 0:
-        # if we have a dictionary add the text as a dictionary value (if there
-        # is any)
+        # if we have a dictionary add the text as a dictionary value (if there is any)
         if len(text) > 0:
             nodedict['_text'] = text
     else:
@@ -177,7 +170,6 @@ def _ConvertXmlToDictRecurse(node, dictclass):
         nodedict = text
 
     return nodedict
-
 
 def ConvertXmlToDict(root, dictclass=XmlDictObject):
     """

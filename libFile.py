@@ -2,12 +2,14 @@
 @package libFile
 @brief Common OS methods encapsulated in a user friendly method.
 '''
+
 import inspect
+import os
+import shutil
+import fnmatch
 
 import pymel.core as pm
 from maya import mel
-import os
-import shutil
 
 
 def linux_path(windowsPath):
@@ -65,7 +67,7 @@ def importFile(filePath):
         extension, filePath)
 
     # Print out the file debug statement
-    print evalLine
+    print(evalLine)
     mel.eval(evalLine)
 
     # Remove the namespace from the nodes.
@@ -74,8 +76,7 @@ def importFile(filePath):
         newName = str(node).replace("PKDTemp_", "")
         node.rename(newName)
         if ":" in node.name():
-            print
-            "Unable to rename: " + node
+            print ("Unable to rename: " + node)
 
 
 def safePath(path):
@@ -202,11 +203,13 @@ def ma_export(path):
 
 def get_file_folder_extension(path):
     """Return a tuple of split paths
-    @type path (string) path which needs to be evaluated
+    @param path (string) path which needs to be evaluated
     """
-    fileName = os.path.basename(path).split(".")[0]
+    fileOnlyName = os.path.basename(path)
+    # Filter out the extension
+    fileName = fileOnlyName[:fileOnlyName.rfind('.')]
     folder = get_parent_folder(path)
-    extension = fileName.split(".")[-1]
+    extension = path.split(".")[-1]
     return fileName, folder, extension
 
 
@@ -216,7 +219,6 @@ def copyfile(source, target):
     @param target(string) path for the destination file
     """
     shutil.copy(source, target)
-
 
 def delete_folder_content(folderPath):
     """Delete all the contents in folder path
@@ -244,3 +246,16 @@ def current_working_directory():
     """
     currentPath = os.path.normpath(os.path.dirname(inspect.getfile(inspect.currentframe())))
     return currentPath
+
+
+def search_pattern_in_folder(searchPattern, folder):
+    """
+    @param searchPattern (string) search pattern that is queried
+    @param folder (string) The target folder
+    @return list of file names that matches the pattern
+    """
+    result = []
+    for fileName in listfiles(folder):
+        if fnmatch.fnmatch(fileName, searchPattern):
+            result.append(fileName)
+    return result

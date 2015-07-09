@@ -56,23 +56,23 @@ import libFile
 import libXml
 reload(libUtilities)
 reload(libXml)
-from maya import cmds, mel
+from maya import cmds
 import pymel.core as pm
 
 
 class Weights(object):
-
     """
     Class to export and import single XML weight maps from a geometry.
 
     @details This class is used when there normaly just one iteration of deformer in the rig eg skinCluster, muscle , cloth etc
 
-    @remark @htmlonly <li> @endhtmlonly A single xml file contains the weight map for the deformer.
+    @remarks
+    @htmlonly <li> @endhtmlonly A single xml file contains the weight map for the deformer.
     The name of this xml file is derived from the name of the geometry.
     """
 
     def __init__(self):
-        """
+        '''
         @property import_data
         @brief The deformer data that is read from the data xml file. This content should be same as @ref export_data
         @property export_data
@@ -82,7 +82,9 @@ class Weights(object):
         @property data
         @brief Data property which is exported to the single data file.
         @details The deformer is rebuilt from the information that is exported eg joints used in skinning, cluster pivot point. This property will be customised in further subclasses as per their requirement.
-        """
+
+
+        '''
         self.target = None
         self._deformer_ = None
         self._folder_ = None
@@ -92,10 +94,8 @@ class Weights(object):
         self.export_data = {}
 
     def export_weights(self):
-        """
-        @brief Export out the weights. @details Does error checks before exporting. This method may be written in the subclasses
-        By default we use the maya deformerWeights command to export the weight
-        """
+        '''@brief Export out the weights. @details Does error checks before exporting. This method may be written in the subclasses
+        By default we use the maya deformerWeights command to export the weight'''
         self._error_checks_()
 
         evalStatment = 'deformerWeights -export -method "index" -deformer "%s" -path "%s" "%s"' % (
@@ -104,22 +104,21 @@ class Weights(object):
         print "Export Weights for " + self.target
 
     def _error_checks_(self):
-        """Check that the folder and deformer type is defined"""
+        '''Check that the folder and deformer type is defined'''
         if self.folder is None:
             raise Exception("No Path Defined")
         if self.deformer is None:
             raise Exception("No Defomer Defined")
 
     def _get_target_defomer_(self):
-        """Define the current deformer property"""
+        '''Define the current deformer property'''
         if self._target_deformer_ is None:
-            self._target_deformer_ = libUtilities.get_target_defomer(
-                self.target, self.deformer)
+            self._target_deformer_ = libUtilities.get_target_defomer(self.target, self.deformer)
         return self._target_deformer_
 
     def import_weights(self):
-        """Import the previously exported weights. Attempt to recreate the deformer first in case none are found
-        Use the default maya command as much as possible."""
+        '''Import the previously exported weights. Attempt to recreate the deformer first in case none are found
+        Use the default maya command as much as possible.'''
         # Create the deformers before importing the weights
         self._create_deformers_()
         # Use the maya deformerWeights command to export the weight
@@ -170,12 +169,12 @@ class Weights(object):
                 # Save as maya compliant path
                 self._folder_ = libFile.linux_path(folder)
             else:
-                raise Exception("Not a folder")
+                raise Exception("Not a folder: %s" % folder)
         else:
-            raise Exception("Folder does not exists")
+            raise Exception("Folder does not exists: %s" % folder)
 
     def _create_deformers_(self):
-        """To be defined in the subclasses"""
+        '''To be defined in the subclasses'''
         # print a debug statement
         print "Weight class _create_deformers_ called"
 
@@ -198,7 +197,7 @@ class Weights(object):
 
     @property
     def datapath(self):
-        """File path to the xml file which contains data relevant to the deformer. This property is used in testing scenarios along with @ref load_data /@ref save_data method.
+        '''File path to the xml file which contains data relevant to the deformer. This property is used in testing scenarios along with @ref load_data /@ref save_data method.
         @code
         import libWeights
         test = libWeights.Weights()
@@ -207,7 +206,7 @@ class Weights(object):
         # Result: 'c:/temp/test/info.xml' #
         @endcode
         @return joined path of folder and the info xml file
-        """
+        '''
         return libFile.join(self.folder, "info.xml")
 
     # @cond DOXYGEN_SHOULD_SKIP_THIS
@@ -220,6 +219,7 @@ class Weights(object):
     def data(self, data):
         # Recieve data from the outside class
         self.import_data = data
+
     # @endcond
 
     ##
@@ -230,27 +230,24 @@ class Weights(object):
 
     ##
     # @property deformer
-    # Which type of deformer is processed. This must be a valid maya node type
-    # eg 'skinCluster', 'blendShape' etc
+    # Which type of deformer is processed. This must be a valid maya node type eg 'skinCluster', 'blendShape' etc
 
     deformer = property(_get_deformer_, _set_deformer_)
 
     ##
     # @property target_deformer
-    # The target maya deformer on which the export and import commands will be
-    # processed
+    # The target maya deformer on which the export and import commands will be processed
     target_deformer = property(_get_target_defomer_, _set_target_defomer_)
 
     ##
     # @property file
-    # The file name which contains the individual weights"""
+    #The file name which contains the individual weights'''
 
     file = property(_get_file_, _set_file_)
 
 
 class SkinWeights(Weights):
-
-    """
+    '''
     Class to import/export skinweights
 
     @code
@@ -279,25 +276,24 @@ class SkinWeights(Weights):
 
     @attention
     This module works only with joints at the moment. If you are using surfaces as an influence object, you will need to extend capability of this class.
-    """
+    '''
     # @cond DOXYGEN_SHOULD_SKIP_THIS
-
     def __init__(self):
         super(SkinWeights, self).__init__()
         self.deformer = "skinCluster"
         # @endcond
 
     def import_weights(self):
-        """Import the weight of the SkinCluster. After that normalise the weights
+        '''Import the weight of the SkinCluster. After that normalise the weights
         @remark The behaviour of Weights.import_weights is extended in this class
-        """
+        '''
         super(SkinWeights, self).import_weights()
         # Normalise the skin weights
         pm.select(self.target)
         libUtilities.melEval('doNormalizeWeightsArgList 1 {"4"}')
 
     def copy_weights(self, newTarget):
-        """@brief Additional function to copy weights from the source geometry to a new one.@details This new geometry will be skinned with the same influence joints.
+        '''@brief Additional function to copy weights from the source geometry to a new one.@details This new geometry will be skinned with the same influence joints.
         @code
         test = libWeights.SkinWeights()
         #Set the target geometry
@@ -305,21 +301,19 @@ class SkinWeights(Weights):
         #copy the weights to the new gometery
         test.copy_weights("pCube2")
         @endcode
-        """
-        currentInfluences = pm.skinCluster(
-            self.target_deformer, inf=True, q=True)
+        '''
+        currentInfluences = pm.skinCluster(self.target_deformer, inf=True, q=True)
         res = libUtilities.skinGeo(newTarget, currentInfluences)
         # Transfer the weights
-        pm.copySkinWeights(ss=self.target_deformer, ds=res, noMirror=True,
-                           surfaceAssociation="rayCast", influenceAssociation="closestJoint")
+        pm.copySkinWeights(ss=self.target_deformer, ds=res, noMirror=True, surfaceAssociation="rayCast",
+                           influenceAssociation="closestJoint")
 
     def _create_deformers_(self):
         # Create the skin deformer if none exists
         if not self.target_deformer:
             jnts = []
             noJnts = []
-            # Alias for the joint list from the import data. Make sure the data
-            # is list
+            # Alias for the joint list from the import data. Make sure the data is list
             joint_data = libXml.list_persist(self.import_data["Joints"])
             # Iterate through all the joints in the list
             for jnt in joint_data:
@@ -329,52 +323,50 @@ class SkinWeights(Weights):
                 else:
                     # Log non existing joins
                     noJnts.append(jnt)
-            # Create the skin cluster
-            cmds.select(self.target, jnts)
+
             # @cond DOXYGEN_SHOULD_SKIP_THIS
-            self.target_deformer = cmds.skinCluster(tsb=1, mi=1)[0]
+            self.target_deformer = libUtilities.skinGeo(self.target, jnts)
             # @endcond
 
             # Print out the list of missing joints
             if noJnts:
-                print '\n%sThe Following Joints do not exists%s' % (libUtilities.print_attention(), libUtilities.print_attention())
+                print '\n%sThe Following Joints do not exists%s' % (
+                    libUtilities.print_attention(), libUtilities.print_attention())
                 libUtilities.print_list(noJnts)
                 print "\n"
 
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     @Weights.data.getter
     def data(self):
-        """Return the joints in this list to the data property
+        '''Return the joints in this list to the data property
         @return the joints used for the target skincluster.
-        """
-        self.export_data = {
-            "Joints": cmds.skinCluster(str(self.target_deformer), q=1, inf=1)}
+        '''
+        self.export_data = {"Joints": cmds.skinCluster(str(self.target_deformer), q=1, inf=1)}
         return self.export_data
-    # @endcond
+        #@endcond
 
 
 class MultiWeights(Weights):
-
-    """
+    '''
     Class to export and import weight maps for multiple instances of the same deformers eg blendshapes, wire, clusters etc.
     A folder is created for each geo which contains the weights of the deformers. This class will be customised for each type of deformer.
-    """
+    '''
 
     def __init__(self):
-        """@property deformer_data
-        @brief Contains @ref Weights.data "data" of each iteration of the deformer. The name of the deformer acts as a key for this dictionary variable"""
+        '''@property deformer_data
+        @brief Contains @ref Weights.data "data" of each iteration of the deformer. The name of the deformer acts as a key for this dictionary variable'''
         super(MultiWeights, self).__init__()
         self._target_deformers_ = []
         self._target_folder_ = ''
         self.deformer_data = {}
 
     def export_weights(self):
-        """
+        '''
 
         @brief Export the individual weights for each iteration of the deformers.  @details Does error checks before exporting. By default we try to use the maya deformerWeights command to export the weight
         @remark The behaviour of Weights.export_weights is overriden in this class
 
-        """
+        '''
         self._error_checks_()
         self._export_individual_weights_()
         print "Export Weights for " + self.target
@@ -388,10 +380,10 @@ class MultiWeights(Weights):
             libUtilities.melEval(evalStatment)
 
     def import_weights(self):
-        """@brief  Import the previously exported weights. @details Attempt to recreate the deformer first in case it is missing. All exported deformers will be recreated.
+        '''@brief  Import the previously exported weights. @details Attempt to recreate the deformer first in case it is missing. All exported deformers will be recreated.
         Use the default maya command as much as possible.
         @remark The behaviour of Weights.import_weights is overriden in this class
-        """
+        '''
         self._create_deformers_()
         self._import_individual_weights_()
         print "Import Weights for " + self.target
@@ -400,71 +392,64 @@ class MultiWeights(Weights):
         # Iterate through all the deformers and import the weigths
         for self.target_deformer in libXml.list_persist(self.import_data["Order"]):
             # Import weight of cluster
-            weightInfo = libXml.ConvertXmlToDict(
-                libFile.join(self.target_folder, self.file))
+            weightInfo = libXml.ConvertXmlToDict(libFile.join(self.target_folder, self.file))
             if weightInfo['deformerWeight'].has_key("weights"):
                 evalStatment = 'deformerWeights -import -method "index" -deformer "%s" -path "%s" "%s"' % (
                     self.target_deformer, self.target_folder, self.file)
                 libUtilities.melEval(evalStatment)
 
     def _get_deformer_data_(self):
-        """To be defined in the subclasses"""
+        '''To be defined in the subclasses'''
         # print a debug statement
         print "MultiWeights class _get_deformer_data_ called"
 
     def _create_deformers_(self):
-        """To be defined in the subclasses"""
+        '''To be defined in the subclasses'''
         # print a debug statement
         print "MultiWeights class _create_deformers_ called"
 
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     @Weights.data.getter
     def data(self):
-        """The deformer data property"""
+        '''The deformer data property'''
         # Gather the export data
         self._get_deformer_data_()
         # Order of deformer
         self.export_data = {"Order": self.target_deformers,
                             "Data": self.deformer_data
                             }
-        # Return the export data
+        #Return the export data
         return self.export_data
 
     @property
     def datapath(self):
-        # File path to the xml file which contains data relevant to the
-        # deformer. Here the data is saved in the subfolder This variable is
-        # usually used in testing scenarios
+        # File path to the xml file which contains data relevant to the deformer. Here the data is saved in the subfolder This variable is usually used in testing scenarios
         return libFile.join(self.target_folder, "%sInfo.xml" % self.deformer.capitalize())
 
     @property
     def file(self):
-        # Each exported file is based on the name of the deformer rather than
-        # the target
+        #Each exported file is based on the name of the deformer rather than the target
         return ("%s.xml" % self.target_deformer)
 
     @property
     def target_deformers(self):
         # Return the list of target deformer type for the geometry
         if not self._target_deformers_:
-            self._target_deformers_ = libUtilities.get_target_defomer(
-                self.target, self.deformer, multiple=True)
+            self._target_deformers_ = libUtilities.get_target_defomer(self.target, self.deformer, multiple=True)
         return self._target_deformers_
 
     @property
     def target_folder(self):
         # Create a subfolder with geometry name as the name of the folder
         if not self._target_folder_:
-            self._target_folder_ = libFile.folder_check(
-                libFile.join(self.folder, str(self.target)))
+            self._target_folder_ = libFile.folder_check(libFile.join(self.folder, str(self.target)))
         return self._target_folder_
 
-    # @endcond
+        # @endcond
 
 
 class ClusterWeights(MultiWeights):
-
-    """
+    '''
       Class to import/export cluster weights
 
       @code
@@ -494,9 +479,8 @@ class ClusterWeights(MultiWeights):
       @remark
       The @ref data xml file contains the vertices that are affected by the cluster deformer. This takes into account when the user creates a cluster from selected vertices.
 
-    """
+    '''
     # @cond DOXYGEN_SHOULD_SKIP_THIS
-
     def __init__(self):
         super(ClusterWeights, self).__init__()
         self.deformer = "cluster"
@@ -506,8 +490,7 @@ class ClusterWeights(MultiWeights):
         # Itererate through all target deformer
         for self.target_deformer in self.target_deformers:
             info = {}
-            handle = libUtilities.pyList(
-                self.target_deformer.getDeformerTools())[0]
+            handle = libUtilities.pyList(self.target_deformer.getDeformerTools())[0]
             # Cluster Handle Name
             info["ClusterHandleName"] = handle.name()
             # Cluster Handle Pivot positions
@@ -517,8 +500,7 @@ class ClusterWeights(MultiWeights):
             info["Relative"] = int(self.target_deformer.relative.get())
             # Vertices affected
             verticesSet = self.target_deformer.listSets()[0]
-            info["Vertices"] = libUtilities.decompress_vertice_group(
-                verticesSet.members())
+            info["Vertices"] = libUtilities.indexize_vertice_group(verticesSet.members())
             self.deformer_data[str(self.target_deformer)] = info
 
     def _create_deformers_(self):
@@ -528,8 +510,7 @@ class ClusterWeights(MultiWeights):
                 # Read info for each cluster
                 info = self.import_data["Data"][cluster]
                 # select vertices
-                libUtilities.select_vertices(
-                    self.target, libXml.list_persist(info["Vertices"]))
+                libUtilities.select_vertices(self.target, libXml.list_persist(info["Vertices"]))
                 # Create the cluster
                 cltr, cTransform = pm.cluster(rel=info["Relative"])
                 # Set the pivot
@@ -541,8 +522,7 @@ class ClusterWeights(MultiWeights):
 
 
 class BlendShapeWeights(MultiWeights):
-
-    """
+    '''
       Class to import/export blendshape weights
 
       @code
@@ -572,19 +552,19 @@ class BlendShapeWeights(MultiWeights):
       @attention &bull; This class does not supports painted weights on the envelope. However individual painted weights are supported.
       @attention &bull; If you are rebuilding the blendshapes, then the target shapes needs to imported first before the weights are imported. You may use the @ref libFile.importFile() command to import the file with the blendshapes.
 
-    """
+    '''
 
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     def __init__(self):
         super(BlendShapeWeights, self).__init__()
         self.deformer = "blendShape"
+
     # @endcond
 
     def _get_deformer_data_(self):
         # Itererate through all blendshape
         for self.target_deformer in self.target_deformers:
-            self.deformer_data[
-                str(self.target_deformer)] = self.target_deformer.getTarget()
+            self.deformer_data[str(self.target_deformer)] = self.target_deformer.getTarget()
 
     def _export_individual_weights_(self):
         vertices = pm.polyEvaluate(self.target, vertex=True)
@@ -603,7 +583,7 @@ class BlendShapeWeights(MultiWeights):
 
             # Export out the weights map information
             if len(weightMap):
-                # Save the xml file
+                #Save the xml file
                 libXml.write_xml(self.weight_file, {"WeightMap": weightMap})
 
     def _create_deformers_(self):
@@ -643,8 +623,7 @@ class BlendShapeWeights(MultiWeights):
         for self.target_deformer in self.target_deformers:
             # Load the weights if they were exported
             if libFile.exists(self.weight_file):
-                weightMap = libXml.ConvertXmlToDict(
-                    self.weight_file)["WeightMap"]
+                weightMap = libXml.ConvertXmlToDict(self.weight_file)["WeightMap"]
                 for index, niceName in zip(self.target_deformer.weightIndexList(), self.target_deformer.getTarget()):
                     # Apply the weight if there was a weight map
                     if weightMap.has_key(niceName):
@@ -660,38 +639,36 @@ class BlendShapeWeights(MultiWeights):
     def weight_file(self):
         # Return the weight map file for each blendshape
         return libFile.join(self.target_folder, self.file)
-    # @endcond
+        #@endcond
 
 "----------------------------------------------------------------------------------------------------------------------------------------------"
 
 
 class WeightManager(object):
-
-    """
+    '''
     Class which manages the mass import/export of deformers. For import geometry must be selected
 
-    """
+    '''
 
     def __init__(self):
-        """
+        '''
         @property weight_class
         @brief The Weights class that is used to export/import the weights and deformer data.
 
         @property command_mode
         @brief boolean flag that is used in @ref libUtilities.get_selected command. By default set to False
 
-        """
+        '''
 
         self._xml_file_ = None
         self.weight_class = None
-        self.scriptEditorWarning = False
+        self.command_mode = False
         self._deformer_ = None
 
     def export_all(self):
         """Exports the weights and deformer data of the selected objects using the @ref weight_class"""
         # get the selected geo
-        sel = libUtilities.get_selected(
-            stringMode=True, scriptEditorWarning=self.scriptEditorWarning)
+        sel = libUtilities.get_selected(stringMode=True, scriptEditorWarning=self.command_mode)
         if not sel:
             # In nothing has been selected
             return False
@@ -702,7 +679,7 @@ class WeightManager(object):
         for geo in sel:
             # Ensure the geometry has the deformer
             if not libUtilities.get_target_defomer(geo, self.deformer, multiple=True):
-                print("No %s Found for %s" % (self.deformer.capitalize(), geo))
+                print ("No %s Found for %s" % (self.deformer.capitalize(), geo))
                 continue
             # Initialise the weight class
             deformerWeight = self._initialise_class_(geo)
@@ -714,10 +691,8 @@ class WeightManager(object):
         # Save out the xml file
         if geoInfo:
             deformerType = self.deformer.capitalize()
-            print("========%s Info Path========\n%s" %
-                  (deformerType, self.info_file))
-            libXml.write_xml(
-                self.info_file, {"%sInfo" % deformerType: geoInfo})
+            print ("========%s Info Path========\n%s" % (deformerType, self.info_file))
+            libXml.write_xml(self.info_file, {"%sInfo" % deformerType: geoInfo})
         cmds.select(sel)
 
         # Return a success result
@@ -725,10 +700,8 @@ class WeightManager(object):
 
     def import_all(self):
         """Import the exported weights and data using the @ref weight_class"""
-        # Import all Weights for selected object based on the information in
-        # the skinInfo
-        geoInfo = libXml.ConvertXmlToDict(
-            self.info_file)["%sInfo" % self.deformer.capitalize()]
+        # Import all Weights for selected object based on the information in the skinInfo
+        geoInfo = libXml.ConvertXmlToDict(self.info_file)["%sInfo" % self.deformer.capitalize()]
         for geo in geoInfo.keys():
             if pm.objExists(geo):
                 # Initialise the weight class
@@ -752,7 +725,7 @@ class WeightManager(object):
     def _get_xml_file_(self):
         # Is the xml file defined
         if self._xml_file_ is None:
-            #raise error
+            # raise error
             cmds.error("XML file not defined")
         else:
             # return the XML path
@@ -773,13 +746,12 @@ class WeightManager(object):
 
     ##
     # @property info_file
-    # User defined data path which contains the @ref Weights.data "deformer
-    # data" of all the processed geometry.
+    #User defined data path which contains the @ref Weights.data "deformer data" of all the processed geometry.
     info_file = property(_get_xml_file_, _set_xml_file_)
 
     @property
     def deformer(self):
-        """returns the Weights.deformer property information"""
+        '''returns the Weights.deformer property information'''
         if self._deformer_ is None:
             self._deformer_ = self.weight_class().deformer
         return self._deformer_
@@ -787,14 +759,13 @@ class WeightManager(object):
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     @property
     def folder(self):
-        # Return the parent folder of the info file
+        #Return the parent folder of the info file
         return libFile.get_parent_folder(self.info_file)
-    # @endcond
+        # @endcond
 
 
 class SkinWeightManager(WeightManager):
-
-    """
+    '''
     Class which manages the mass import/export of skinCluster.
     @code
     import libWeights
@@ -813,7 +784,7 @@ class SkinWeightManager(WeightManager):
     #Create deformers if needed and import in the weights for all the geometry
     test.import_all()
     @endcode
-    """
+    '''
 
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     def __init__(self):
@@ -823,8 +794,7 @@ class SkinWeightManager(WeightManager):
 
 
 class ClusterWeightManager(WeightManager):
-
-    """
+    '''
     Class which manages the mass import/export of clusters.
     @code
     import libWeights
@@ -844,9 +814,8 @@ class ClusterWeightManager(WeightManager):
     test.import_all()
     @endcode
 
-    """
+    '''
     # @cond DOXYGEN_SHOULD_SKIP_THIS
-
     def __init__(self):
         super(ClusterWeightManager, self).__init__()
         self.weight_class = ClusterWeights
@@ -854,8 +823,7 @@ class ClusterWeightManager(WeightManager):
 
 
 class BlendsWeightManager(WeightManager):
-
-    """
+    '''
     Class which manages the mass import/export of blendshapes.
     @code
     import libWeights
@@ -875,10 +843,10 @@ class BlendsWeightManager(WeightManager):
     test.import_all()
     @endcode
 
-    """
+    '''
 
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     def __init__(self):
         super(BlendsWeightManager, self).__init__()
         self.weight_class = BlendShapeWeights
-    # @endcond
+        #@endcond
