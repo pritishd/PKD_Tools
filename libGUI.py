@@ -2,11 +2,11 @@ from functools import partial
 
 import pymel.core as pm
 
-import libPySide
-import libUtilities
-import libFile
-import libWeights
-import libGeo
+from PKD_Tools import libPySide
+from PKD_Tools import libUtilities
+from PKD_Tools import libFile
+from PKD_Tools import libWeights
+from PKD_Tools import libGeo
 
 for module in libUtilities, libPySide, libFile, libGeo:
     reload(module)
@@ -226,7 +226,7 @@ class BlendshapeManagerGUI(ManagerGUI):
         The property ManagerGUI.weightManager is overwritten in this class
         """
         return libWeights.BlendsWeightManager
-        #@endcond
+        # @endcond
 
 
 class ObjExportGUI(ManagerGUI):
@@ -261,8 +261,72 @@ class ObjExportGUI(ManagerGUI):
     def _connect_signals_(self):
         super(ObjExportGUI, self)._connect_signals_()
         self.cleanse_button.clicked.connect(self._cleanse_geo_)
+        self.scene_check_button.clicked.connect(self._check_scene_)
 
     # @endcond
+
+    def _check_scene_(self):
+        # Get the errors
+        topNode = libGeo.get_top_node()
+
+        warnWindow = libPySide.QWarningBox()
+
+        if not topNode:
+            warnWindow.setText("No topnode found")
+            warnWindow.setWindowTitle("Missing TopNode")
+            warnWindow.exec_()
+            return
+        else:
+            errorInfo = libGeo.find_heirachy_errors(topNode)
+            detailed_text = ""
+
+            if errorInfo["Namespace Transform"]:
+                warnWindow.setText("Namespace transform found")
+                warnWindow.setWindowTitle("Namespace Error")
+                detailed = "The following transforms have namespace in them\n\n"
+                for namespace in errorInfo["Namespace Transform"]:
+                    detailed += "select -r %s;\n" % namespace.name()
+                warnWindow.setDetailedText(detailed)
+                warnWindow.exec_()
+                return
+            if errorInfo["Duplicate Transform"]:
+                warnWindow.setText("Duplicate transform found")
+                warnWindow.setWindowTitle("Duplicate Transform Error")
+                detailed = "The following transforms are duplicated\n\n"
+                for duplicate in errorInfo["Duplicate Transform"]:
+                    detailed += "select -r %s;\n" % duplicate.name()
+                warnWindow.setDetailedText(detailed)
+                warnWindow.exec_()
+                return
+
+            if errorInfo["Duplicate Shapes"]:
+                warnWindow.setText("Duplicate Shapes")
+                warnWindow.setWindowTitle("Duplicate Shapes Error")
+                detailed = "The following shapes are duplicated\n\n"
+                for duplicate in errorInfo["Duplicate Shapes"]:
+                    detailed += "select -r %s;\n" % duplicate.name()
+                warnWindow.setDetailedText(detailed)
+                warnWindow.exec_()
+                return
+
+            if errorInfo["History Geos"]:
+                warnWindow.setText("Geo with history")
+                warnWindow.setWindowTitle("Geo History Error")
+                detailed = "The following mesh has history on them\n\n"
+                for historyGeo in errorInfo["History Geos"]:
+                    detailed += "select -r %s;\n" % historyGeo.name()
+                warnWindow.setDetailedText(detailed)
+                warnWindow.exec_()
+                return
+
+        # Give the all clear
+        congratWin = libPySide.QMessageBox()
+        congratWin.setText("Everything seems ok")
+        congratWin.setWindowTitle("All Clear")
+        congratWin.exec_()
+
+
+
 
     def _cleanse_geo_(self):
         objManager = self._initialise_manager_class_()
@@ -293,14 +357,12 @@ class ObjExportGUI(ManagerGUI):
 
         objManager.import_all()
 
-
     def _initialise_manager_class_(self):
         """initialse the weight manager class and set the info file"""
         self.objManager = libGeo.ObjManager()
         if libFile.exists(self.infoPath):
             self.objManager.export_dir = self.infoPath
         return self.objManager
-
 
     @property
     def infoPath(self):
@@ -311,6 +373,7 @@ class ObjExportGUI(ManagerGUI):
     def deformer(self):
         """Return value for the initial text"""
         return "Obj"
+
 
 def nothing_selected_box():
     """Bring the error message in case nothing is selected"""
