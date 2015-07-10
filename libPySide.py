@@ -1,5 +1,5 @@
 """
-@package PKD_Tools.libGeo
+@package PKD_Tools.libPySide
  This scripts creates an empty PySide custom window in Maya
  To run the script you need to have built Shiboken and PySide
  Following documentation on best practice for Pyside in maya

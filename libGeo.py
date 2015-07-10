@@ -3,20 +3,12 @@
 @brief This package contains utilities specifically related to geo such as wrap deformer command or create_wrap
 the convert_joint_to_cluster
 """
-try:
-    from libs import libUtilities
-    from libs import libFile
-except:
-    from PKD_tools import libUtilities
-    from PKD_tools import libFile
+
 import tempfile
-
 import os
-
 import json
 
 from maya import cmds, mel
-
 import pymel.core as pm
 from pymel.internal.plogging import pymelLogger as pyLog
 

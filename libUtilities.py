@@ -1,5 +1,5 @@
 '''
-@package libUtilities
+@package PKD_Tools.libUtilities
 @brief Miscellenous package with useful commands that is imported by other packages.
 @details As the package gets more complex, we will refactor common methods into specialised packages
 '''

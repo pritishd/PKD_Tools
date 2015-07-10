@@ -1,12 +1,17 @@
+"""
+@package PKD_Tools.libGUI
+ This package contains all the GUI
+ """
+
 from functools import partial
 
 import pymel.core as pm
 
-from PKD_Tools import libPySide
-from PKD_Tools import libUtilities
-from PKD_Tools import libFile
-from PKD_Tools import libWeights
-from PKD_Tools import libGeo
+import libPySide
+import libUtilities
+import libFile
+import libWeights
+import libGeo
 
 for module in libUtilities, libPySide, libFile, libGeo:
     reload(module)
