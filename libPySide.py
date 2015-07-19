@@ -34,6 +34,7 @@ class QMessageBox(QtGui.QMessageBox):
         self.setWindowIcon(icon)
         self.setSizeGripEnabled(True)
 
+
     def event(self, e):
         # Make it a resizable window
         result = QtGui.QMessageBox.event(self, e)

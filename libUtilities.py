@@ -647,6 +647,7 @@ def mel2pyStr(text):
     """
     print py2mel.mel2pyStr(text, pymelNamespace="pm")
 
+
 def changeTangents(tangent, *args):
     """Function to change the default tangent based
     @oaram tangent (string) the type of default in and out tangent
@@ -664,3 +665,113 @@ def get_animation_time_range():
     @return tuple of integer
     """
     return pm.playbackOptions(q=1, ast=1), pm.playbackOptions(q=1, aet=1)
+
+
+def get_default_lock_status(node):
+    """
+    Return the status of the transform of the node
+    @param node: The pynode that is being evaluated
+    @return: Dictonary of the various attributes lock status
+    """
+    node = pm.PyNode(node)
+    lockStatus = {}
+    for attr in _default_attibute_list_():
+        lockStatus[attr] = node.attr(attr).isLocked()
+    return lockStatus
+
+
+def set_lock_status(node, lockStatusDict):
+    """
+    Set the lock status based on a dictonary of attributes
+    @param node: The pynode that is being evaluated
+    @param lockStatusDict: Dictonary of the various attributes lock status
+    """
+    node = pm.PyNode(node)
+    for attr in lockStatusDict:
+        if lockStatusDict[attr]:
+            node.attr(attr).lock()
+        else:
+            node.attr(attr).unlock()
+
+
+def unlock_default_attribute(node):
+    """
+    Unlock the the default status of a node
+    """
+    node = pm.PyNode(node)
+    for attr in _default_attibute_list_():
+        node.attr(attr).unlock()
+
+
+def freeze_transform(transform):
+    """Freeze the default attributes of transform node even if the some of the attributes are locked. After freezing the
+    status reset the transform status
+    @param transform: The tranform node that is being evaluated
+    """
+    # Get the current lock status of the default attributes
+    defaultLockStatus = get_default_lock_status(transform)
+    transform = pm.PyNode(transform)
+    childrenLockStatus = {}
+    # Check to see if there are any children
+    if transform.getChildren(ad=1,type="transform"):
+        # Iterate through all the children
+        for childTransform in transform.getChildren(ad=1,type="transform"):
+            # Get the lock status of the children and store it in the dictonary
+            childrenLockStatus[childTransform] = get_default_lock_status(childTransform)
+            # Unlock the child transform status
+            unlock_default_attribute(childTransform)
+
+    # Unlock default status
+    unlock_default_attribute(transform)
+
+    # Freeze the tranform
+    pm.makeIdentity(transform, n=0, s=1, r=1, t=1, apply=True)
+
+    # Reset the children lock status
+    for childTransform in childrenLockStatus:
+        set_lock_status(childTransform,childrenLockStatus[childTransform])
+    set_lock_status(transform,defaultLockStatus)
+
+def _default_attibute_list_():
+    """"Return the list of default maya attributes"""
+    return _translate_attribute_list_() + _rotate_attribute_list_() + _scale_attribute_list_() + _visibility_attribute_list_()
+
+
+def _translate_attribute_list_():
+    """
+    @return: Return the list of names of the default translate attribute of a maya transform node
+    """
+    return ["translateX",
+            "translateY",
+            "translateZ",
+            "translate"
+            ]
+
+
+def _rotate_attribute_list_():
+    """
+    @return: Return the list of names of the default rotate attribute of a maya transform node
+    """
+    return ["rotateX",
+            "rotateY",
+            "rotateZ",
+            "rotate"
+            ]
+
+
+def _scale_attribute_list_():
+    """
+    @return: Return the list of names of the default scale attribute of a maya transform node
+    """
+    return ["scaleX",
+            "scaleY",
+            "scaleZ",
+            "scale"
+            ]
+
+
+def _visibility_attribute_list_():
+    """
+    @return: Return the list of names of the default scale attribute of a maya transform node
+    """
+    return ["visibility"]

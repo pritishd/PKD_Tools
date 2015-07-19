@@ -7,16 +7,19 @@ from functools import partial
 
 import pymel.core as pm
 
+if __name__ == '__main__':
+    localPath = r"C:\Users\admin\Documents\maya\scripts\PKD_Tools"
+    import sys
+    if localPath not in sys.path:
+        sys.path.append(localPath)
 import libPySide
 import libUtilities
 import libFile
 import libWeights
 import libGeo
 
-for module in libUtilities, libPySide, libFile, libGeo:
+for module in libWeights,libUtilities, libPySide, libFile, libGeo:
     reload(module)
-
-reload(libPySide)
 
 class TangentSwapper(libPySide.QDockableWindow):
     """A PySide based tangent swapper"""
@@ -276,11 +279,22 @@ class ObjExportGUI(ManagerGUI):
         warnWindow = libPySide.QWarningBox()
 
         if not topNode:
-            warnWindow.setText("No topnode found")
-            warnWindow.setWindowTitle("Missing TopNode")
+            warnWindow.setText("No top group found")
+            warnWindow.setWindowTitle("Missing Top Group")
             warnWindow.exec_()
             return
         else:
+            # Check that there is only top node in the scene
+            if libGeo.multiple_top_nodes_exists():
+                warnWindow.setText("Multiple top groups found")
+                warnWindow.setWindowTitle("Multiple Top Groups")
+                detailed = """There are multiple top groups in the scene. The tool would perform better if you merge the groups.
+Otherwise this tool would work on the first top group which is determined by Maya."""
+                warnWindow.setDetailedText(detailed)
+                warnWindow.exec_()
+                return
+
+
             errorInfo = libGeo.find_heirachy_errors(topNode)
             detailed_text = ""
 
@@ -293,6 +307,7 @@ class ObjExportGUI(ManagerGUI):
                 warnWindow.setDetailedText(detailed)
                 warnWindow.exec_()
                 return
+
             if errorInfo["Duplicate Transform"]:
                 warnWindow.setText("Duplicate transform found")
                 warnWindow.setWindowTitle("Duplicate Transform Error")
@@ -306,11 +321,18 @@ class ObjExportGUI(ManagerGUI):
             if errorInfo["Duplicate Shapes"]:
                 warnWindow.setText("Duplicate Shapes")
                 warnWindow.setWindowTitle("Duplicate Shapes Error")
-                detailed = "The following shapes are duplicated\n\n"
+                detailed = "The following shapes are duplicated however they seem to appear to come under different parent name\n\n"
                 for duplicate in errorInfo["Duplicate Shapes"]:
                     detailed += "select -r %s;\n" % duplicate.name()
+                detailed += '\n\nThis tool can attempt to fix the problem. Run the scene checker again to see if problem is resolved'
+                fixButton = libPySide.QtGui.QPushButton("Attempt Fix")
+                okButton = libPySide.QtGui.QPushButton("Abort")
+                warnWindow.addButton(okButton, libPySide.QtGui.QMessageBox.NoRole)
+                warnWindow.addButton(fixButton, libPySide.QtGui.QMessageBox.YesRole)
                 warnWindow.setDetailedText(detailed)
-                warnWindow.exec_()
+                ret = warnWindow.exec_()
+                if ret:
+                    libGeo.fix_duplicates_shapes(errorInfo["Duplicate Shapes"])
                 return
 
             if errorInfo["History Geos"]:
@@ -324,10 +346,10 @@ class ObjExportGUI(ManagerGUI):
                 return
 
         # Give the all clear
-        congratWin = libPySide.QMessageBox()
-        congratWin.setText("Everything seems ok")
-        congratWin.setWindowTitle("All Clear")
-        congratWin.exec_()
+        congratsWin = libPySide.QMessageBox()
+        congratsWin.setText("Everything seems ok")
+        congratsWin.setWindowTitle("All Clear")
+        congratsWin.exec_()
 
     def _cleanse_geo_(self):
         objManager = self._initialise_manager_class_()

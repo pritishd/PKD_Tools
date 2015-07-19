@@ -23,6 +23,15 @@ def get_top_node():
             return top
 
 
+def multiple_top_nodes_exists():
+    """Check if the the scene has multiple top level groups"""
+    topNodes = []
+    for top in pm.ls(assemblies=True, ud=True):
+        if not top.getShape():
+            topNodes.append(top)
+    return len(topNodes) > 1
+
+
 def find_heirachy_errors(topNode):
     """ Return a dictanary of lists with common heirachy errors
     @param: The top node of a group
@@ -97,13 +106,14 @@ class ObjManager(object):
         # Sort the heirachy by string size
         hierachy.sort(key=len)
         info = {"heirachy": hierachy, "pivots": pivots}
-        # Writing JSON data
-        with open(self.datapath, 'w') as f:
-            json.dump(info, f)
+        self.heirachy_file_info = info
 
     def export_heirachy_obj(self):
         fileInfo = {}
-        for geo in self.geo_list:
+        # Reverse the geo list so that the deepest geo is deleted first in case there is a geo inside geo
+        geo_list = self.geo_list
+        geo_list.reverse()
+        for geo in geo_list:
             pm.delete(geo, ch=1)
             parent = pm.listRelatives(geo, parent=True)
             pm.parent(geo, w=True)
@@ -132,7 +142,7 @@ class ObjManager(object):
         fileInfo = self.geo_file_info
         for geo in fileInfo.keys():
             cmds.file(fileInfo[geo],
-                      rpr="temp",
+                      rpr="PKD_Temp",
                       i=1,
                       type="OBJ",
                       loadReferenceDepth="all",
@@ -148,19 +158,18 @@ class ObjManager(object):
                 os.remove(fileInfo[geo])
             for top in pm.ls(assemblies=True, ud=True):
                 if top.getShape():
-                    if top.getShape().type() == "mesh":
-                        pm.parent(top, self.top_node)
+                    if top.getShape().type() == "mesh" and top.name()== "PKD_Temp_Mesh":
+                        # pm.parent(top, self.top_node)
                         top.rename(geo)
                         pm.select(geo)
-                        mel.eval("polySetToFaceNormal")
                         mel.eval("polySoftEdge -a 180 " + geo)
+                        mel.eval("polySetToFaceNormal")
                         pm.delete(geo, ch=1)
                         pm.refresh()
 
     def rebuild_heirachy(self):
         # Rebuild the heirachy by reading the scene info file
-        with open(self.datapath, 'r') as f:
-            read_info = json.load(f)
+        read_info = self.heirachy_file_info
 
         # Rebuild the heirachy
         for transform in read_info["heirachy"]:
@@ -199,12 +208,17 @@ class ObjManager(object):
         if self.new_scene:
             pm.createNode("transform", n=self.top_node)
 
+        # Reset the top node
+        topNode = pm.PyNode(self.top_node)
+        topNode.scale.unlock()
+        topNode.translate.unlock()
+
         self.import_all()
         pyLog.info("Geo Is Cleansed")
 
     def export_all(self):
         # Export All Geo and heirachy info
-        self.freeze_heirachy()
+        libUtilities.freeze_transform(self.top_node)
         self.write_heirachy_data()
         self.export_heirachy_obj()
 
@@ -216,17 +230,16 @@ class ObjManager(object):
         self.rebuild_heirachy()
 
         return self._geo_list_
-
-    def freeze_heirachy(self):
-        """
-        Freeze all the transform node in the heirachy
-        """
-        print self.top_node
-        for transform in pm.listRelatives(self.top_node, type="transform", ad=1, ni=True) + [self.top_node]:
-            try:
-                pm.makeIdentity(transform, n=0, s=1, r=1, t=1, apply=True, pn=1)
-            except:
-                raise Exception("Unable to freeze transforms on: %s" % transform.name())
+    #
+    # def freeze_heirachy(self):
+    #     """
+    #     Freeze all the transform node in the heirachy
+    #     """
+    #     for transform in pm.listRelatives(self.top_node, type="transform", ad=1, ni=True) + [self.top_node]:
+    #         try:
+    #             pm.makeIdentity(transform, n=0, s=1, r=1, t=1, apply=True, pn=1)
+    #         except:
+    #             raise Exception("Unable to freeze transforms on: %s" % transform.name())
 
     @property
     def top_node(self):
@@ -279,9 +292,24 @@ class ObjManager(object):
 
     @geo_file_info.setter
     def geo_file_info(self, path_info):
-        # Write Writing JSON data
+        # Write JSON data
         with open(self.geoListPath, 'w') as f:
             json.dump(path_info, f)
+
+    @property
+    def heirachy_file_info(self):
+        """Read the heirachy info"""
+        if not libFile.exists(self.datapath):
+            raise Exception("No geo has been exported to this path")
+        with open(self.datapath, 'r') as f:
+            return json.load(f)
+
+    @heirachy_file_info.setter
+    def heirachy_file_info(self, heirachy_info):
+        # Write JSON data
+        with open(self.datapath, 'w') as f:
+            json.dump(heirachy_info, f)
+
 
 
 def convert_joint_to_cluster(targetGeo, skipList=[]):
