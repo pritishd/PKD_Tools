@@ -1,8 +1,9 @@
 """
 @package PKD_Tools.libPySide
- This scripts creates an empty PySide custom window in Maya
- To run the script you need to have built Shiboken and PySide
- Following documentation on best practice for Pyside in maya
+ @brief Here we do a basic PySide setup so that all GUIs are inside of maya and that they follow some common formatting
+  to bring about consistency
+ @details This is following documentation on best practice for Pyside in maya
+ 
  http://knowledge.autodesk.com/search-result/caas/CloudHelp/cloudhelp/2015/ENU/Maya-SDK/files/GUID-66ADA1FF-3E0F-469C-84C7-74CEB36D42EC-htm.html"""
 
 from shiboken import wrapInstance
@@ -26,7 +27,7 @@ def getMayaMainWindow():
     return wrapInstance(long(accessMainWindow), QtGui.QMainWindow)
 
 class QMessageBox(QtGui.QMessageBox):
-    """ Setup up convience message boxes"""
+    """ Setup up of convience message boxes"""
 
     def __init__(self):
         super(QMessageBox, self).__init__(parent=getMayaMainWindow())
@@ -57,18 +58,21 @@ class QMessageBox(QtGui.QMessageBox):
 
 
 class QCriticalBox(QMessageBox):
+    """ A message box with a critical icon"""
     def __init__(self):
         super(QCriticalBox, self).__init__()
         self.setIcon(QtGui.QMessageBox.Icon.Critical)
 
 
 class QWarningBox(QMessageBox):
+    """ A message box with a warning icon"""
     def __init__(self):
         super(QWarningBox, self).__init__()
         self.setIcon(QtGui.QMessageBox.Icon.Warning)
 
 
 class QQuestionBox(QMessageBox):
+    """ A message box with a question icon"""
     def __init__(self):
         super(QQuestionBox, self).__init__()
         self.setIcon(QtGui.QMessageBox.Icon.Question)
@@ -340,7 +344,7 @@ class TestGUI(QDockableWindow):
 
 class VerticalTabBar(QtGui.QTabBar):
     """A tab bar with a vertical side bar with text written horizontally instead of vertically
-    http://stackoverflow.com/questions/3607709/how-to-change-text-alignment-in-qtabwidget"""
+    @details This is a modification of the following http://stackoverflow.com/questions/3607709/how-to-change-text-alignment-in-qtabwidget"""
 
     def __init__(self, *args, **kwargs):
         self.tabSize = QtCore.QSize(kwargs.pop('width'), kwargs.pop('height'))

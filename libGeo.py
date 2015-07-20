@@ -34,8 +34,8 @@ def multiple_top_nodes_exists():
 
 def find_heirachy_errors(topNode):
     """ Return a dictanary of lists with common heirachy errors
-    @param: The top node of a group
-    @return: A dictonary of errors
+    @param topNode The top node of a group
+    @return A dictonary of errors
     """
     duplicateTransform = []
     duplicateShapes = []
@@ -69,7 +69,7 @@ def find_heirachy_errors(topNode):
 
 def fix_duplicates_shapes(duplicateShapes=None):
     """ Attempt to fix duplicate shapes by renaming based on parent dags name
-    @param list of pynodes with duplicated shapes
+    @param duplicateShapes list of pynodes with duplicated shapes
     """
     if not duplicateShapes:
         duplicateShapes = []
@@ -377,7 +377,7 @@ def create_wrap(*args, **kwargs):
 
     source: http://artofrigging.com/scripting-mayas-wrap-deformer/
 
-    @return: The wrap deformer node
+    @return The wrap deformer node
     """
 
     source = str(args[0])

@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['command_5fmode',['command_mode',['../class_p_k_d___tools_1_1lib_weights_1_1_weight_manager.html#aef369ba61afc51f83e1a5fae30678fa6',1,'PKD_Tools::libWeights::WeightManager']]]
+  ['appicon',['AppIcon',['../namespace_p_k_d___tools_1_1lib_py_side.html#a54a22be4e6a8478c380f1f54553c1d17',1,'PKD_Tools::libPySide']]],
+  ['applabel',['AppLabel',['../namespace_p_k_d___tools_1_1lib_py_side.html#a7299547b8a58314bc629b57ac5ffaed3',1,'PKD_Tools::libPySide']]]
 ];

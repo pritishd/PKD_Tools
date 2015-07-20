@@ -1,5 +1,5 @@
 '''
-@package libFile
+@package PKD_Tools.libFile
 @brief Common OS methods encapsulated in a user friendly method.
 '''
 
@@ -183,7 +183,7 @@ def listfolders(path):
 def listfiles(path, extension=''):
     """
     @param path (string) Path that is queried for files
-    @param path (string) Filter result based on certain extension
+    @param extension (string) Filter result based on certain extension
     @return list of files in that folder
     """
     res = [d for d in os.listdir(path) if os.path.isfile(os.path.join(path, d))]
@@ -215,8 +215,8 @@ def get_file_folder_extension(path):
 
 def copyfile(source, target):
     """Convenience method tp copy file from one location to another
-    @param source(string)for the source file
-    @param target(string) path for the destination file
+    @param source (string)for the source file
+    @param target (string) path for the destination file
     """
     shutil.copy(source, target)
 
@@ -235,7 +235,7 @@ def delete_folder_content(folderPath):
 def open_folder_in_windows_explorer(path):
     """
     Open a path in windows explorer
-    @param path(string) Path to open in windows explorer
+    @param path (string) Path to open in windows explorer
     """
     os.startfile(linux_path(path))
 

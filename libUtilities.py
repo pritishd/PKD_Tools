@@ -74,7 +74,7 @@ def reverse_attibute(attribute, name=""):
 def addAttr(target, attrName="", attrMax=1, attrMin=0, SV=0, sn="", df=0):
     """
     Add a float attr to tranform node
-    param target: Tranform node
+    @param target: Tranform node
     @param attrName: The name shown in the channelbox
     @param attrMax: The maximum value of the float attribute. Default is 1
     @param attrMin: The minumum value of the float attribute. Default is 0
@@ -635,6 +635,7 @@ def title(item):
     import libUtilities
     libUtilities.title("GI joe is awesome")
     # Result: 'GI Joe Is Awesome' #
+    @endcode
     """
     lst = [word[0].upper() + word[1:] for word in item.split()]
     return " ".join(lst)
@@ -650,7 +651,7 @@ def mel2pyStr(text):
 
 def changeTangents(tangent, *args):
     """Function to change the default tangent based
-    @oaram tangent (string) the type of default in and out tangent
+    @param tangent (string) the type of default in and out tangent
     """
     pm.keyTangent(g=True, ott=tangent)
     if tangent == "step":

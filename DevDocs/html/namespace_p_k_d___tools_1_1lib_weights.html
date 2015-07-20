@@ -47,6 +47,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
+      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li class="current"><a href="namespaces.html"><span>Packages</span></a></li>
       <li><a href="annotated.html"><span>Classes</span></a></li>
       <li>
@@ -154,6 +155,8 @@ The number of vertices on the geometry itself has not changed. </li>
 During export, the target geometry must be selected. </li>
 <li>
 If there are existing deformers on the geometry, make sure their names are the same as the exported data so that correct weights are imported </li>
+<li>
+If you want the deformer to be rebuilt ensure that the same deformer name does not exists in target/import scene. As a best practice, always rename your deformers in your source/export scene. </li>
 </ol>
 <p>Current supported deformers are </p><ul>
 <li>
@@ -190,7 +193,7 @@ Data(as explained before) about the deformers for each geometry </li>
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><a class="el" href="namespace_p_k_d___tools.html">PKD_Tools</a></li><li class="navelem"><a class="el" href="namespace_p_k_d___tools_1_1lib_weights.html">libWeights</a></li>
-    <li class="footer">Generated on Sat Mar 21 2015 21:23:50 for PKD_Tools by
+    <li class="footer">Generated on Mon Jul 20 2015 22:51:09 for PKD_Tools by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.9.1 </li>
   </ul>

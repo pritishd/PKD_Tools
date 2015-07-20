@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['weight_5fclass',['weight_class',['../class_p_k_d___tools_1_1lib_weights_1_1_weight_manager.html#ae7f812afa3beaae3f410811fc26e451d',1,'PKD_Tools::libWeights::WeightManager']]],
-  ['window',['window',['../class_p_k_d___tools_1_1lib_g_u_i_1_1_g_u_i.html#a9da56301ff0c6c9bff236535ef89d697',1,'PKD_Tools::libGUI::GUI']]]
+  ['form',['form',['../class_p_k_d___tools_1_1lib_py_side_1_1_q_group_box.html#a7bad6e870e1913486f4ac503f84b519c',1,'PKD_Tools::libPySide::QGroupBox']]]
 ];
