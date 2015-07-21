@@ -33,10 +33,8 @@ var hierarchy =
             [ "PKD_Tools.libGUI.ObjExportGUI", "class_p_k_d___tools_1_1lib_g_u_i_1_1_obj_export_g_u_i.html", null ],
             [ "PKD_Tools.libGUI.SkinManagerGUI", "class_p_k_d___tools_1_1lib_g_u_i_1_1_skin_manager_g_u_i.html", null ]
           ] ],
-          [ "PKD_Tools.libGUI.TangentSwapper", "class_p_k_d___tools_1_1lib_g_u_i_1_1_tangent_swapper.html", null ],
-          [ "PKD_Tools.libPySide.TestGUI", "class_p_k_d___tools_1_1lib_py_side_1_1_test_g_u_i.html", null ]
-        ] ],
-        [ "PKD_Tools.libPySide.VerticalTabTest", "class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_test.html", null ]
+          [ "PKD_Tools.libGUI.TangentSwapper", "class_p_k_d___tools_1_1lib_g_u_i_1_1_tangent_swapper.html", null ]
+        ] ]
       ] ]
     ] ],
     [ "QMessageBox", null, [

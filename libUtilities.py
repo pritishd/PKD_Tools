@@ -649,7 +649,7 @@ def mel2pyStr(text):
     print py2mel.mel2pyStr(text, pymelNamespace="pm")
 
 
-def changeTangents(tangent, *args):
+def changeTangents(tangent):
     """Function to change the default tangent based
     @param tangent (string) the type of default in and out tangent
     """

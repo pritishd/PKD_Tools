@@ -1,7 +1,7 @@
 var searchData=
 [
   ['capitalize',['capitalize',['../namespace_p_k_d___tools_1_1lib_utilities.html#a0288307cac6cde074e572b73e3ffacb2',1,'PKD_Tools::libUtilities']]],
-  ['changetangents',['changeTangents',['../namespace_p_k_d___tools_1_1lib_utilities.html#a7b98e27b7accf24fdf1cab90356e4a3e',1,'PKD_Tools::libUtilities']]],
+  ['changetangents',['changeTangents',['../namespace_p_k_d___tools_1_1lib_utilities.html#a677c1f4e4b82485848061221ce55ba23',1,'PKD_Tools::libUtilities']]],
   ['cleanse_5fgeo',['cleanse_geo',['../class_p_k_d___tools_1_1lib_geo_1_1_obj_manager.html#ac4f4f38e16826b8fc4ec840bd82c443a',1,'PKD_Tools::libGeo::ObjManager']]],
   ['collapse',['collapse',['../class_p_k_d___tools_1_1lib_py_side_1_1_q_group_box.html#a1df902c1a6765c0a933f96c5c27acff3',1,'PKD_Tools::libPySide::QGroupBox']]],
   ['colorcurve',['colorCurve',['../namespace_p_k_d___tools_1_1lib_utilities.html#a0532cd62aa19a21228a4ab8dc13082f8',1,'PKD_Tools::libUtilities']]],

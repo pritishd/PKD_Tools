@@ -1,7 +1,7 @@
 var searchData=
 [
   ['capitalize',['capitalize',['../namespace_p_k_d___tools_1_1lib_utilities.html#a0288307cac6cde074e572b73e3ffacb2',1,'PKD_Tools::libUtilities']]],
-  ['changetangents',['changeTangents',['../namespace_p_k_d___tools_1_1lib_utilities.html#a7b98e27b7accf24fdf1cab90356e4a3e',1,'PKD_Tools::libUtilities']]],
+  ['changetangents',['changeTangents',['../namespace_p_k_d___tools_1_1lib_utilities.html#a677c1f4e4b82485848061221ce55ba23',1,'PKD_Tools::libUtilities']]],
   ['cleanse_5fgeo',['cleanse_geo',['../class_p_k_d___tools_1_1lib_geo_1_1_obj_manager.html#ac4f4f38e16826b8fc4ec840bd82c443a',1,'PKD_Tools::libGeo::ObjManager']]],
   ['cleansing_5fmode',['cleansing_mode',['../class_p_k_d___tools_1_1lib_geo_1_1_obj_manager.html#a83c77aaa3fd19fae7cc60adc948bc4be',1,'PKD_Tools::libGeo::ObjManager']]],
   ['clustermanagergui',['ClusterManagerGUI',['../class_p_k_d___tools_1_1lib_g_u_i_1_1_cluster_manager_g_u_i.html',1,'PKD_Tools::libGUI']]],

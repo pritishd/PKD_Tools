@@ -1,8 +1,6 @@
 var searchData=
 [
-  ['geo_5ffile_5finfo',['geo_file_info',['../class_p_k_d___tools_1_1lib_geo_1_1_obj_manager.html#abf26e20a08caf518ac9b88478d804199',1,'PKD_Tools.libGeo.ObjManager.geo_file_info()'],['../class_p_k_d___tools_1_1lib_geo_1_1_obj_manager.html#a9a58cc3dcf202ed736f913f1ad8cc5db',1,'PKD_Tools.libGeo.ObjManager.geo_file_info(self)'],['../class_p_k_d___tools_1_1lib_geo_1_1_obj_manager.html#a13b487ed8b8f32f6ca56701e04b2a3aa',1,'PKD_Tools.libGeo.ObjManager.geo_file_info(self, path_info)']]],
-  ['geo_5flist',['geo_list',['../class_p_k_d___tools_1_1lib_geo_1_1_obj_manager.html#aa5ef02cae7854a6e6b997d9878a3a581',1,'PKD_Tools::libGeo::ObjManager']]],
-  ['geolistpath',['geoListPath',['../class_p_k_d___tools_1_1lib_geo_1_1_obj_manager.html#a879325a0e5550968066e2b40cfb6cbe4',1,'PKD_Tools::libGeo::ObjManager']]],
+  ['geo_5ffile_5finfo',['geo_file_info',['../class_p_k_d___tools_1_1lib_geo_1_1_obj_manager.html#abf26e20a08caf518ac9b88478d804199',1,'PKD_Tools::libGeo::ObjManager']]],
   ['get_5fanimation_5ftime_5frange',['get_animation_time_range',['../namespace_p_k_d___tools_1_1lib_utilities.html#a421184194476b84e52ab708f75e8ead2',1,'PKD_Tools::libUtilities']]],
   ['get_5fcentre_5fpiv_5fpos',['get_centre_piv_pos',['../namespace_p_k_d___tools_1_1lib_utilities.html#aabbf681d83eaf6e7fb05944c6d805b78',1,'PKD_Tools::libUtilities']]],
   ['get_5fdefault_5flock_5fstatus',['get_default_lock_status',['../namespace_p_k_d___tools_1_1lib_utilities.html#a761ff546408f0d860b207246413abaf0',1,'PKD_Tools::libUtilities']]],
