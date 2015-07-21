@@ -9,6 +9,7 @@ import os
 import json
 
 from maya import cmds, mel
+
 import pymel.core as pm
 from pymel.internal.plogging import pymelLogger as pyLog
 
@@ -82,6 +83,7 @@ class ObjManager(object):
     """Class to manage obj import/export. This class also maintains heirachy and pivot information. However the heirachy must be
     clean of any common issues such as duplicate transform name.
     @attention The obj plugin is loaded by default for safety whenever this class is initialised"""
+
     def __init__(self):
         """@property new_scene
         @brief Is the obj heirachy being imported into a new scene. Useful if you want to start from scratch
