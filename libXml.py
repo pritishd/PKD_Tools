@@ -1,7 +1,9 @@
 '''
-@package libXml
+@package PKD_Tools.libXml
 @brief This package allows you to convert from XML to a dictionary and vice versa
 @details Copied from the following link along with some more custom methods
+Eventually this module will be phased out in favor the superior JSON string. However we will keep it just as a backup.
+Also some studios sometimes insists on XML format.
 
 http://libstoragemgmt.sourceforge.net/srcdoc/html/xmltodict_8py_source.html
 

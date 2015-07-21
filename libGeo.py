@@ -9,6 +9,7 @@ import os
 import json
 
 from maya import cmds, mel
+
 import pymel.core as pm
 from pymel.internal.plogging import pymelLogger as pyLog
 
@@ -23,10 +24,19 @@ def get_top_node():
             return top
 
 
+def multiple_top_nodes_exists():
+    """Check if the the scene has multiple top level groups"""
+    topNodes = []
+    for top in pm.ls(assemblies=True, ud=True):
+        if not top.getShape():
+            topNodes.append(top)
+    return len(topNodes) > 1
+
+
 def find_heirachy_errors(topNode):
     """ Return a dictanary of lists with common heirachy errors
-    @param: The top node of a group
-    @return: A dictonary of errors
+    @param topNode The top node of a group
+    @return A dictonary of errors
     """
     duplicateTransform = []
     duplicateShapes = []
@@ -60,7 +70,7 @@ def find_heirachy_errors(topNode):
 
 def fix_duplicates_shapes(duplicateShapes=None):
     """ Attempt to fix duplicate shapes by renaming based on parent dags name
-    @param list of pynodes with duplicated shapes
+    @param duplicateShapes list of pynodes with duplicated shapes
     """
     if not duplicateShapes:
         duplicateShapes = []
@@ -70,8 +80,22 @@ def fix_duplicates_shapes(duplicateShapes=None):
 
 
 class ObjManager(object):
+    """Class to manage obj import/export. This class also maintains heirachy and pivot information. However the heirachy must be
+    clean of any common issues such as duplicate transform name.
+    @attention The obj plugin is loaded by default for safety whenever this class is initialised"""
+
     def __init__(self):
-        super(ObjManager, self).__init__()
+        """@property new_scene
+        @brief Is the obj heirachy being imported into a new scene. Useful if you want to start from scratch
+        @property cleansing_mode
+        @brief In cleansing the mode the original geometery is deleted as soon as it is exported. This way any
+        shader information is not lost
+        @property heirachy_file_info
+        @brief The file which contains all the heirachy information such as structure and pivots
+        @property geo_file_info
+        @brief The file which contains information about all geo that was exported and it's current path
+
+        """
         self._top_node_ = None
         self._export_dir_ = None
         self._geo_list_ = []
@@ -97,13 +121,15 @@ class ObjManager(object):
         # Sort the heirachy by string size
         hierachy.sort(key=len)
         info = {"heirachy": hierachy, "pivots": pivots}
-        # Writing JSON data
-        with open(self.datapath, 'w') as f:
-            json.dump(info, f)
+        self.heirachy_file_info = info
 
     def export_heirachy_obj(self):
+        """Export the individual meshes in the heirachy"""
         fileInfo = {}
-        for geo in self.geo_list:
+        # Reverse the geo list so that the deepest geo is deleted first in case there is a geo inside geo
+        geo_list = self.geo_list
+        geo_list.reverse()
+        for geo in geo_list:
             pm.delete(geo, ch=1)
             parent = pm.listRelatives(geo, parent=True)
             pm.parent(geo, w=True)
@@ -132,7 +158,7 @@ class ObjManager(object):
         fileInfo = self.geo_file_info
         for geo in fileInfo.keys():
             cmds.file(fileInfo[geo],
-                      rpr="temp",
+                      rpr="PKD_Temp",
                       i=1,
                       type="OBJ",
                       loadReferenceDepth="all",
@@ -148,19 +174,18 @@ class ObjManager(object):
                 os.remove(fileInfo[geo])
             for top in pm.ls(assemblies=True, ud=True):
                 if top.getShape():
-                    if top.getShape().type() == "mesh":
-                        pm.parent(top, self.top_node)
+                    if top.getShape().type() == "mesh" and top.name()== "PKD_Temp_Mesh":
+                        # pm.parent(top, self.top_node)
                         top.rename(geo)
                         pm.select(geo)
-                        mel.eval("polySetToFaceNormal")
                         mel.eval("polySoftEdge -a 180 " + geo)
+                        mel.eval("polySetToFaceNormal")
                         pm.delete(geo, ch=1)
                         pm.refresh()
 
     def rebuild_heirachy(self):
-        # Rebuild the heirachy by reading the scene info file
-        with open(self.datapath, 'r') as f:
-            read_info = json.load(f)
+        """ Rebuild the heirachy by reading the heirachy info file"""
+        read_info = self.heirachy_file_info
 
         # Rebuild the heirachy
         for transform in read_info["heirachy"]:
@@ -199,44 +224,39 @@ class ObjManager(object):
         if self.new_scene:
             pm.createNode("transform", n=self.top_node)
 
+        # Reset the top node
+        topNode = pm.PyNode(self.top_node)
+        topNode.scale.unlock()
+        topNode.translate.unlock()
+
         self.import_all()
         pyLog.info("Geo Is Cleansed")
 
     def export_all(self):
-        # Export All Geo and heirachy info
-        self.freeze_heirachy()
+        """Export All Geo and heirachy info"""
+        libUtilities.freeze_transform(self.top_node)
         self.write_heirachy_data()
         self.export_heirachy_obj()
 
     def import_all(self):
-        # Import All Geo and heirachy info
+        """Import All Geo and heirachy info"""
         self.import_heirachy_geo()
         pm.select(cl=1)
         mel.eval("FrameAll;")
         self.rebuild_heirachy()
 
         return self._geo_list_
-
-    def freeze_heirachy(self):
-        """
-        Freeze all the transform node in the heirachy
-        """
-        print self.top_node
-        for transform in pm.listRelatives(self.top_node, type="transform", ad=1, ni=True) + [self.top_node]:
-            try:
-                pm.makeIdentity(transform, n=0, s=1, r=1, t=1, apply=True, pn=1)
-            except:
-                raise Exception("Unable to freeze transforms on: %s" % transform.name())
-
+    # @cond DOXYGEN_SHOULD_SKIP_THIS
     @property
     def top_node(self):
-        """Get the top node"""
+        """Get the top node name. If it is defined then find it by searching the top group"""
         if not self._top_node_:
             self._top_node_ = str(get_top_node())
         return self._top_node_
 
     @top_node.setter
     def top_node(self, node):
+        """Set the top node name as string"""
         # Recieve data about the top node. Make sure it is a string
         self._top_node_ = str(node)
 
@@ -250,14 +270,15 @@ class ObjManager(object):
 
     @property
     def export_dir(self):
-        """Export Directory """
+        """Get the Export Directory """
         if self._export_dir_ is None:
             self._export_dir_ = tempfile.gettempdir()
         return self._export_dir_
 
     @export_dir.setter
     def export_dir(self, path):
-        self._export_dir_ = libFile.linux_path(path)
+        """Set the Export Directory """
+        self._export_dir_ = libFile.folder_check_advanced(path)
 
     @property
     def datapath(self):
@@ -271,7 +292,7 @@ class ObjManager(object):
 
     @property
     def geo_file_info(self):
-        """Read the geo path info"""
+        """Read the geo path info from a json file"""
         if not libFile.exists(self.geoListPath):
             raise Exception("No geo has been exported to this path")
         with open(self.geoListPath, 'r') as f:
@@ -279,9 +300,25 @@ class ObjManager(object):
 
     @geo_file_info.setter
     def geo_file_info(self, path_info):
-        # Write Writing JSON data
+        """Write the geo path info to json file"""
+        # Write JSON data
         with open(self.geoListPath, 'w') as f:
             json.dump(path_info, f)
+
+    @property
+    def heirachy_file_info(self):
+        """Read the heirachy info from a json file"""
+        if not libFile.exists(self.datapath):
+            raise Exception("No geo has been exported to this path")
+        with open(self.datapath, 'r') as f:
+            return json.load(f)
+
+    @heirachy_file_info.setter
+    def heirachy_file_info(self, heirachy_info):
+        """Write the heirachy info into a json file"""
+        with open(self.datapath, 'w') as f:
+            json.dump(heirachy_info, f)
+    # @endcond
 
 
 def convert_joint_to_cluster(targetGeo, skipList=[]):
@@ -349,7 +386,7 @@ def create_wrap(*args, **kwargs):
 
     source: http://artofrigging.com/scripting-mayas-wrap-deformer/
 
-    @return: The wrap deformer node
+    @return The wrap deformer node
     """
 
     source = str(args[0])

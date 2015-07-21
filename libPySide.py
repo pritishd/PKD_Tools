@@ -1,8 +1,9 @@
 """
 @package PKD_Tools.libPySide
- This scripts creates an empty PySide custom window in Maya
- To run the script you need to have built Shiboken and PySide
- Following documentation on best practice for Pyside in maya
+ @brief Here we do a basic PySide setup so that all GUIs are inside of maya and that they follow some common formatting
+  to bring about consistency
+ @details This is following documentation on best practice for Pyside in maya
+ 
  http://knowledge.autodesk.com/search-result/caas/CloudHelp/cloudhelp/2015/ENU/Maya-SDK/files/GUID-66ADA1FF-3E0F-469C-84C7-74CEB36D42EC-htm.html"""
 
 from shiboken import wrapInstance
@@ -22,11 +23,12 @@ AppLabel = libFile.join(libFile.current_working_directory(), r"Icons/WinLabel.pn
 # to the main Maya window, it uses a combination of the Maya API as well as the SIP module
 
 def getMayaMainWindow():
+    """Setup so that any Pyside window are a child within the maya application"""
     accessMainWindow = OpenMayaUI.MQtUtil.mainWindow()
     return wrapInstance(long(accessMainWindow), QtGui.QMainWindow)
 
 class QMessageBox(QtGui.QMessageBox):
-    """ Setup up convience message boxes"""
+    """ Setup up of convience message boxes"""
 
     def __init__(self):
         super(QMessageBox, self).__init__(parent=getMayaMainWindow())
@@ -34,8 +36,9 @@ class QMessageBox(QtGui.QMessageBox):
         self.setWindowIcon(icon)
         self.setSizeGripEnabled(True)
 
+
     def event(self, e):
-        # Make it a resizable window
+        """Make it a resizable window. Used most in the context of detailed box"""
         result = QtGui.QMessageBox.event(self, e)
 
         self.setMinimumHeight(0)
@@ -56,18 +59,21 @@ class QMessageBox(QtGui.QMessageBox):
 
 
 class QCriticalBox(QMessageBox):
+    """ A message box with a critical icon"""
     def __init__(self):
         super(QCriticalBox, self).__init__()
         self.setIcon(QtGui.QMessageBox.Icon.Critical)
 
 
 class QWarningBox(QMessageBox):
+    """ A message box with a warning icon"""
     def __init__(self):
         super(QWarningBox, self).__init__()
         self.setIcon(QtGui.QMessageBox.Icon.Warning)
 
 
 class QQuestionBox(QMessageBox):
+    """ A message box with a question icon"""
     def __init__(self):
         super(QQuestionBox, self).__init__()
         self.setIcon(QtGui.QMessageBox.Icon.Question)
@@ -103,6 +109,7 @@ class QGroupBox(QtGui.QGroupBox):
             self.toggleCollapse.emit()
 
     def collapse(self):
+        """Force the collapse state"""
         self.isCollapsed = True
         self.setFixedHeight(17)
 
@@ -275,7 +282,7 @@ class QDockableWindow(QMainWindow):
         #     pyLog.info(cmds.dockControl(self._dockedwidget_, q=1, h=1))
         # cmds.dockControl(self._dockedwidget_, e=1, w=278,h=296)
 
-
+# @cond DOXYGEN_SHOULD_SKIP_THIS
 class TestGUI(QDockableWindow):
     """A test GUI"""
 
@@ -335,17 +342,18 @@ class TestGUI(QDockableWindow):
         self.line_edit = self.findChild(QtGui.QLineEdit, self.line_edit_name)
         print self.line_edit
         print self.line_edit.text()
-
+# @endcond
 
 class VerticalTabBar(QtGui.QTabBar):
     """A tab bar with a vertical side bar with text written horizontally instead of vertically
-    http://stackoverflow.com/questions/3607709/how-to-change-text-alignment-in-qtabwidget"""
+    @details This is a modification of the following http://stackoverflow.com/questions/3607709/how-to-change-text-alignment-in-qtabwidget"""
 
     def __init__(self, *args, **kwargs):
         self.tabSize = QtCore.QSize(kwargs.pop('width'), kwargs.pop('height'))
         super(VerticalTabBar, self).__init__(*args, **kwargs)
 
     def paintEvent(self, event):
+        """Write the text horizontally instead of vertically"""
         super(VerticalTabBar, self).paintEvent(event)
         painter = QtGui.QStylePainter(self)
         option = QtGui.QStyleOptionTab()
@@ -361,11 +369,11 @@ class VerticalTabBar(QtGui.QTabBar):
                              QtCore.Qt.AlignVCenter | QtCore.Qt.TextDontClip,
                              self.tabText(index).replace("&", ""))
         painter.end()
-
+    # @cond DOXYGEN_SHOULD_SKIP_THIS
     def tabSizeHint(self, index):
         return self.tabSize
-
-
+    # @endcond
+# @cond DOXYGEN_SHOULD_SKIP_THIS
 class VerticalTabTest(QMainWindow):
     """A vertical tab test"""
 
@@ -380,9 +388,10 @@ class VerticalTabTest(QMainWindow):
         tabs.setTabPosition(QtGui.QTabWidget.West)
         tabs.show()
         self.main_layout.addWidget(tabs)
-
+# @endcond DOXYGEN_SHOULD_SKIP_THIS
 
 def horizontal_divider():
+    """Return a horizontal divider"""
     divider = QtGui.QFrame()
     divider.setFrameShape(QtGui.QFrame.HLine)
     divider.setFrameShadow(QtGui.QFrame.Sunken)
@@ -390,6 +399,7 @@ def horizontal_divider():
 
 
 def vLine_divider():
+    """Return a vertical divider"""
     divider = QtGui.QFrame()
     divider.setFrameShape(QtGui.QFrame.VLine)
     divider.setFrameShadow(QtGui.QFrame.Sunken)

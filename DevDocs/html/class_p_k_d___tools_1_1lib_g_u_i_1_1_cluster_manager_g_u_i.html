@@ -47,6 +47,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
+      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Packages</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li>
@@ -106,13 +107,14 @@ $(document).ready(function(){initNavTree('class_p_k_d___tools_1_1lib_g_u_i_1_1_c
 
 <div class="header">
   <div class="summary">
+<a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="class_p_k_d___tools_1_1lib_g_u_i_1_1_cluster_manager_g_u_i-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">PKD_Tools.libGUI.ClusterManagerGUI Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 
-<p>Setup the Cluster Import/Exporter.  
+<p>Setup the Skin Import/Exporter Gui.  
  <a href="class_p_k_d___tools_1_1lib_g_u_i_1_1_cluster_manager_g_u_i.html#details">More...</a></p>
 <div class="dynheader">
 Inheritance diagram for PKD_Tools.libGUI.ClusterManagerGUI:</div>
@@ -120,13 +122,17 @@ Inheritance diagram for PKD_Tools.libGUI.ClusterManagerGUI:</div>
  <div class="center">
   <img src="class_p_k_d___tools_1_1lib_g_u_i_1_1_cluster_manager_g_u_i.png" usemap="#PKD_Tools.libGUI.ClusterManagerGUI_map" alt=""/>
   <map id="PKD_Tools.libGUI.ClusterManagerGUI_map" name="PKD_Tools.libGUI.ClusterManagerGUI_map">
-<area href="class_p_k_d___tools_1_1lib_g_u_i_1_1_manager_g_u_i.html" title="Setup a generic deformer weight import/exporter gui. " alt="PKD_Tools.libGUI.ManagerGUI" shape="rect" coords="0,112,226,136"/>
-<area href="class_p_k_d___tools_1_1lib_g_u_i_1_1_g_u_i.html" title="Generic "GUI" class which is expanded to make skin exporter, cluster weight exporter, obj exporter etc. " alt="PKD_Tools.libGUI.GUI" shape="rect" coords="0,56,226,80"/>
+<area href="class_p_k_d___tools_1_1lib_g_u_i_1_1_manager_g_u_i.html" title="Setup a generic deformer weight import/exporter gui. " alt="PKD_Tools.libGUI.ManagerGUI" shape="rect" coords="0,168,242,192"/>
+<area href="class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window.html" title="Create a dockable window. " alt="PKD_Tools.libPySide.QDockableWindow" shape="rect" coords="0,112,242,136"/>
+<area href="class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window.html" title="Common Functions used in various pySide GUI. " alt="PKD_Tools.libPySide.QMainWindow" shape="rect" coords="0,56,242,80"/>
 </map>
  </div></div>
 <table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="inherited"></a>
-Additional Inherited Members</h2></td></tr>
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
+Public Member Functions</h2></td></tr>
+<tr class="memitem:abb2d4afd7580153238c3e58940c7f826"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_p_k_d___tools_1_1lib_g_u_i_1_1_cluster_manager_g_u_i.html#abb2d4afd7580153238c3e58940c7f826">infoPath</a> (self)</td></tr>
+<tr class="memdesc:abb2d4afd7580153238c3e58940c7f826"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the user defined folder.  <a href="#abb2d4afd7580153238c3e58940c7f826">More...</a><br /></td></tr>
+<tr class="separator:abb2d4afd7580153238c3e58940c7f826"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_class_p_k_d___tools_1_1lib_g_u_i_1_1_manager_g_u_i"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_class_p_k_d___tools_1_1lib_g_u_i_1_1_manager_g_u_i')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="class_p_k_d___tools_1_1lib_g_u_i_1_1_manager_g_u_i.html">PKD_Tools.libGUI.ManagerGUI</a></td></tr>
 <tr class="memitem:a05ffca108302eebe2857908df86c7e73 inherit pub_methods_class_p_k_d___tools_1_1lib_g_u_i_1_1_manager_g_u_i"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_p_k_d___tools_1_1lib_g_u_i_1_1_manager_g_u_i.html#a05ffca108302eebe2857908df86c7e73">infoPath</a> (self)</td></tr>
 <tr class="memdesc:a05ffca108302eebe2857908df86c7e73 inherit pub_methods_class_p_k_d___tools_1_1lib_g_u_i_1_1_manager_g_u_i"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the <a class="el" href="class_p_k_d___tools_1_1lib_weights_1_1_weights.html#acc11a6f2551d45a505ed458228e8d072">data</a> file which exists in the user defined folder.  <a href="#a05ffca108302eebe2857908df86c7e73">More...</a><br /></td></tr>
@@ -137,28 +143,61 @@ Additional Inherited Members</h2></td></tr>
 <tr class="memitem:ac760730dd3759a8f3432bba25ff73074 inherit pub_methods_class_p_k_d___tools_1_1lib_g_u_i_1_1_manager_g_u_i"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_p_k_d___tools_1_1lib_g_u_i_1_1_manager_g_u_i.html#ac760730dd3759a8f3432bba25ff73074">weightManager</a> (self)</td></tr>
 <tr class="memdesc:ac760730dd3759a8f3432bba25ff73074 inherit pub_methods_class_p_k_d___tools_1_1lib_g_u_i_1_1_manager_g_u_i"><td class="mdescLeft">&#160;</td><td class="mdescRight">The property that sets the default <a class="el" href="class_p_k_d___tools_1_1lib_weights_1_1_weight_manager.html">WeightManager</a> that is relevant to the Gui.  <a href="#ac760730dd3759a8f3432bba25ff73074">More...</a><br /></td></tr>
 <tr class="separator:ac760730dd3759a8f3432bba25ff73074 inherit pub_methods_class_p_k_d___tools_1_1lib_g_u_i_1_1_manager_g_u_i"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pub_methods_class_p_k_d___tools_1_1lib_g_u_i_1_1_g_u_i"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_class_p_k_d___tools_1_1lib_g_u_i_1_1_g_u_i')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="class_p_k_d___tools_1_1lib_g_u_i_1_1_g_u_i.html">PKD_Tools.libGUI.GUI</a></td></tr>
-<tr class="memitem:a69527b40431ef9ce79b5a32a4218e334 inherit pub_methods_class_p_k_d___tools_1_1lib_g_u_i_1_1_g_u_i"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_p_k_d___tools_1_1lib_g_u_i_1_1_g_u_i.html#a69527b40431ef9ce79b5a32a4218e334">__init__</a> (self)</td></tr>
-<tr class="memdesc:a69527b40431ef9ce79b5a32a4218e334 inherit pub_methods_class_p_k_d___tools_1_1lib_g_u_i_1_1_g_u_i"><td class="mdescLeft">&#160;</td><td class="mdescRight">The <a class="el" href="class_p_k_d___tools_1_1lib_g_u_i_1_1_g_u_i.html" title="Generic &quot;GUI&quot; class which is expanded to make skin exporter, cluster weight exporter, obj exporter etc. ">GUI</a> constructor.  <a href="#a69527b40431ef9ce79b5a32a4218e334">More...</a><br /></td></tr>
-<tr class="separator:a69527b40431ef9ce79b5a32a4218e334 inherit pub_methods_class_p_k_d___tools_1_1lib_g_u_i_1_1_g_u_i"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8ace24402a714b1a1d810d895b62745b inherit pub_methods_class_p_k_d___tools_1_1lib_g_u_i_1_1_g_u_i"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_p_k_d___tools_1_1lib_g_u_i_1_1_g_u_i.html#a8ace24402a714b1a1d810d895b62745b">title</a> (self)</td></tr>
-<tr class="memdesc:a8ace24402a714b1a1d810d895b62745b inherit pub_methods_class_p_k_d___tools_1_1lib_g_u_i_1_1_g_u_i"><td class="mdescLeft">&#160;</td><td class="mdescRight">The property that sets title of the window.  <a href="#a8ace24402a714b1a1d810d895b62745b">More...</a><br /></td></tr>
-<tr class="separator:a8ace24402a714b1a1d810d895b62745b inherit pub_methods_class_p_k_d___tools_1_1lib_g_u_i_1_1_g_u_i"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4e47ea5acbee3d6d7d576aafb3852e07 inherit pub_methods_class_p_k_d___tools_1_1lib_g_u_i_1_1_g_u_i"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_p_k_d___tools_1_1lib_g_u_i_1_1_g_u_i.html#a4e47ea5acbee3d6d7d576aafb3852e07">width</a> (self)</td></tr>
-<tr class="memdesc:a4e47ea5acbee3d6d7d576aafb3852e07 inherit pub_methods_class_p_k_d___tools_1_1lib_g_u_i_1_1_g_u_i"><td class="mdescLeft">&#160;</td><td class="mdescRight">The property that sets default width of the window.  <a href="#a4e47ea5acbee3d6d7d576aafb3852e07">More...</a><br /></td></tr>
-<tr class="separator:a4e47ea5acbee3d6d7d576aafb3852e07 inherit pub_methods_class_p_k_d___tools_1_1lib_g_u_i_1_1_g_u_i"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pub_attribs_class_p_k_d___tools_1_1lib_g_u_i_1_1_g_u_i"><td colspan="2" onclick="javascript:toggleInherit('pub_attribs_class_p_k_d___tools_1_1lib_g_u_i_1_1_g_u_i')"><img src="closed.png" alt="-"/>&#160;Public Attributes inherited from <a class="el" href="class_p_k_d___tools_1_1lib_g_u_i_1_1_g_u_i.html">PKD_Tools.libGUI.GUI</a></td></tr>
-<tr class="memitem:a9da56301ff0c6c9bff236535ef89d697 inherit pub_attribs_class_p_k_d___tools_1_1lib_g_u_i_1_1_g_u_i"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_p_k_d___tools_1_1lib_g_u_i_1_1_g_u_i.html#a9da56301ff0c6c9bff236535ef89d697">window</a></td></tr>
-<tr class="memdesc:a9da56301ff0c6c9bff236535ef89d697 inherit pub_attribs_class_p_k_d___tools_1_1lib_g_u_i_1_1_g_u_i"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the current maya window object.  <a href="#a9da56301ff0c6c9bff236535ef89d697">More...</a><br /></td></tr>
-<tr class="separator:a9da56301ff0c6c9bff236535ef89d697 inherit pub_attribs_class_p_k_d___tools_1_1lib_g_u_i_1_1_g_u_i"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_methods_class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window.html">PKD_Tools.libPySide.QDockableWindow</a></td></tr>
+<tr class="memitem:a977f91ec0d4968cdb469f5cbba09ef71 inherit pub_methods_class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window.html#a977f91ec0d4968cdb469f5cbba09ef71">__init__</a> (self)</td></tr>
+<tr class="separator:a977f91ec0d4968cdb469f5cbba09ef71 inherit pub_methods_class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2094109c9183af650f7a5d88bd7edcd9 inherit pub_methods_class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window.html#a2094109c9183af650f7a5d88bd7edcd9">show</a> (self, args, kwargs)</td></tr>
+<tr class="memdesc:a2094109c9183af650f7a5d88bd7edcd9 inherit pub_methods_class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create Dockable UI.  <a href="#a2094109c9183af650f7a5d88bd7edcd9">More...</a><br /></td></tr>
+<tr class="separator:a2094109c9183af650f7a5d88bd7edcd9 inherit pub_methods_class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_methods_class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window.html">PKD_Tools.libPySide.QMainWindow</a></td></tr>
+<tr class="memitem:a1904546214d0dee031bd34ab0c8b4d28 inherit pub_methods_class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window.html#a1904546214d0dee031bd34ab0c8b4d28">__init__</a> (self)</td></tr>
+<tr class="separator:a1904546214d0dee031bd34ab0c8b4d28 inherit pub_methods_class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad81240f8555b9402b0116092215347d9 inherit pub_methods_class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window.html#ad81240f8555b9402b0116092215347d9">setWindowIcon</a> (self, iconPath)</td></tr>
+<tr class="memdesc:ad81240f8555b9402b0116092215347d9 inherit pub_methods_class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the icon for via QIcon.  <a href="#ad81240f8555b9402b0116092215347d9">More...</a><br /></td></tr>
+<tr class="separator:ad81240f8555b9402b0116092215347d9 inherit pub_methods_class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5a036de745ab97e016865b4af1e303bd inherit pub_methods_class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window.html#a5a036de745ab97e016865b4af1e303bd">show</a> (self, args, kwargs)</td></tr>
+<tr class="separator:a5a036de745ab97e016865b4af1e303bd inherit pub_methods_class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a992001b3d18cfcdbc70ff71bdd093554 inherit pub_methods_class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window.html#a992001b3d18cfcdbc70ff71bdd093554">resize_window</a> (self, args, kwargs)</td></tr>
+<tr class="separator:a992001b3d18cfcdbc70ff71bdd093554 inherit pub_methods_class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="inherited"></a>
+Additional Inherited Members</h2></td></tr>
+<tr class="inherit_header pub_attribs_class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window"><td colspan="2" onclick="javascript:toggleInherit('pub_attribs_class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window')"><img src="closed.png" alt="-"/>&#160;Public Attributes inherited from <a class="el" href="class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window.html">PKD_Tools.libPySide.QDockableWindow</a></td></tr>
+<tr class="memitem:aae83a251625ba7fc2dd10434f975819a inherit pub_attribs_class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window.html#aae83a251625ba7fc2dd10434f975819a">init_float_state</a></td></tr>
+<tr class="separator:aae83a251625ba7fc2dd10434f975819a inherit pub_attribs_class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_attribs_class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window"><td colspan="2" onclick="javascript:toggleInherit('pub_attribs_class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window')"><img src="closed.png" alt="-"/>&#160;Public Attributes inherited from <a class="el" href="class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window.html">PKD_Tools.libPySide.QMainWindow</a></td></tr>
+<tr class="memitem:ac0597ffd4ed0803d286b07b984375d6e inherit pub_attribs_class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window.html#ac0597ffd4ed0803d286b07b984375d6e">main_layout</a></td></tr>
+<tr class="separator:ac0597ffd4ed0803d286b07b984375d6e inherit pub_attribs_class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Setup the Cluster Import/Exporter. </p>
+<div class="textblock"><p>Setup the Skin Import/Exporter Gui. </p>
 <div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="keyword">import</span> libGUI</div>
-<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<a class="code" href="class_p_k_d___tools_1_1lib_g_u_i_1_1_cluster_manager_g_u_i.html">libGUI.ClusterManagerGUI</a>()</div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;gui = <a class="code" href="class_p_k_d___tools_1_1lib_g_u_i_1_1_cluster_manager_g_u_i.html">libGUI.ClusterManagerGUI</a>()</div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;gui.show()</div>
 </div><!-- fragment --> 
-<p>Definition at line <a class="el" href="lib_g_u_i_8py_source.html#l00188">188</a> of file <a class="el" href="lib_g_u_i_8py_source.html">libGUI.py</a>.</p>
-</div><hr/>The documentation for this class was generated from the following file:<ul>
+<p>Definition at line <a class="el" href="lib_g_u_i_8py_source.html#l00207">207</a> of file <a class="el" href="lib_g_u_i_8py_source.html">libGUI.py</a>.</p>
+</div><h2 class="groupheader">Member Function Documentation</h2>
+<a class="anchor" id="abb2d4afd7580153238c3e58940c7f826"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def PKD_Tools.libGUI.ClusterManagerGUI.infoPath </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Return the user defined folder. </p>
+
+<p>Definition at line <a class="el" href="lib_g_u_i_8py_source.html#l00227">227</a> of file <a class="el" href="lib_g_u_i_8py_source.html">libGUI.py</a>.</p>
+
+</div>
+</div>
+<hr/>The documentation for this class was generated from the following file:<ul>
 <li>C:/Users/admin/Documents/maya/scripts/PKD_Tools/<a class="el" href="lib_g_u_i_8py_source.html">libGUI.py</a></li>
 </ul>
 </div><!-- contents -->
@@ -167,7 +206,7 @@ Additional Inherited Members</h2></td></tr>
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><a class="el" href="namespace_p_k_d___tools.html">PKD_Tools</a></li><li class="navelem"><a class="el" href="namespace_p_k_d___tools_1_1lib_g_u_i.html">libGUI</a></li><li class="navelem"><a class="el" href="class_p_k_d___tools_1_1lib_g_u_i_1_1_cluster_manager_g_u_i.html">ClusterManagerGUI</a></li>
-    <li class="footer">Generated on Sat Mar 21 2015 21:23:50 for PKD_Tools by
+    <li class="footer">Generated on Tue Jul 21 2015 22:59:07 for PKD_Tools by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.9.1 </li>
   </ul>
