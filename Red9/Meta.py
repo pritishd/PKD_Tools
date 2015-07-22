@@ -36,18 +36,17 @@ from functools import partial
 from functools import wraps
 import sys
 import os
-
 import uuid
 
 import maya.cmds as cmds
 import maya.mel as mel
-
 import maya.OpenMaya as OpenMaya
 
 import Red9.startup.setup as r9Setup
 import General as r9General
 import CoreUtils as r9Core
 import AnimationUtils as r9Anim
+
 
 
 
@@ -1198,7 +1197,9 @@ def pymelHandler(func):
 class MetaClass(object):
     
     cached = None
-        
+
+
+
     def __new__(cls, *args, **kws):
         '''
         Idea here is if a MayaNode is passed in and has the mClass attr
@@ -1241,7 +1242,13 @@ class MetaClass(object):
         else:
             log.debug("mClass not found, given or registered")
             return super(cls.__class__, cls).__new__(cls)
-    
+
+    @property
+    def pynode(self):
+        import pymel.core as pm
+        return pm.PyNode(self.mNode)
+
+
     #@pymelHandler
     def __init__(self, node=None, name=None, nodeType='network', autofill='all', *args, **kws):
         '''
