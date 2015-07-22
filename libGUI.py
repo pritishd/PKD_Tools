@@ -12,6 +12,13 @@ if __name__ == '__main__':
     import sys
     if localPath not in sys.path:
         sys.path.append(localPath)
+
+    localPath = r"H:\maya\scripts\PKD_Tools"
+    import sys
+
+    if localPath not in sys.path:
+        sys.path.append(localPath)
+
 import libPySide
 import libUtilities
 import libFile
@@ -303,7 +310,7 @@ Otherwise this tool would work on the first top group which is determined by May
                 warnWindow.setWindowTitle("Namespace Error")
                 detailed = "The following transforms have namespace in them\n\n"
                 for namespace in errorInfo["Namespace Transform"]:
-                    detailed += "select -r %s;\n" % namespace.name()
+                    detailed += "select -add %s;\n" % namespace.name()
                 warnWindow.setDetailedText(detailed)
                 warnWindow.exec_()
                 return
@@ -313,7 +320,7 @@ Otherwise this tool would work on the first top group which is determined by May
                 warnWindow.setWindowTitle("Duplicate Transform Error")
                 detailed = "The following transforms are duplicated\n\n"
                 for duplicate in errorInfo["Duplicate Transform"]:
-                    detailed += "select -r %s;\n" % duplicate.name()
+                    detailed += "select -add %s;\n" % duplicate.name()
                 warnWindow.setDetailedText(detailed)
                 warnWindow.exec_()
                 return
@@ -323,7 +330,7 @@ Otherwise this tool would work on the first top group which is determined by May
                 warnWindow.setWindowTitle("Duplicate Shapes Error")
                 detailed = "The following shapes are duplicated however they seem to appear to come under different parent name\n\n"
                 for duplicate in errorInfo["Duplicate Shapes"]:
-                    detailed += "select -r %s;\n" % duplicate.name()
+                    detailed += "select -add %s;\n" % duplicate.name()
                 detailed += '\n\nThis tool can attempt to fix the problem. Run the scene checker again to see if problem is resolved'
                 fixButton = libPySide.QtGui.QPushButton("Attempt Fix")
                 okButton = libPySide.QtGui.QPushButton("Abort")
@@ -340,7 +347,7 @@ Otherwise this tool would work on the first top group which is determined by May
                 warnWindow.setWindowTitle("Geo History Error")
                 detailed = "The following mesh has history on them\n\n"
                 for historyGeo in errorInfo["History Geos"]:
-                    detailed += "select -r %s;\n" % historyGeo.name()
+                    detailed += "select -add %s;\n" % historyGeo.name()
                 warnWindow.setDetailedText(detailed)
                 warnWindow.exec_()
                 return
