@@ -267,7 +267,8 @@ class QDockableWindow(QMainWindow):
                                                    content=self.objectName(),
                                                    floatChangeCommand=self._auto_resize_
                                                    )
-        except:
+        except Exception, e:
+            pyLog.info(str(e))
             pyLog.info("Maya dock window failed")
 
         super(QDockableWindow, self).show()

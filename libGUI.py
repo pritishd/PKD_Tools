@@ -10,6 +10,7 @@ import pymel.core as pm
 if __name__ == '__main__':
     localPath = r"C:\Users\admin\Documents\maya\scripts\PKD_Tools"
     import sys
+
     if localPath not in sys.path:
         sys.path.append(localPath)
 
@@ -25,8 +26,9 @@ import libFile
 import libWeights
 import libGeo
 
-for module in libWeights,libUtilities, libPySide, libFile, libGeo:
+for module in libWeights, libUtilities, libPySide, libFile, libGeo:
     reload(module)
+
 
 class TangentSwapper(libPySide.QDockableWindow):
     """A PySide based tangent swapper"""
@@ -243,7 +245,7 @@ class BlendshapeManagerGUI(ManagerGUI):
         # @endcond
 
 
-class ObjExportGUI(ManagerGUI):
+class ObjManagerGUI(ManagerGUI):
     """
     Bonus tool for exporting out the selected geometery as obj to a single destination folder. The name of the geometery is used as file name.
     Setup the Obj Exporter
@@ -257,11 +259,11 @@ class ObjExportGUI(ManagerGUI):
 
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     def __init__(self):
-        super(ObjExportGUI, self).__init__()
+        super(ObjManagerGUI, self).__init__()
         self.setWindowTitle("Obj Manager")
 
     def _setup_(self):
-        super(ObjExportGUI, self)._setup_()
+        super(ObjManagerGUI, self)._setup_()
         # Add the heirachy checker
 
         self.main_layout.insertWidget(1, libPySide.horizontal_divider())
@@ -273,7 +275,7 @@ class ObjExportGUI(ManagerGUI):
         self.io_button_layout.addWidget(self.cleanse_button)
 
     def _connect_signals_(self):
-        super(ObjExportGUI, self)._connect_signals_()
+        super(ObjManagerGUI, self)._connect_signals_()
         self.cleanse_button.clicked.connect(self._cleanse_geo_)
         self.scene_check_button.clicked.connect(self._check_scene_)
 
@@ -300,7 +302,6 @@ Otherwise this tool would work on the first top group which is determined by May
                 warnWindow.setDetailedText(detailed)
                 warnWindow.exec_()
                 return
-
 
             errorInfo = libGeo.find_heirachy_errors(topNode)
             detailed_text = ""
@@ -430,5 +431,5 @@ def confirm_box(title, message, detailedMessage=""):
 
 
 if __name__ == '__main__':
-    win = ObjExportGUI()
+    win = ObjManagerGUI()
     win.show()
