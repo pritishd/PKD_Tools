@@ -142,9 +142,9 @@ class ManagerGUI(libPySide.QDockableWindow):
             noFileBox = libPySide.QCriticalBox()
             noFileBox.setText("Path does not exists")
             noFileBox.setWindowTitle("File Error")
-            noFileBox.setDetailedText("The following path does exists on disk:\n%s" % current_path)
+            noFileBox.setDetailedText("The following path does not exists on disk:\n%s" % current_path)
             noFileBox.exec_()
-            pm.error("The following path does exists on disk:\n%s" % current_path)
+            pm.error("The following path does not exists on disk:\n%s" % current_path)
 
     @property
     def infoPath(self):
