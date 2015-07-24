@@ -10,7 +10,6 @@ import pymel.core as pm
 if __name__ == '__main__':
     localPath = r"C:\Users\admin\Documents\maya\scripts\PKD_Tools"
     import sys
-
     if localPath not in sys.path:
         sys.path.append(localPath)
 
@@ -28,7 +27,6 @@ import libGeo
 
 for module in libWeights, libUtilities, libPySide, libFile, libGeo:
     reload(module)
-
 
 class TangentSwapper(libPySide.QDockableWindow):
     """A PySide based tangent swapper"""

@@ -9,7 +9,6 @@ import os
 import json
 
 from maya import cmds, mel
-
 import pymel.core as pm
 from pymel.internal.plogging import pymelLogger as pyLog
 
@@ -178,8 +177,9 @@ class ObjManager(object):
                         # pm.parent(top, self.top_node)
                         top.rename(geo)
                         pm.select(geo)
-                        mel.eval("polySoftEdge -a 180 " + geo)
+                        mel.eval("polySoftEdge -a 180 %s" % geo)
                         mel.eval("polySetToFaceNormal")
+                        mel.eval("polySoftEdge -a 180 %s" % geo)
                         pm.delete(geo, ch=1)
                         pm.refresh()
 
