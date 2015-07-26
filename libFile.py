@@ -7,6 +7,7 @@ import inspect
 import os
 import shutil
 import fnmatch
+import json
 
 import pymel.core as pm
 from maya import mel
@@ -259,3 +260,20 @@ def search_pattern_in_folder(searchPattern, folder):
         if fnmatch.fnmatch(fileName, searchPattern):
             result.append(fileName)
     return result
+
+
+def load_json(path):
+    """Read json information
+    @param path The path to the json file"""
+
+    with open(path, 'r') as f:
+        return json.load(f)
+
+
+def write_json(path, data):
+    """Write json information
+    @param path The path to the json file
+    @param data The information that is written
+    """
+    with open(path, 'w') as f:
+        json.dump(data, f)

@@ -27,10 +27,10 @@ import logging
 import maya.cmds as cmds
 
 import Red9.startup.setup as r9Setup
-import CoreUtils as r9Core
-import General as r9General
-import AnimationUtils as r9Anim
-import Meta as r9Meta
+import Red9_CoreUtils as r9Core
+import Red9_General as r9General
+import Red9_AnimationUtils as r9Anim
+import Red9_Meta as r9Meta
 import Red9.packages.configobj as configobj
 
 logging.basicConfig()
@@ -391,6 +391,9 @@ class DataMap(object):
         '''
         Write the Pose ConfigObj to file
         '''
+        if not os.access(filepath,os.W_OK):
+            raise IOError('File is Read-Only - write aborted : %s' % filepath)
+        
         ConfigObj = configobj.ConfigObj(indent_type='\t')
         ConfigObj['filterNode_settings']=self.settings.__dict__
         ConfigObj['poseData']=self.poseDict

@@ -1,21 +1,24 @@
 __author__ = 'pritish.dogra'
 
-from PKD_Tools.Red9 import Meta
+from PKD_Tools.Red9 import Red9_Meta
 
 
-class base(Meta.MetaClass):
+class rig(Red9_Meta.MetaClass):
     """This is base System. Transform is the main"""
 
 
-class fk(base):
+class fk(rig):
     """This is base Fk System."""
     pass
 
 
-class ikjnt(base):
+class ikjnt(rig):
     """This is base IK System. with a three or four joint"""
     pass
 
+class ik(ik):
+    """This is a basic IK hand System."""
+    pass
 
 class ikHand(ik):
     """This is IK hand System."""
@@ -32,6 +35,6 @@ class ikHoof(ik):
     pass
 
 
-class ikSpline(base):
+class ikSpline(rig):
     """This is a Spline IK System"""
     pass

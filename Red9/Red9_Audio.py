@@ -22,13 +22,12 @@ import contextlib
 import logging
 
 import maya.cmds as cmds
-
 import maya.mel as mel
 
-import General as r9General
+import Red9_General as r9General
 import Red9.startup.setup as r9Setup
-import Meta as r9Meta
-import CoreUtils as r9Core
+import Red9_Meta as r9Meta
+import Red9_CoreUtils as r9Core
 
 logging.basicConfig()
 log = logging.getLogger(__name__)

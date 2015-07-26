@@ -7,6 +7,7 @@
 from maya import cmds, mel
 import pymel.core as pm
 import pymel.tools.mel2py as py2mel
+from pymel.internal.plogging import pymelLogger as pyLog
 
 import libXml
 from libVector import vector
@@ -526,7 +527,8 @@ def snapBake(source, target):
     try:
         target.setScale(scale)
     except:
-        print "Unable to set the target scale"
+        pyLog.warning("Unable to set the target scale")
+
 
 
 def melEval(evalStatment, echo=False):
@@ -540,7 +542,7 @@ def melEval(evalStatment, echo=False):
                 print statement
             mel.eval("%s;" % statement)
         except:
-            print("## ## ##  FAILED MEL STATEMENT: %s## ## ## " % ("%s;" % statement))
+            pyLog.warning("## ## ##  FAILED MEL STATEMENT: %s## ## ## " % ("%s;" % statement))
 
 
 def normalise_list(original_vals, new_normal):
@@ -646,7 +648,11 @@ def mel2pyStr(text):
     Convert a mel command to pymel command and print the result
     @param text: The mel command
     """
-    print py2mel.mel2pyStr(text, pymelNamespace="pm")
+    ''.endswith()
+    if not text.endswith(";"):
+        pyLog.warning('Please end the mel code with ";"')
+    else:
+        print py2mel.mel2pyStr(text, pymelNamespace="pm")
 
 
 def changeTangents(tangent):
@@ -658,8 +664,7 @@ def changeTangents(tangent):
         pm.keyTangent(itt="clamped", g=True)
     else:
         pm.keyTangent(g=True, itt=tangent)
-    print "Current Tangents: %s" % tangent.capitalize()
-
+    pyLog.info("Current Tangents: %s" % tangent.capitalize())
 
 def get_animation_time_range():
     """Function to return the Start frame and End Frame
@@ -693,6 +698,9 @@ def set_lock_status(node, lockStatusDict):
             node.attr(attr).lock()
         else:
             node.attr(attr).unlock()
+
+def set_visibility(node):
+    k = pm.PyNode("asd")
 
 
 def unlock_default_attribute(node):

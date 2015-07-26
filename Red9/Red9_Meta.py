@@ -42,14 +42,13 @@ import maya.cmds as cmds
 import maya.mel as mel
 import maya.OpenMaya as OpenMaya
 
-import Red9.startup.setup as r9Setup
-import General as r9General
-import CoreUtils as r9Core
-import AnimationUtils as r9Anim
+import startup.setup as r9Setup
 
-
-
-
+#import Red9.startup.setup as r9Setup
+import Red9_General as r9General
+import Red9_CoreUtils as r9Core
+import Red9_AnimationUtils as r9Anim
+reload(r9Anim)
 # Language map is used for all UI's as a text mapping for languages
 LANGUAGE_MAP = r9Setup.LANGUAGE_MAP
 
@@ -97,6 +96,9 @@ from only those active Python classes who inherit from MetaClass
 global RED9_META_REGISTERY 
 ====================================================================================
 '''
+
+# --- Class Registery --- --------------------------
+
 def registerMClassInheritanceMapping():
     global RED9_META_REGISTERY
     RED9_META_REGISTERY={}
@@ -173,9 +175,8 @@ def getMClassDataFromNode(node):
             raise StandardError('getMClassFromNode failed for node : %s' % node)
 
     
-# NodeType Management ---------------------------
-  
- 
+# --- NodeType --- ---------------------------
+
 def registerMClassNodeMapping(nodeTypes=[]):
     '''
     Hook to allow you to extend the type of nodes included in all the
@@ -230,10 +231,7 @@ def resetMClassNodeTypes():
     registerMClassNodeMapping(nodeTypes=None)
 
     
-    
-    
-    
-# NodeCache Management ---------------------------
+# --- NodeCache --- ---------------------------
 
 def generateUUID():
     '''
@@ -425,10 +423,70 @@ def getMObject(node):
     selList.add(node)
     selList.getDependNode(0,mobj)
     return mobj
-                    
-# ====================================================================================
-    
-    
+
+
+# --- Decorators --- ------------------------------------------------------
+
+def nodeLockManager(func):
+    '''
+    Simple decorator to manage metaNodes which are locked. Why lock??
+    Currently just the metaRig and therefore any subclasses of that are locked.
+    The reason is that the Maya 'network' node I use has issues when certain
+    connections are deleted, the node itself can get deleted and cleanup, removing
+    the entire network! Try it, make a metaNode and key an attr on it, then run
+    cutKeys...the node will be deleted.
+
+    This decorator is used to manage the unlocking of self for all calls that
+    require change access rights to the 'network' node itself.
+    '''
+    @wraps(func)
+    def wrapper(*args, **kws):
+        res=None
+        err=None
+        locked=False
+        try:
+            locked=False
+            mNode=args[0]  # args[0] is self
+            #log.debug('nodeLockManager > func : %s : metaNode / self: %s' % (func.__name__,mNode.mNode))
+            if mNode.mNode and mNode._lockState:
+                locked=True
+                #log.debug('nodeLockManager > func : %s : node being unlocked' % func.__name__)
+                cmds.lockNode(mNode.mNode,lock=False)
+            res=func(*args, **kws)
+        except StandardError, error:
+            err=error
+        finally:
+            if locked:
+                #log.debug('nodeLockManager > func : %s : node being relocked' % func.__name__)
+                cmds.lockNode(mNode.mNode, lock=True)
+            if err:
+                traceback = sys.exc_info()[2]  # get the full traceback
+                raise StandardError(StandardError(err), traceback)
+            return res
+    return wrapper
+
+def pymelHandler(func):
+    def wrapper(*args, **kws):
+        res=None
+        err=None
+        try:
+            #inputNodes=args[0]
+            #if 'pymel' in str(type(inputNodes)):
+            #    print 'pymel Node passed in!!!!!!!!!!'
+            #    print 'type : ', args
+            #    #args[0]=str(inputNodes)
+            res=func(*args, **kws)
+        except StandardError, error:
+            err=error
+        finally:
+            if err:
+                traceback = sys.exc_info()[2]  # get the full traceback
+                raise StandardError(StandardError(err), traceback)
+            return res
+    return wrapper
+
+
+# --- MetaData Utilities --- -------------------
     
 def attributeDataType(val):
     '''
@@ -593,7 +651,7 @@ def getMetaNodes(mTypes=[], mInstances=[], mClassGrps=[], mAttrs=None, dataType=
         return mNodes
     if mAttrs:
         #lazy to avoid cyclic imports
-        import CoreUtils as r9Core
+        import Red9_CoreUtils as r9Core
         mNodes=r9Core.FilterNode().lsSearchAttributes(mAttrs, nodes=mNodes)
     if dataType=='mClass':
         return[MetaClass(node,**kws) for node in mNodes]
@@ -672,7 +730,7 @@ def getConnectedMetaNodes(nodes, source=True, destination=True, mTypes=[], mInst
                 mNodes.append(node)
     if mAttrs:
         #lazy to avoid cyclic imports
-        import CoreUtils as r9Core
+        import Red9_CoreUtils as r9Core
         mNodes=r9Core.FilterNode().lsSearchAttributes(mAttrs, nodes=mNodes)
     if dataType=='mClass':
         return [MetaClass(node,**kws) for node in set(mNodes)]
@@ -732,14 +790,52 @@ def getConnectedMetaSystemRoot(node, mTypes=[], ignoreTypes=[], mSystemRoot=True
             parents=getConnectedMetaNodes(mNode.mNode,source=True,destination=False)
 
 
+@nodeLockManager
+def convertMClassType(cls, newMClass, **kws):
+    '''
+    change the current mClass type of the given class instance. This used to be
+    an internal func in eth baseClass but that seemed to make no sense as
+    you're mutating the class dynamically
+
+    :param cls: initialize mClass object t9o mutate
+    :param newMClass: new class definition for the given cls
+
+    ..note ::
+        If you're converting a StandardWrapped Maya node to a fully fledged mNode then you also
+        need to ensure that that NODETYPE is registered to meta or else it won't get picked up
+        when you run any of the gets.
+    '''
+    newMClass=mTypesToRegistryKey(newMClass)[0]
+    if newMClass in RED9_META_REGISTERY:
+        try:
+            removeFromCache(cls)
+            if not cls.hasAttr('mClass'):
+                log.debug('Converting StandardWrapped MayaNode to a fully fledged mClass instance')
+                convertNodeToMetaData(cls.mNode,newMClass)
+            else:
+                cls.mClass=newMClass
+            return MetaClass(cls.mNode, **kws)
+        except:
+            raise StandardError('Failed to convert self to new mClassType : %s' % newMClass)
+    else:
+        raise StandardError('given class is not in the mClass Registry : %s' % newMClass)
+
 def  convertNodeToMetaData(nodes,mClass):
     '''
     pass in a node and convert it to a MetaNode, assuming that the nodeType
-    is valid in the metaNodeTypesRegistry
+    is valid in the metaNodeTypesRegistry.
+
+    :param nodes: nodes to cast to mClass instances
+    :param mClass: mClass class to convert them too
+
+    ..note ::
+        ideally you should use the convertMClassType func now as that wraps this if the
+        nodes passed in aren't already instanitated or bound to meta
     '''
     if not type(nodes)==list:
         nodes=[nodes]
     for node in nodes:
+        log.debug('converting node %s >> to %s mNode' % (r9Core.nodeNameStrip(node),mClass))
         mNode=MetaClass(node)
         mNode.addAttr('mClass', value=mTypesToRegistryKey(mClass)[0])
         mNode.addAttr('mNodeID', value=node.split('|')[-1].split(':')[-1])
@@ -747,7 +843,8 @@ def  convertNodeToMetaData(nodes,mClass):
         mNode.attrSetLocked('mNodeID', True)
     return [MetaClass(node) for node in nodes]
 
-        
+
+
 class MClassNodeUI(object):
     '''
     Simple UI to display all MetaNodes in the scene
@@ -1131,65 +1228,7 @@ class MClassNodeUI(object):
         for key, value in sorted(data.items()):
             print key, ' : ', value
 
-# Decorators ==========================================================
 
-def nodeLockManager(func):
-    '''
-    Simple decorator to manage metaNodes which are locked. Why lock??
-    Currently just the metaRig and therefore any subclasses of that are locked.
-    The reason is that the Maya 'network' node I use has issues when certain
-    connections are deleted, the node itself can get deleted and cleanup, removing
-    the entire network! Try it, make a metaNode and key an attr on it, then run
-    cutKeys...the node will be deleted.
-    
-    This decorator is used to manage the unlocking of self for all calls that
-    require change access rights to the 'network' node itself.
-    '''
-    @wraps(func)
-    def wrapper(*args, **kws):
-        res=None
-        err=None
-        locked=False
-        try:
-            locked=False
-            mNode=args[0]  # args[0] is self
-            #log.debug('nodeLockManager > func : %s : metaNode / self: %s' % (func.__name__,mNode.mNode))
-            if mNode.mNode and mNode._lockState:
-                locked=True
-                #log.debug('nodeLockManager > func : %s : node being unlocked' % func.__name__)
-                cmds.lockNode(mNode.mNode,lock=False)
-            res=func(*args, **kws)
-        except StandardError, error:
-            err=error
-        finally:
-            if locked:
-                #log.debug('nodeLockManager > func : %s : node being relocked' % func.__name__)
-                cmds.lockNode(mNode.mNode, lock=True)
-            if err:
-                traceback = sys.exc_info()[2]  # get the full traceback
-                raise StandardError(StandardError(err), traceback)
-            return res
-    return wrapper
-
-def pymelHandler(func):
-    def wrapper(*args, **kws):
-        res=None
-        err=None
-        try:
-            #inputNodes=args[0]
-            #if 'pymel' in str(type(inputNodes)):
-            #    print 'pymel Node passed in!!!!!!!!!!'
-            #    print 'type : ', args
-            #    #args[0]=str(inputNodes)
-            res=func(*args, **kws)
-        except StandardError, error:
-            err=error
-        finally:
-            if err:
-                traceback = sys.exc_info()[2]  # get the full traceback
-                raise StandardError(StandardError(err), traceback)
-            return res
-    return wrapper
 
 
 # Main Meta Class ==========================================================
@@ -1197,8 +1236,6 @@ def pymelHandler(func):
 class MetaClass(object):
     
     cached = None
-
-
 
     def __new__(cls, *args, **kws):
         '''
@@ -1942,13 +1979,15 @@ class MetaClass(object):
     def delete(self):
         '''
         delete the mNode and this class instance
-        WORKAROUND: Looks like there's a bug in the Network node in that deletion of a node
-        will also delete all other connected networks...BIG DEAL. AD are looking into this for us
+
+        Note that if you delete a 'network' node then by default
+        Maya will delete connected child nodes unless they're wired.
+        To prevent this set the self.lockState=True in your classes __init__
         '''
         global RED9_META_NODECACHE
         
         if cmds.lockNode(self.mNode, q=True):
-            cmds.lockNode(self.mNode,lock=False)
+            cmds.lockNode(self.mNode, lock=False)
         #clear the node from the cache
         if RED9_META_NODECACHE:
             if self.hasAttr('UUID'):
@@ -1959,20 +1998,6 @@ class MetaClass(object):
         #delete the Maya node and this python object
         cmds.delete(self.mNode)
         del(self)
-    
-    @nodeLockManager
-    def convertMClassType(self, newMClass, **kws):
-        '''
-        change the current mClass type of the node and re-initialize the object
-        '''
-        if newMClass in RED9_META_REGISTERY:
-            removeFromCache(self)
-            self.mClass=newMClass
-            #we reset the cache so that the UUID's are all updated to account for the change in mClass  
-            #resetCache()
-            return MetaClass(self.mNode, **kws)
-        else:
-            raise StandardError('given class is not in the mClass Registry : %s' % newMClass)
 
 
     # Reference / Namespace Management Block
@@ -2016,6 +2041,7 @@ class MetaClass(object):
         direct namespace of a node, not the nested. This new func will
         return the namespace in it's entirity either as a list or a 
         catenated string
+
         :param asList: either return the namespaces in a list or as a catenated string (default)
         '''
         ns=self.mNode.split(':')
@@ -2030,8 +2056,7 @@ class MetaClass(object):
             else:
                 return ''
                     
-        
-        
+
     # Connection Management Block
     #---------------------------------------------------------------------------------
     
@@ -2556,13 +2581,14 @@ class MetaClass(object):
                 else:
                     cons.append(con.split('.')[1])
         return cons
-            
+
+
 def deleteEntireMetaRigStructure(searchNode=None):
     '''
     This is a hard core unplug and cleanup of all attrs added by the
     MetaRig, all connections and all nodes. Use CAREFULLY!
     '''
-    import AnimationUtils as r9Anim  # lazy to stop cyclic as anim also import meta
+    import Red9_AnimationUtils as r9Anim  # lazy to stop cyclic as anim also import meta
     if searchNode and not cmds.objExists(searchNode):
         raise StandardError('given searchNode doesnt exist')
     if not searchNode:
@@ -2602,7 +2628,7 @@ def wireControlsToNewMetaRig(nodes, name=None, mRig=None):
     :param mRig: optional mRig instance to add the controls too
     '''
     if not mRig:
-        mRig=MetaRig(name=name)
+        mRig=Rig(name=name)
     for node in nodes:
         mRig.addRigCtrl(node, r9Core.nodeNameStrip(node))
     return mRig
@@ -3046,7 +3072,7 @@ class MetaRig(MetaClass):
         '''
         store AttrMap to the metaRig, saving the chBox state of ALL attrs for ALL nodes in the hierarchy
         '''
-        import CoreUtils as r9Core  # lazy loaded
+        import Red9_CoreUtils as r9Core  # lazy loaded
         chn = r9Core.LockChannels()
         chn.saveChannelMap(filepath=None,
                            nodes=getattr(self,'%s_Main' % self.CTRL_Prefix),
@@ -3057,7 +3083,7 @@ class MetaRig(MetaClass):
         '''
         load AttrMap from the metaRig, returning the chBox state of ALL attrs for ALL nodes in the hierarchy
         '''
-        import CoreUtils as r9Core  # lazy loaded
+        import Red9_CoreUtils as r9Core  # lazy loaded
         chn = r9Core.LockChannels()
         chn.loadChannelMap(filepath=None,
                            nodes=getattr(self,'%s_Main' % self.CTRL_Prefix),
@@ -3131,7 +3157,7 @@ class MetaRigSubSystem(MetaRig):
         
     def __bindData__(self):
         self.addAttr('systemType', attrType='string')
-        self.addAttr('mirrorSide',enumName='Centre:Left:Right',attrType='enum')
+        self.addAttr('mirrorSide',enumName='Centre:Left:Right:Unique',attrType='enum')
  
  
 class MetaRigSupport(MetaClass):
@@ -3283,7 +3309,7 @@ def monitorHUDaddCBAttrs():
     Adds selected attrs from the CB to a MetaHUD node for monitoring,
     if HUD node already exists this will simply add more attrs to it
     '''
-    import CoreUtils as r9Core
+    import Red9_CoreUtils as r9Core
     node=cmds.ls(sl=True,l=True)[0]
     attrs=cmds.channelBox('mainChannelBox', q=True,selectedMainAttributes=True)
     currentHUDs=getMetaNodes(mTypes=MetaHUDNode,mAttrs='mNodeID=CBMonitorHUD')
@@ -3336,7 +3362,7 @@ def monitorHUDremoveCBAttrs():
     '''
     ChannelBox wrappers for the HUD : remove attrs from the MetaHUD
     '''
-    import CoreUtils as r9Core
+    import Red9_CoreUtils as r9Core
     currentHUDs=getMetaNodes(mTypes=MetaHUDNode,mAttrs='mNodeID=CBMonitorHUD')
     if currentHUDs:
         metaHUD=currentHUDs[0]

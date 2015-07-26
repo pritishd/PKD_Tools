@@ -6,7 +6,6 @@ the convert_joint_to_cluster
 
 import tempfile
 import os
-import json
 
 from maya import cmds, mel
 import pymel.core as pm
@@ -173,7 +172,7 @@ class ObjManager(object):
                 os.remove(fileInfo[geo])
             for top in pm.ls(assemblies=True, ud=True):
                 if top.getShape():
-                    if top.getShape().type() == "mesh" and top.name()== "PKD_Temp_Mesh":
+                    if top.getShape().type() == "mesh" and top.name() == "PKD_Temp_Mesh":
                         # pm.parent(top, self.top_node)
                         top.rename(geo)
                         pm.select(geo)
@@ -246,6 +245,7 @@ class ObjManager(object):
         self.rebuild_heirachy()
 
         return self._geo_list_
+
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     @property
     def top_node(self):
@@ -295,30 +295,26 @@ class ObjManager(object):
         """Read the geo path info from a json file"""
         if not libFile.exists(self.geoListPath):
             raise Exception("No geo has been exported to this path")
-        with open(self.geoListPath, 'r') as f:
-            return json.load(f)
+        return libFile.load_json(self.geoListPath)
 
     @geo_file_info.setter
     def geo_file_info(self, path_info):
         """Write the geo path info to json file"""
         # Write JSON data
-        with open(self.geoListPath, 'w') as f:
-            json.dump(path_info, f)
+        libFile.write_json(self.geoListPath,path_info)
 
     @property
     def heirachy_file_info(self):
         """Read the heirachy info from a json file"""
         if not libFile.exists(self.datapath):
             raise Exception("No geo has been exported to this path")
-        with open(self.datapath, 'r') as f:
-            return json.load(f)
+        return libFile.load_json(self.datapath)        
 
     @heirachy_file_info.setter
     def heirachy_file_info(self, heirachy_info):
         """Write the heirachy info into a json file"""
-        with open(self.datapath, 'w') as f:
-            json.dump(heirachy_info, f)
-    # @endcond
+        libFile.write_json(self.datapath,heirachy_info)
+        # @endcond
 
 
 def convert_joint_to_cluster(targetGeo, skipList=[]):
