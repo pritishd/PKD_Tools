@@ -23,7 +23,7 @@ import maya.cmds as cmds
 import maya.OpenMaya as OpenMaya
 
 import Red9.packages.configobj as configobj
-import Red9.startup.setup as r9Setup
+import startup.setup as r9Setup
 import Red9_General as r9General
 import Red9_Audio as r9Audio
 import Red9_AnimationUtils as r9Anim

@@ -17,9 +17,10 @@ import logging
 
 import maya.cmds as cmds
 
-import Red9.startup.setup as r9Setup
+import startup.setup as r9Setup
 import Red9_Meta as r9Meta
 import Red9_AnimationUtils as r9Anim
+
 logging.basicConfig()
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)

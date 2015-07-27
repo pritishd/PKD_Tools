@@ -4,6 +4,8 @@ from pymel.internal.plogging import pymelLogger as pyLog
 
 from PKD_Tools import libFile
 
+reload(libFile)
+
 
 def nameMe(partSfx, partName, endSuffix):
     """Set the name convention of all nodes"""
