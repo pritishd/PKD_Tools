@@ -277,3 +277,10 @@ def write_json(path, data):
     """
     with open(path, 'w') as f:
         json.dump(data, f)
+
+
+def remove(path):
+    """Delete a file
+    @param path Delete filepath
+    """
+    os.remove(path)

@@ -37,7 +37,7 @@ class PKD_Meta(Red9_Meta.MetaRig):
         self.addAttr('mirrorSide', enumName='Centre:Left:Right:Unique',
                      attrType='enum', hidden=True)  # ensure these are added by default
 
-    def etParent(self, targetSystem):
+    def setParent(self, targetSystem):
         self.pynode.setParent(targetSystem.mNode)
 
 
@@ -236,6 +236,10 @@ class MyCameraMeta(Red9_Meta.MetaClass):
     Example showing that metaData isn't limited to 'network' nodes,
     by using the 'nodeType' arg in the class __init__ you can modify
     the general behaviour such that meta creates any type of Maya node.
+    '''
+    def __init__(self,*args,**kws):
+        super(MyCameraMeta, self).__init__(nodeType='camera',*args,**kws)
+        self.item = None
     """
 
     def __init__(self, *args, **kws):
@@ -245,6 +249,20 @@ class MyCameraMeta(Red9_Meta.MetaClass):
 Red9_Meta.registerMClassInheritanceMapping()
 Red9_Meta.registerMClassNodeMapping(nodeTypes='transform')
 Red9_Meta.registerMClassNodeMapping(nodeTypes='camera')
+
+# if __name__ == '__main__':
+#     pm.newFile(f=1)
+#     cam = MyCameraMeta(name="MyCam")
+#     cam.item = "test"
+#     print cam.mNode
+#     print cam.item
+# 
+#     filePath = pm.saveAs(r"C:\temp\testMeta.ma")
+#     pm.newFile(f=1)
+#     pm.openFile(filePath)
+#     cam = Red9_Meta.MetaClass("MyCam")
+#     print cam.mNode
+#     print cam.item
 
 if __name__ == '__main__':
     pm.newFile(f=1)
@@ -278,10 +296,10 @@ if __name__ == '__main__':
 
     # Need to run this in case of opening and closing file
 
-    # from PKD_Tools.Red9 import Red9_Meta
-    # reload(Red9_Meta)
-    #
-    # from PKD_Tools.Rigging import core
-    # reload(core)
-    #
-    # k = Red9_Meta.MetaClass("CharacterRig")
+    from PKD_Tools.Red9 import Red9_Meta
+    reload(Red9_Meta)
+
+    from PKD_Tools.Rigging import core
+    reload(core)
+
+    k = Red9_Meta.MetaClass("CharacterRig")
