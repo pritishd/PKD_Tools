@@ -47,6 +47,9 @@ class UnitTestCase(unittest.TestCase):
         name = "Pritish"
         self.assertTrue("Pritish", name, "Asserting True")
 
+    def variable_is_not_none(self, variable, variable_name="'"):
+        self.assertNotEqual(variable, None, "Testing that variable %s is not none%s" % variable)
+
     def runTest(self):
         pass
 
@@ -92,10 +95,6 @@ class BatchTest(object):
             f.write('\n' + title)
         unittest.TextTestRunner(f).run(self.suite)
 
-
-print "Generalised Tests"
-unit = BatchTest()
-unit.batch_test()
 
 if __name__ == '__main__':
     print "Generalised Tests"

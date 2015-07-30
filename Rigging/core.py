@@ -87,7 +87,7 @@ class Ctrl(PKD_Meta):
         self._gimbal_ = None
         self._parentMasterPH_ = None
         self._parentMasterSN_ = None
-        self.hasConstrainNode = False
+        self.hasGimbalNode = False
         self.ctrlShape = "Ball"
         self.hasParentMaster = False
         # self._internal_var_ = {"Prnt":self._prnt_,
@@ -151,7 +151,7 @@ class Ctrl(PKD_Meta):
         self.gimbal = PKD_Meta(name=utils.nameMe(self.side, self.part, "Gimbal"), nodeType="transform")
         self.gimbal.rigType = "constrain"
         self.gimbal.pynode.setParent(self.mNode)
-        self.hasConstrainNode = True
+        self.hasGimbalNode = True
         self.addSupportNode(self.gimbal, "Gimbal")
 
     def setParent(self, targetSystem):
@@ -203,7 +203,7 @@ class Ctrl(PKD_Meta):
     def gimbal(self, data):
         data = self._set_initialise_internal_("_gimbal_", data)
         if data is not None:
-            self.hasConstrainNode = True
+            self.hasGimbalNode = True
         return data
 
     @property
