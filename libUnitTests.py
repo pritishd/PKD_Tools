@@ -24,12 +24,18 @@ class Droid(object):
 
 
 class UnitTestCase(unittest.TestCase):
-    """Base Class For All Unit Test."""
+    """Base Class For All Unit Test. If you need to test a variable you need to make it attribute
+    for this class and initialise it from the kwargs
+    """
 
     def __init__(self, testName, **kwargs):
-        """Initialise variables"""
+
         super(UnitTestCase, self).__init__(testName)
         self.unitTestId = "Base Unit Test Case"
+        if kwargs.has_key("targetNode"):
+            self.targetNode = kwargs["targetNode"]
+        if kwargs.has_key("variable_name"):
+            self.variable_name = kwargs["variable_name"]
 
     def example_test_success_case(self):
         test_condition = (1 == 1)
@@ -40,15 +46,17 @@ class UnitTestCase(unittest.TestCase):
         self.assertEqual(test_condition, True, "Failed test case.")
 
     def example_test_not_equal(self):
-        test_condition = (1 == 1)
         self.assertNotEqual(1, 1, "Not equal test. This should fail")
 
     def example_test_true(self):
         name = "Pritish"
-        self.assertTrue("Pritish", name, "Asserting True")
 
-    def variable_is_not_none(self, variable, variable_name="'"):
-        self.assertNotEqual(variable, None, "Testing that variable %s is not none%s" % variable)
+        self.assertTrue("Pritish", name)
+
+    def variable_is_not_none(self):
+        variable = eval("self.targetNode.%s" % self.variable_name)
+        self.assertNotEqual(variable, None, "Testing that variable %s is not None" % self.variable_name)
+
 
     def runTest(self):
         pass
@@ -97,6 +105,7 @@ class BatchTest(object):
 
 
 if __name__ == '__main__':
-    print "Generalised Tests"
-    unit = BatchTest()
-    unit.batch_test()
+    unittest.main()
+    # print "Generalised Tests"
+    # unit = BatchTest()
+    # unit.batch_test()

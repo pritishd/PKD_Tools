@@ -21,64 +21,96 @@ def _fullSide_(side):
                 }
     return sideDict[side]
 
+_SUBCOMPONENTS_ = ["FK","IK","Dyn"]
 
-class PKD_MetaClass(Red9_Meta.MetaClass):
-    pass
+class MetaRig(Red9_Meta.MetaRig):
+    # Set default values
+    def __init__(self, *args, **kwargs):
+        if kwargs.has_key("side") and kwargs.has_key("part"):
+            # Setup defaults
 
+            if not kwargs.has_key("endSuffix"):
+                kwargs["endSuffix"] = "Grp"
 
-class PKD_Meta(Red9_Meta.MetaRig):
-    def __init__(self, *args, **kws):
-        super(PKD_Meta, self).__init__(*args, **kws)
-        self.lockState = False
-        self.lockState = False
-
-    def __bindData__(self):
-        self.addAttr('rigType', '')  # ensure these are added by default
-        self.addAttr('mirrorSide', enumName='Centre:Left:Right:Unique',
-                     attrType='enum', hidden=True)  # ensure these are added by default
-
-    def setParent(self, targetSystem):
-        self.pynode.setParent(targetSystem.mNode)
-
-
-def _add_meta_data_(node, type):
-    metaNode = PKD_Meta(node.name())
-    metaNode.rigType = type
-
-
-class SubSystem(Red9_Meta.MetaRigSubSystem):
-    """This is a base system. """
-
-    def __init__(self, *args, **kws):
-        if kws.has_key("side") and kws.has_key("part"):
-            full_name = utils.nameMe(kws["side"], kws["part"], "Grp")
-            super(SubSystem, self).__init__(name=full_name, nodeType="transform")
-            self.side = kws["side"]
-            self.mirrorSide = _fullSide_(self.side)
+            if not kwargs.has_key("nodeType"):
+                kwargs["nodeType"] = "transform"
+            full_name = utils.nameMe(kwargs["side"], kwargs["part"], kwargs["endSuffix"])
+            # Remove the keyword arguement
+            super(MetaRig, self).__init__(name=full_name, **kwargs)
+            self.part = kwargs["part"]
+            if kwargs.has_key("side"):
+                self.mirrorSide = _fullSide_(kwargs["side"])
+            self.rigType = kwargs["endSuffix"]
             self.lockState = False
             self.lockState = False
+            self.mSystemRoot  = False
+
         else:
-            super(SubSystem, self).__init__(*args, **kws)
+            super(MetaRig, self).__init__(*args, **kwargs)
+        self.lockState = False
+        self.lockState = False
+        self.isSubComponent = False
+        if hasattr(self,"systemType"):
+            if self.systemType in _SUBCOMPONENTS_:
+                self.isSubComponent = True
+
+    def __bindData__(self, *args, **kwgs):
+        # ensure these are added by default
+        self.addAttr("part", "")
+        self.addAttr('mirrorSide', enumName='Centre:Left:Right:Unique',
+                     attrType='enum', hidden=True)
+        self.addAttr('rigType', '')
+
 
     def setParent(self, targetSystem):
         self.pynode.setParent(targetSystem.mNode)
 
+    def convertToComponent(self, component="FK"):
+        componentName = "%s_%s" % (component, self.part)
+        self.pynode.rename(self.shortName().replace(self.part, componentName))
+        # Add a new attr
+        if not hasattr(self,"systemType"):
+            self.addAttr("systemType", component)
+        self.isSubComponent = True
+        # Rename the component the child component
+        for child in self.getChildMetaNodes():
+            child.convertToComponent(component)
 
-class Ctrl(PKD_Meta):
+    @property
+    def side(self):
+        return self.pynode.attr("mirrorSide").get(asString=True)[0]
+
+
+class SubSystem(MetaRig):
+    """This is a base system. """
+    def setParent(self, targetSystem):
+        self.pynode.setParent(targetSystem.mNode)
+
+    def __bindData__(self, *args, **kwgs):
+        super(SubSystem, self).__bindData__(*args, **kwgs)
+        self.addAttr('systemType', "")
+
+    def addMetaSubSystem(self, system="FK", **kwargs):
+        # Add subgroup
+        subSystem = SubSystem(side=self.side, part=self.part)
+        subSystem.setParent(self)
+        self.connectChild(subSystem, "%s_System" % system)
+        subSystem.systemType = "FK"
+        return subSystem
+
+class Joint(MetaRig):
+    def __init__(self,*args,**kwargs):
+        kwargs["nodeType"] = "network"
+        super(Joint, self).__init__(*args,**kwargs)
+
+
+class Ctrl(MetaRig):
     """This is a base control System"""
 
-    def __init__(self, *args, **kws):
-        if kws.has_key("side") and kws.has_key("part"):
-            full_name = utils.nameMe(kws["side"], kws["part"], "Ctrl")
-            super(Ctrl, self).__init__(name=full_name, nodeType="transform")
-            self.part = kws["part"]
-            # Set Meta Attr
-            self.rigType = "Ctrl"
-            self.mirrorSide = _fullSide_(kws["side"])
-            self.mSystemRoot = False
-        else:
-            super(Ctrl, self).__init__(*args, **kws)
-
+    def __init__(self, *args, **kwargs):
+        kwargs["endSuffix"] = "Ctrl"
+        super(Ctrl, self).__init__(*args, **kwargs)
+        self.mSystemRoot = False
         self.ctrl = self
         self._prnt_ = None
         # Internal Var
@@ -90,35 +122,21 @@ class Ctrl(PKD_Meta):
         self.hasGimbalNode = False
         self.ctrlShape = "Ball"
         self.hasParentMaster = False
-        # self._internal_var_ = {"Prnt":self._prnt_,
-        #                        "Xtra":self._xtra_,
-        #                        "Gimbal":self._gimbal_,
-        #
-        #
-        #                        }
-
-    def __bindData__(self):
-        """Set up the part attributes"""
-        super(Ctrl, self).__bindData__()
-        self.addAttr("part", "")
-        self.attrSetLocked("part", True)
 
     def create_ctrl(self):
         # Create the xtra grp
-        self.xtra = PKD_Meta(name=utils.nameMe(self.side, self.part, "Xtra"), nodeType="transform")
-        self.xtra.rigType = "xtra"
-        self.xtra.mirrorSide = self.mirrorSide
+        self.xtra = MetaRig(part=self.part, side=self.side, endSuffix="Xtra")
         self.addSupportNode(self.xtra, "Xtra")
 
         # Create the control
-        self.prnt = PKD_Meta(name=utils.nameMe(self.side, self.part, "Prnt"), nodeType="transform")
-        self.prnt.rigType = "xtra"
-        self.prnt.mirrorSide = self.mirrorSide
+        self.prnt = MetaRig(part=self.part, side=self.side, endSuffix="Prnt")
         self.addSupportNode(self.prnt, "Prnt")
 
-        # tempCtrlShape = utils.build_ctrl_shape(self.ctrlShape)
-        tempCtrlShape = pm.circle(ch=0)[0]
+        tempCtrlShape = utils.build_ctrl_shape(self.ctrlShape)
+        #tempCtrlShape = pm.circle(ch=0)[0]
         libUtilities.transfer_shape(tempCtrlShape, self.mNode)
+        self.pynode.getShape().rename("%sShape"%self.shortName())
+
         pm.delete(tempCtrlShape)
 
         # Parent the ctrl to the xtra
@@ -135,9 +153,9 @@ class Ctrl(PKD_Meta):
 
     def add_parent_master(self):
         # Create the parent master group if need be
-        self.parentMasterSN = PKD_Meta(name="%s_SN" % self.mNodeID, nodeType="transform")
+        self.parentMasterSN = MetaRig(name="%s_SN" % self.mNodeID, nodeType="transform")
         self.parentMasterSN.rigType = "SN"
-        self.parentMasterPH = PKD_Meta(name="%s_PH" % self.mNodeID, nodeType="transform")
+        self.parentMasterPH = MetaRig(name="%s_PH" % self.mNodeID, nodeType="transform")
         self.parentMasterPH.rigType = "PH"
         # Setup the parenting
         self.pynode.setParent(self.parentMasterSN.mNode)
@@ -148,7 +166,7 @@ class Ctrl(PKD_Meta):
         self.addSupportNode(self.parentMasterPH, "ParentMasterPH")
 
     def add_constrain_node(self):
-        self.gimbal = PKD_Meta(name=utils.nameMe(self.side, self.part, "Gimbal"), nodeType="transform")
+        self.gimbal = MetaRig(name=utils.nameMe(self.side, self.part, "Gimbal"), nodeType="transform")
         self.gimbal.rigType = "constrain"
         self.gimbal.pynode.setParent(self.mNode)
         self.hasGimbalNode = True
@@ -158,7 +176,7 @@ class Ctrl(PKD_Meta):
         # print isinstance (targetSystem, Red9_Meta.MetaClass)
         self.prnt.pynode.setParent(targetSystem.mNode)
 
-    def _get_initialise_internal_(self, internalVariableName):
+    def _relink_meta_internal_variables_(self, internalVariableName):
         # Check that there is connection
         if self.__dict__[internalVariableName] is None:
             # Look for the connection
@@ -181,7 +199,7 @@ class Ctrl(PKD_Meta):
 
     @property
     def prnt(self):
-        return self._get_initialise_internal_("_prnt_")
+        return self._relink_meta_internal_variables_("_prnt_")
 
     @prnt.setter
     def prnt(self, data):
@@ -189,7 +207,7 @@ class Ctrl(PKD_Meta):
 
     @property
     def xtra(self):
-        return self._get_initialise_internal_("_xtra_")
+        return self._relink_meta_internal_variables_("_xtra_")
 
     @xtra.setter
     def xtra(self, data):
@@ -197,18 +215,17 @@ class Ctrl(PKD_Meta):
 
     @property
     def gimbal(self):
-        return self._get_initialise_internal_("_gimbal_")
+        return self._relink_meta_internal_variables_("_gimbal_")
 
     @gimbal.setter
     def gimbal(self, data):
         data = self._set_initialise_internal_("_gimbal_", data)
         if data is not None:
             self.hasGimbalNode = True
-        return data
 
     @property
     def parentMasterPH(self):
-        data = self._get_initialise_internal_("_parentMasterPH_")
+        data = self._relink_meta_internal_variables_("_parentMasterPH_")
         if data is not None:
             self.hasParentMaster = True
         return data
@@ -219,7 +236,7 @@ class Ctrl(PKD_Meta):
 
     @property
     def parentMasterSN(self):
-        return self._get_initialise_internal_("_parentMasterSN_")
+        return self._relink_meta_internal_variables_("_parentMasterSN_")
 
     @parentMasterSN.setter
     def parentMasterSN(self, data):
@@ -237,69 +254,84 @@ class MyCameraMeta(Red9_Meta.MetaClass):
     by using the 'nodeType' arg in the class __init__ you can modify
     the general behaviour such that meta creates any type of Maya node.
     '''
-    def __init__(self,*args,**kws):
-        super(MyCameraMeta, self).__init__(nodeType='camera',*args,**kws)
+    def __init__(self,*args,**kwargs):
+        super(MyCameraMeta, self).__init__(nodeType='camera',*args,**kwargs)
         self.item = None
     """
 
-    def __init__(self, *args, **kws):
-        super(MyCameraMeta, self).__init__(nodeType='camera', *args, **kws)
+    def __init__(self, *args, **kwargs):
+        super(MyCameraMeta, self).__init__(nodeType='camera', *args, **kwargs)
+
+
+# class Joint(PKD_Meta):
+#     def __init__(self, *args, **kwargs):
+#         if kwargs.has_key("side") and kwargs.has_key("part"):
+#             full_name = utils.nameMe(kwargs["side"], kwargs["part"], "Ctrl")
+#             super(Joint, self).__init__(name=full_name, nodeType="transform")
+#         else:
+#             super(Joint, self).__init__(nodeType='joint', *args, **kwargs)
 
 
 Red9_Meta.registerMClassInheritanceMapping()
-Red9_Meta.registerMClassNodeMapping(nodeTypes='transform')
-Red9_Meta.registerMClassNodeMapping(nodeTypes='camera')
-
-# if __name__ == '__main__':
-#     pm.newFile(f=1)
-#     cam = MyCameraMeta(name="MyCam")
-#     cam.item = "test"
-#     print cam.mNode
-#     print cam.item
-# 
-#     filePath = pm.saveAs(r"C:\temp\testMeta.ma")
-#     pm.newFile(f=1)
-#     pm.openFile(filePath)
-#     cam = Red9_Meta.MetaClass("MyCam")
-#     print cam.mNode
-#     print cam.item
+Red9_Meta.registerMClassNodeMapping(nodeTypes=['transform', 'camera', 'joint'])
 
 if __name__ == '__main__':
+    # pm.newFile(f=1)
+    # cam = MyCameraMeta(name="MyCam")
+    # cam.item = "test"
+    # print cam.mNode
+    # print cam.item
+    #
+    # filePath = pm.saveAs(r"C:\temp\testMeta.ma")
+    # pm.newFile(f=1)
+    # pm.openFile(filePath)
+    # cam = Red9_Meta.MetaClass("MyCam")
+    # print cam.mNode
+    # print cam.item
+    #
     pm.newFile(f=1)
     # cam = MyCameraMeta()
     subSystem = SubSystem(side="U", part="Core")
 
+    #
     mRig = Red9_Meta.MetaRig(name='CharacterRig', nodeType="transform")
     mRig.connectChild(subSystem, 'Arm')
     subSystem.setParent(mRig)
-
-    fkSystem = SubSystem(side="U", part="FK")
-
-    fkSystem.setParent(subSystem)
-    subSystem.connectChild(fkSystem, 'FK_System')
-
-    myCtrl = Ctrl(side="U", part="FK0")
-    myCtrl.create_ctrl()
-    myCtrl.add_constrain_node()
-    myCtrl.add_parent_master()
-    myCtrl.setParent(fkSystem)
-
-    myCtrl1 = Ctrl(side="U", part="FK1")
-    myCtrl1.create_ctrl()
-
-    myCtrl1.setParent(fkSystem)
-
-    fkCtrls = [myCtrl.mNode, myCtrl1.mNode]
-    fkSystem.connectChildren(fkCtrls, "Ctrl")
-    subSystem.connectChildren(fkCtrls, "FK")
+    #
+    fkSystem = subSystem.addMetaSubSystem()
+    # fkSystem = SubSystem(side="U", part="Arm")
+    # fkSystem.setParent(subSystem)
+    # subSystem.connectChild(fkSystem, 'FK_System')
 
 
-    # Need to run this in case of opening and closing file
+    #myCtrl = Ctrl(side="U", part="Hand")
+    #myCtrl.create_ctrl()
+    # myCtrl.add_constrain_node()
+    # myCtrl.add_parent_master()
+    #myCtrl.setParent(fkSystem)
+    #
+    # myCtrl1 = Ctrl(side="U", part="FK1")
+    # myCtrl1.create_ctrl()
+    #
+    # myCtrl1.setParent(fkSystem)
+    #
+    # fkCtrls = [myCtrl.mNode, myCtrl1.mNode]
+    # fkCtrls = [myCtrl]
+    # fkSystem.connectChildren(fkCtrls, "Ctrl")
+    # fkSystem.convertToComponent("FK")
+    # subSystem.connectChildren(fkCtrls, "FK")
 
-    from PKD_Tools.Red9 import Red9_Meta
-    reload(Red9_Meta)
+    jntSystem = Joint(side="U", part="Cora")
 
-    from PKD_Tools.Rigging import core
-    reload(core)
-
-    k = Red9_Meta.MetaClass("CharacterRig")
+    #
+    #
+    # # Need to run this in case of opening and closing file
+    #
+    # from PKD_Tools.Red9 import Red9_Meta
+    # reload(Red9_Meta)
+    #
+    # from PKD_Tools.Rigging import core
+    # reload(core)
+    #
+    # k = Red9_Meta.MetaClass("CharacterRig")
+    # pm.newFile(f=1)

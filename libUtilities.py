@@ -648,7 +648,6 @@ def mel2pyStr(text):
     Convert a mel command to pymel command and print the result
     @param text: The mel command
     """
-    ''.endswith()
     if not text.endswith(";"):
         pyLog.warning('Please end the mel code with ";"')
     else:

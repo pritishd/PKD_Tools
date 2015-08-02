@@ -49,7 +49,7 @@ def importFile(filePath):
     libFile.importFile(r"c:\myFolder\test.ma")
     @endcode
 
-    @attention Watch out for clashing names with existing nodes.
+    @attention Watch out for Fashing names with existing nodes.
     """
     extension = None
     # Determine what kind of maya file are we dealing with
