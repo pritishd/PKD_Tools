@@ -65,7 +65,6 @@ Red9_Meta.registerMClassInheritanceMapping()
 
 if __name__ == '__main__':
     pm.newFile(f=1)
-    print "asdasdasdasdasd"
     # cam = MyCameraMeta()
     #subSystem = SubSystem(side="U", part="Core")
     #print "s"

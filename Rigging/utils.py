@@ -13,7 +13,7 @@ def nameMe(partSfx, partName, endSuffix):
         return "%s_%s_%s" % (partSfx, partName, endSuffix)
 
 
-ctrlJsonFile = libFile.join(libFile.current_working_directory(), "Rigging/Data/Ctrl.json")
+CTRLS_INFO_INFO = libFile.join(libFile.current_working_directory(), "Rigging/Data/Ctrl.json")
 
 
 def export_ctrl_shapes():
@@ -27,13 +27,13 @@ def export_ctrl_shapes():
                             "knots": top.numKnots()}
             curvesData[top.name()] = detailedInfo
 
-    libFile.write_json(ctrlJsonFile, curvesData)
-    pyLog.info("Curve information written to: %s" % ctrlJsonFile)
+    libFile.write_json(CTRLS_INFO_INFO, curvesData)
+    pyLog.info("Curve information written to: %s" % CTRLS_INFO_INFO)
 
 
 def build_ctrl_shape(type=""):
     """Create a curve from the json"""
-    curvesData = libFile.load_json(ctrlJsonFile)
+    curvesData = libFile.load_json(CTRLS_INFO_INFO)
 
     if curvesData.has_key(type):
         detailedInfo = curvesData[type]
@@ -49,6 +49,50 @@ def build_ctrl_shape(type=""):
 
 def build_all_ctrls_shapes():
     """Build all curves from the json file"""
-    curvesData = libFile.load_json(ctrlJsonFile)
+    curvesData = libFile.load_json(CTRLS_INFO_INFO)
     for crv in curvesData.keys():
         build_ctrl_shape(crv)
+
+
+TEST_JOINTS_INFO = libFile.join(libFile.current_working_directory(), "Rigging/Data/Joints.json")
+
+
+def save_test_joint(parentJoint, systemType):
+    """
+    @param parentJoint: the parent joint
+    @param systemType: The test joint associated with the class
+    """
+    # joint -e  -oj yzx -secondaryAxisOrient zup -ch -zso;
+    joint_info = {}
+    if libFile.exists(TEST_JOINTS_INFO):
+        joint_info = libFile.load_json(TEST_JOINTS_INFO)
+
+    current_joint_data = []
+
+    parentJoint = pm.PyNode(parentJoint)
+    for joint in [parentJoint] + pm.listRelatives(parentJoint, ad=1, type="joint"):
+        info = {"orient": list(joint.jointOrient.get()),
+                "position": list(joint.getTranslation(space="world"))}
+        current_joint_data.append(info)
+
+    print current_joint_data
+    joint_info[systemType] = current_joint_data
+    libFile.write_json(TEST_JOINTS_INFO, joint_info)
+
+
+def create_test_joint(systemType):
+    """
+    @param parentJoint: the parent joint
+    @param systemType: The test joint associated with the class
+    joint -e -zso -oj yzx -sao zup joint1;
+    """
+    current_joint_data = libFile.load_json(TEST_JOINTS_INFO)["ik"]
+    joints = []
+    print current_joint_data
+    for joint, index in zip(current_joint_data, range(len(current_joint_data))):
+        pm.select(cl=1)
+        jnt = pm.joint(p=joint["position"])
+        jnt.jointOrient.set(joint["orient"])
+        if index:
+            jnt.setParent(joints[index - 1])
+        joints.append(jnt)
