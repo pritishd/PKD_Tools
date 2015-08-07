@@ -4,7 +4,9 @@ from PKD_Tools.Red9 import Red9_Meta
 reload(Red9_Meta)
 from PKD_Tools.Rigging import core
 reload(core)
+from PKD_Tools.Rigging import utils
 
+reload(utils)
 import sys
 
 sys.modules.clear()
@@ -15,22 +17,25 @@ class rig(core.SubSystem):
     """This is base System. Transform is the main"""
 
     def __init__(self, *args, **kwargs):
-        print kwargs
         super(rig, self).__init__(*args, **kwargs)
         self.joints = None
+        self.ctrls = None
 
 
 class ik(rig):
+    def __init__(self, *args, **kwargs):
+        super(rig, self).__init__(*args, **kwargs)
+        self.ikHandle = None
+
+    def build(self):
+        # Build the IK System
+        # Build the controls
+        # Setup the polevector / no flip
+        pass
+
     def test_build(self):
-        joints = [{'orient': [0.0, -0.0, 0.0], 'position': [0.0, 0, 0.0]},
-                  {'orient': [0.0, -0.0, 0.0], 'position': [0.0, 4.000000000000001, 0.0]}]
+        joints = utils.create_test_joint(self.__class__.__name__)
 
-        for joint in joints:
-            pm.select(cl=1)
-            self.joints.append(pm.joint(position=joint["position"], orientation=joint["orient"]))
-
-        for i in range(1, len(self.joints)):
-            self.joint[i].setParent(self.joint[i - 1])
 
 
 class fk(rig):

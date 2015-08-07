@@ -75,7 +75,6 @@ def save_test_joint(parentJoint, systemType):
                 "position": list(joint.getTranslation(space="world"))}
         current_joint_data.append(info)
 
-    print current_joint_data
     joint_info[systemType] = current_joint_data
     libFile.write_json(TEST_JOINTS_INFO, joint_info)
 
@@ -88,7 +87,6 @@ def create_test_joint(systemType):
     """
     current_joint_data = libFile.load_json(TEST_JOINTS_INFO)["ik"]
     joints = []
-    print current_joint_data
     for joint, index in zip(current_joint_data, range(len(current_joint_data))):
         pm.select(cl=1)
         jnt = pm.joint(p=joint["position"])
@@ -96,3 +94,4 @@ def create_test_joint(systemType):
         if index:
             jnt.setParent(joints[index - 1])
         joints.append(jnt)
+    return joints

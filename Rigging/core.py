@@ -80,6 +80,16 @@ class MetaRig(Red9_Meta.MetaRig):
     def side(self):
         return self.pynode.attr("mirrorSide").get(asString=True)[0]
 
+    def _relink_meta_internal_variables_(self, internalVariableName):
+        # Check that there is connection
+        if self.__dict__[internalVariableName] is None:
+            # Look for the connection
+            nodeAttrName = "SUP_%s" % internalVariableName.replace("_", "").capitalize()
+            if self.hasAttr(nodeAttrName):
+                # Initialise the parent class
+                self.__dict__[internalVariableName] = eval("self.%s" % nodeAttrName)
+        return self.__dict__[internalVariableName]
+
 
 class SubSystem(MetaRig):
     """This is a base system. """
@@ -175,16 +185,6 @@ class Ctrl(MetaRig):
     def setParent(self, targetSystem):
         # print isinstance (targetSystem, Red9_Meta.MetaClass)
         self.prnt.pynode.setParent(targetSystem.mNode)
-
-    def _relink_meta_internal_variables_(self, internalVariableName):
-        # Check that there is connection
-        if self.__dict__[internalVariableName] is None:
-            # Look for the connection
-            nodeAttrName = "SUP_%s" % internalVariableName.replace("_", "").capitalize()
-            if self.hasAttr(nodeAttrName):
-                # Initialise the parent class
-                self.__dict__[internalVariableName] = eval("self.%s" % nodeAttrName)
-        return self.__dict__[internalVariableName]
 
     def _set_initialise_internal_(self, internalVariableName, data):
         try:
