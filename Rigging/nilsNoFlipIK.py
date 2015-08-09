@@ -1,5 +1,6 @@
-# script created by pymel.tools.mel2py from mel file:
-# H:\maya\scripts\nilsNoFlipIK.mel
+#  script created by pymel.tools.mel2py from mel file:
+#  H:\maya\scripts\nilsNoFlipIK.mel
+#  http://Highend3d.com/maya/downloads/mel_scripts/character/4595.html
 
 from pymel.all import *
 

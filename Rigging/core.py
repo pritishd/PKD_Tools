@@ -21,17 +21,26 @@ def _fullSide_(side):
                 }
     return sideDict[side]
 
-_SUBCOMPONENTS_ = ["FK","IK","Dyn"]
 
-class MetaRig(Red9_Meta.MetaRig):
+_SUBCOMPONENTS_ = ["FK", "IK", "Dyn"]
+
+
+class MetaEnhanced(object):
+    """Some more custom properties which adds on to the base meta classes"""
+
+    @property
+    def pynode(self):
+        import pymel.core as pm
+        return pm.PyNode(self.mNode)
+
+
+class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
     # Set default values
     def __init__(self, *args, **kwargs):
         if kwargs.has_key("side") and kwargs.has_key("part"):
             # Setup defaults
-
             if not kwargs.has_key("endSuffix"):
                 kwargs["endSuffix"] = "Grp"
-
             if not kwargs.has_key("nodeType"):
                 kwargs["nodeType"] = "transform"
             full_name = utils.nameMe(kwargs["side"], kwargs["part"], kwargs["endSuffix"])
@@ -43,16 +52,19 @@ class MetaRig(Red9_Meta.MetaRig):
             self.rigType = kwargs["endSuffix"]
             self.lockState = False
             self.lockState = False
-            self.mSystemRoot  = False
+            self.mSystemRoot = False
 
         else:
             super(MetaRig, self).__init__(*args, **kwargs)
         self.lockState = False
         self.lockState = False
         self.isSubComponent = False
-        if hasattr(self,"systemType"):
+        if hasattr(self, "systemType"):
             if self.systemType in _SUBCOMPONENTS_:
                 self.isSubComponent = True
+
+        # debugMode
+        self.debugMode = False
 
     def __bindData__(self, *args, **kwgs):
         # ensure these are added by default
@@ -61,7 +73,6 @@ class MetaRig(Red9_Meta.MetaRig):
                      attrType='enum', hidden=True)
         self.addAttr('rigType', '')
 
-
     def setParent(self, targetSystem):
         self.pynode.setParent(targetSystem.mNode)
 
@@ -69,7 +80,7 @@ class MetaRig(Red9_Meta.MetaRig):
         componentName = "%s_%s" % (component, self.part)
         self.pynode.rename(self.shortName().replace(self.part, componentName))
         # Add a new attr
-        if not hasattr(self,"systemType"):
+        if not hasattr(self, "systemType"):
             self.addAttr("systemType", component)
         self.isSubComponent = True
         # Rename the component the child component
@@ -84,15 +95,29 @@ class MetaRig(Red9_Meta.MetaRig):
         # Check that there is connection
         if self.__dict__[internalVariableName] is None:
             # Look for the connection
-            nodeAttrName = "SUP_%s" % internalVariableName.replace("_", "").capitalize()
+            nodeAttrName = "SUP_%s" % libUtilities.capitalize(internalVariableName.replace("_", ""))
             if self.hasAttr(nodeAttrName):
                 # Initialise the parent class
                 self.__dict__[internalVariableName] = eval("self.%s" % nodeAttrName)
+            elif self.debugMode:
+                libUtilities.pyLog.info("%s not found on %s" % (nodeAttrName, self.mNode))
+
+        # Ensure that internal variable are always meta classes
+        if type(self.__dict__[internalVariableName]) == list:
+            self.__dict__[internalVariableName] = MetaRig(self.__dict__[internalVariableName][0])
         return self.__dict__[internalVariableName]
+
+    def _set_initialise_internal_(self, internalVariableName, data):
+        try:
+            assert isinstance(data, Red9_Meta.MetaClass)
+            self.__dict__[internalVariableName] = data
+        except:
+            raise Exception("Input must be MetaClass")
 
 
 class SubSystem(MetaRig):
     """This is a base system. """
+
     def setParent(self, targetSystem):
         self.pynode.setParent(targetSystem.mNode)
 
@@ -102,17 +127,26 @@ class SubSystem(MetaRig):
 
     def addMetaSubSystem(self, system="FK", **kwargs):
         # Add subgroup
-        subSystem = SubSystem(side=self.side, part=self.part)
+        subSystem = SubSystem(side=self.side, part=self.part, **kwargs)
         subSystem.setParent(self)
         self.connectChild(subSystem, "%s_System" % system)
-        subSystem.systemType = "FK"
+        subSystem.systemType = system
         return subSystem
 
-class Joint(MetaRig):
-    def __init__(self,*args,**kwargs):
-        kwargs["nodeType"] = "network"
-        super(Joint, self).__init__(*args,**kwargs)
 
+class JointSystem(MetaRig):
+    def __init__(self, *args, **kwargs):
+        kwargs["nodeType"] = "network"
+        kwargs["endSuffix"] = "Sys"
+        super(JointSystem, self).__init__(*args, **kwargs)
+
+    def addJoints(self,joints):
+        joints = libUtilities.stringList(joints)
+        joints.reverse()
+        self.connectChildren(libUtilities.stringList(joints), "Joints")
+
+    def setParent(self, targetSystem):
+        pm.PyNode(self.Joints[0]).setParent(targetSystem.mNode)
 
 class Ctrl(MetaRig):
     """This is a base control System"""
@@ -143,9 +177,9 @@ class Ctrl(MetaRig):
         self.addSupportNode(self.prnt, "Prnt")
 
         tempCtrlShape = utils.build_ctrl_shape(self.ctrlShape)
-        #tempCtrlShape = pm.circle(ch=0)[0]
+        # tempCtrlShape = pm.circle(ch=0)[0]
         libUtilities.transfer_shape(tempCtrlShape, self.mNode)
-        self.pynode.getShape().rename("%sShape"%self.shortName())
+        self.pynode.getShape().rename("%sShape" % self.shortName())
 
         pm.delete(tempCtrlShape)
 
@@ -185,13 +219,6 @@ class Ctrl(MetaRig):
     def setParent(self, targetSystem):
         # print isinstance (targetSystem, Red9_Meta.MetaClass)
         self.prnt.pynode.setParent(targetSystem.mNode)
-
-    def _set_initialise_internal_(self, internalVariableName, data):
-        try:
-            assert isinstance(data, Red9_Meta.MetaClass)
-            self.__dict__[internalVariableName] = data
-        except:
-            raise Exception("Input must be MetaClass")
 
     @property
     def side(self):
@@ -243,12 +270,12 @@ class Ctrl(MetaRig):
         self._set_initialise_internal_("_parentMasterSN_", data)
 
 
-class Anno_Loc(Red9_Meta.MetaClass):
+class Anno_Loc(Red9_Meta.MetaClass, MetaEnhanced):
     """This is a a annoated locator"""
     pass
 
 
-class MyCameraMeta(Red9_Meta.MetaClass):
+class MyCameraMeta(Red9_Meta.MetaClass, MetaEnhanced):
     """
     Example showing that metaData isn't limited to 'network' nodes,
     by using the 'nodeType' arg in the class __init__ you can modify
@@ -291,24 +318,23 @@ if __name__ == '__main__':
     #
     pm.newFile(f=1)
     # cam = MyCameraMeta()
-    subSystem = SubSystem(side="U", part="Core")
+    subSystem = SubSystem(side="L", part="Core")
 
-    #
     mRig = Red9_Meta.MetaRig(name='CharacterRig', nodeType="transform")
     mRig.connectChild(subSystem, 'Arm')
     subSystem.setParent(mRig)
-    #
+
     fkSystem = subSystem.addMetaSubSystem()
     # fkSystem = SubSystem(side="U", part="Arm")
     # fkSystem.setParent(subSystem)
     # subSystem.connectChild(fkSystem, 'FK_System')
 
 
-    #myCtrl = Ctrl(side="U", part="Hand")
-    #myCtrl.create_ctrl()
+    myCtrl = Ctrl(side="L", part="Hand")
+    myCtrl.create_ctrl()
     # myCtrl.add_constrain_node()
     # myCtrl.add_parent_master()
-    #myCtrl.setParent(fkSystem)
+    # myCtrl.setParent(fkSystem)
     #
     # myCtrl1 = Ctrl(side="U", part="FK1")
     # myCtrl1.create_ctrl()
@@ -321,7 +347,7 @@ if __name__ == '__main__':
     # fkSystem.convertToComponent("FK")
     # subSystem.connectChildren(fkCtrls, "FK")
 
-    jntSystem = Joint(side="U", part="Cora")
+    # jntSystem = JointSystem(side="U", part="Cora")
 
     #
     #

@@ -42,13 +42,12 @@ import maya.cmds as cmds
 import maya.mel as mel
 import maya.OpenMaya as OpenMaya
 
-import startup.setup as r9Setup
-
-#import Red9.startup.setup as r9Setup
+import Red9.startup.setup as r9Setup
 import Red9_General as r9General
 import Red9_CoreUtils as r9Core
 import Red9_AnimationUtils as r9Anim
-reload(r9Anim)
+
+
 # Language map is used for all UI's as a text mapping for languages
 LANGUAGE_MAP = r9Setup.LANGUAGE_MAP
 
@@ -304,6 +303,9 @@ def getMetaFromCache(mNode):
         if mNode in RED9_META_NODECACHE.keys():
             try:
                 if RED9_META_NODECACHE[mNode].isValidMObject():
+                    if not RED9_META_NODECACHE[mNode]._MObject == getMObject(mNode):
+                        log.debug('CACHE : %s : ID is already registered but MObjects are different, node may have been renamed' % mNode)
+                        return
                     #print 'namebased returned from cache ', mNode
                     log.debug('CACHE : %s Returning mNode from nameBased cache!' % mNode)
                     return RED9_META_NODECACHE[mNode]
@@ -1280,12 +1282,6 @@ class MetaClass(object):
             log.debug("mClass not found, given or registered")
             return super(cls.__class__, cls).__new__(cls)
 
-    @property
-    def pynode(self):
-        import pymel.core as pm
-        return pm.PyNode(self.mNode)
-
-
     #@pymelHandler
     def __init__(self, node=None, name=None, nodeType='network', autofill='all', *args, **kws):
         '''
@@ -1360,7 +1356,9 @@ class MetaClass(object):
                 registerMClassNodeCache(self)
             else:
                 log.debug('Standard Maya Node being metaManaged')
-                
+                #do we register NON MClass standard wrapped Maya Nodes to the registery??
+                #registerMClassNodeCache(self)
+
         self.lockState=False
         
         #bind any default attrs up - note this should be overloaded where required
@@ -2618,21 +2616,7 @@ def deleteEntireMetaRigStructure(searchNode=None):
                 cmds.deleteAttr('%s.mirrorAxis' % child)
         metaChild.delete()
 
-def wireControlsToNewMetaRig(nodes, name=None, mRig=None):
-    '''
-    fast way to wire nodes to a blank MetaRig to gain some of the support
-    features of the codebase without having to manually build a structured network
-    
-    :param nodes: nodes to wire as controllers to the MetaRig
-    :param name: name of the MetaRig node
-    :param mRig: optional mRig instance to add the controls too
-    '''
-    if not mRig:
-        mRig=Rig(name=name)
-    for node in nodes:
-        mRig.addRigCtrl(node, r9Core.nodeNameStrip(node))
-    return mRig
-    
+
 class MetaRig(MetaClass):
     '''
     Sub-class of Meta used as the back-bone of our internal rigging
@@ -3157,7 +3141,7 @@ class MetaRigSubSystem(MetaRig):
         
     def __bindData__(self):
         self.addAttr('systemType', attrType='string')
-        self.addAttr('mirrorSide',enumName='Centre:Left:Right:Unique',attrType='enum')
+        self.addAttr('mirrorSide',enumName='Centre:Left:Right',attrType='enum')
  
  
 class MetaRigSupport(MetaClass):
@@ -3189,8 +3173,16 @@ class MetaRigSupport(MetaClass):
                 for key, value in boundData.iteritems():
                     log.debug('Adding boundData to node : %s:%s' %(key,value))
                     MetaClass(node).addAttr(key, value=value)
-                    
-                    
+
+
+# --- Facial BaseClasses  --- -------------------
+
+'''
+Facial Base classes used and expanded upon by the Red9 Pro and client systems.
+These are here so that we have consistant, open base classes that we can use as
+a marker for the toolsets.
+'''
+
 class MetaFacialRig(MetaRig):
     '''
     SubClass of the MetaRig, designed to be manage Facial systems in the MetaData
@@ -3207,6 +3199,22 @@ class MetaFacialRig(MetaRig):
         '''
         pass
 
+class MetaFacialUI(MetaRig):
+    '''
+    SubClass of the MetaRig, designed to manage facial board style controls
+    for a facial system. Just an extract class to inherit from but it means that
+    all our facial logic will find custom class control boards based on being
+    subclassed from this consistent base.
+    '''
+    def __init__(self,*args,**kws):
+        super(MetaFacialUI, self).__init__(*args,**kws)
+        self.mClassGrp = 'MetaFacialRig'
+
+    def __bindData__(self):
+        '''
+        over-load and blank so that the MetaRig bindData doesn't get inherited
+        '''
+        pass
 
 class MetaFacialRigSupport(MetaClass):
     '''
@@ -3233,6 +3241,8 @@ class MetaFacialRigSupport(MetaClass):
                     log.debug('Adding boundData to node : %s:%s' %(key,value))
                     MetaClass(node).addAttr(key, value=value)
 
+
+# --- HIK BaseClasses  --- -------------------
 
 class MetaHIKCharacterNode(MetaRig):
     '''

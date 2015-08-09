@@ -95,3 +95,8 @@ def create_test_joint(systemType):
             jnt.setParent(joints[index - 1])
         joints.append(jnt)
     return joints
+
+
+if __name__ == '__main__':
+    pm.newFile(f=1)
+    build_all_ctrls_shapes()

@@ -6,7 +6,6 @@
 
 from maya import cmds, mel
 import pymel.core as pm
-import pymel.tools.mel2py as py2mel
 from pymel.internal.plogging import pymelLogger as pyLog
 
 import libXml
@@ -190,14 +189,14 @@ def parZero(target, sfx="Prnt"):
     ## 
     group = pm.group(n=target + "_" + sfx, em=1)
     parentObject = pm.listRelatives(target, p=1)
-    snapper(group, target)
+    snap(group, target)
     if parentObject:
         pm.parent(group, parentObject[0])
     pm.parent(target, group)
     return group
 
 
-def snapper(source, target="", t=True, r=True):
+def snap(source, target, t=True, r=True):
     """
     Snap the first object to the second object. However a preset value can also be given.
     @param source: The source transform object
@@ -416,18 +415,18 @@ def strip_integer_in_string(name):
     return name[0:i]
 
 
-def transfer_shape(source, target, snap=True):
+def transfer_shape(source, target, snapToTarget=True):
     """
     Reparent a shape node from one parent to another
     @param source: The source dag which contains the shape
     @param target: The source dag which will have the new shape the shape
-    @param snap: Should be we reparent with world space or object space
+    @param snapToTarget: Should be we reparent with world space or object space
     @return:
     """
     source = pm.PyNode(source)
     target = pm.PyNode(target)
-    if snap:
-        snapper(source, target)
+    if snapToTarget:
+        snap(source, target)
         pm.makeIdentity(source, apply=1)
     oldShape = source.getShape()
 
@@ -651,6 +650,7 @@ def mel2pyStr(text):
     if not text.endswith(";"):
         pyLog.warning('Please end the mel code with ";"')
     else:
+        import pymel.tools.mel2py as py2mel
         print py2mel.mel2pyStr(text, pymelNamespace="pm")
 
 
