@@ -33,7 +33,8 @@ def nilsNoFlipIK():
 def nilsGetLocalPos(vector, baseX, baseY, baseZ):
     """First is the input-vector given in world space. Argument 2-4 are the baseVectors in target space"""
 
-    tMatrix = []
+    tMatrix = [None] * 9
+
     # Create transformationmatrix from base in worldspace to base in target space
     tMatrix[0] = baseX[0]
     tMatrix[3] = baseX[1]
@@ -50,7 +51,8 @@ def nilsGetLocalPos(vector, baseX, baseY, baseZ):
                        (tMatrix[6] * tMatrix[4] * tMatrix[2]) + (tMatrix[7] * tMatrix[5] * tMatrix[0]) + (
                            tMatrix[8] * tMatrix[3] * tMatrix[1])))
     # Multiply input-vector with theinverse of $tMatrix to get vector in target space
-    localPos = []
+    localPos = [None] * 3
+
     if determinant != 0:
         localPos[0] = ((((tMatrix[4] * tMatrix[8]) - (tMatrix[5] * tMatrix[7])) * vector[0]) + (
             -((tMatrix[1] * tMatrix[8]) - (tMatrix[2] * tMatrix[7])) * vector[1]) + (
@@ -123,6 +125,8 @@ def nilsNoFlipIKProc(newPVX, newPVY, newPVZ, ikHandle):
     delete(null, null2)
     # Delete these temporary helpers
     # Get the sourceVector in localSpace
+
+
     sourceLocal = nilsGetLocalPos(sourceWorld, baseX, baseY, baseZ)
     if len(sourceLocal) == 3:
         twist = float((mel.atan2d(sourceLocal[2], sourceLocal[0]) * -1))
