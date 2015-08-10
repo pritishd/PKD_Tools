@@ -29,8 +29,9 @@ import maya.cmds as cmds
 import maya.mel as mel
 
 
+
 #Only valid Red9 import
-import Red9.startup.setup as r9Setup
+import startup.setup as r9Setup
 
 
 import logging

@@ -26,7 +26,7 @@ import logging
 
 import maya.cmds as cmds
 
-import Red9.startup.setup as r9Setup
+import startup.setup as r9Setup
 import Red9_CoreUtils as r9Core
 import Red9_General as r9General
 import Red9_AnimationUtils as r9Anim

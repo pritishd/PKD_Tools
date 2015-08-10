@@ -90,7 +90,7 @@ import logging
 import maya.cmds as cmds
 import maya.mel as mel
 
-import Red9.startup.setup as r9Setup
+import startup.setup as r9Setup
 import Red9_CoreUtils as r9Core
 import Red9_General as r9General
 import Red9_PoseSaver as r9Pose
@@ -3818,8 +3818,8 @@ class MirrorHierarchy(object):
         if not side:
             return False
         if type(side) == int:
-            if not side in range(0, 3):
-                raise ValueError('given mirror side is not a valid int entry: 0, 1 or 2')
+            if not side in range(0, 4):
+                raise ValueError('given mirror side is not a valid int entry: 0, 1, 2,3')
             else:
                 return True
         if not side in self.mirrorDict:

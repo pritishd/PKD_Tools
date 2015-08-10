@@ -25,7 +25,7 @@ import maya.cmds as cmds
 import maya.mel as mel
 
 import Red9_General as r9General
-import Red9.startup.setup as r9Setup
+import startup.setup as r9Setup
 import Red9_Meta as r9Meta
 import Red9_CoreUtils as r9Core
 

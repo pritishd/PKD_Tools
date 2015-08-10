@@ -140,13 +140,18 @@ class JointSystem(MetaRig):
         kwargs["endSuffix"] = "Sys"
         super(JointSystem, self).__init__(*args, **kwargs)
 
-    def addJoints(self,joints):
+    def addJoints(self, joints):
         joints = libUtilities.stringList(joints)
         joints.reverse()
         self.connectChildren(libUtilities.stringList(joints), "Joints")
 
     def setParent(self, targetSystem):
         pm.PyNode(self.Joints[0]).setParent(targetSystem.mNode)
+
+    def setRotateOrder(self, rotateOrder):
+        for joint in self.Joints:
+            pm.PyNode(joint).rotateOrder.set(rotateOrder)
+
 
 class Ctrl(MetaRig):
     """This is a base control System"""

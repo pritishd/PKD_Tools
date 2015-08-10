@@ -83,10 +83,10 @@ class Droid(object):
         self.myCtrl = Red9_Meta.MetaClass("U_FK_Core_Ctrl")
 
     def save_file(self):
-        self.saved_file = pm.saveAs(r"C:\temp\testMeta.ma")
+        self.saved_file = pm.saveAs(r"D:\TEMP\testMeta.ma")
 
     def open_file(self):
-        pm.openFile(r"C:\temp\testMeta.ma")
+        pm.openFile(r"D:\TEMP\testMeta.ma")
 
 
 class ikDroid(Droid):
