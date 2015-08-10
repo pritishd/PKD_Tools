@@ -114,6 +114,20 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
         except:
             raise Exception("Input must be MetaClass")
 
+    def getRigCtrl(self, target):
+        children = self.getChildren(walk=True, asMeta=True, cAttrs=["%s_%s" % (self.CTRL_Prefix, target)])
+        if not children:
+            libUtilities.pyLog.warn("%s ctrl not found on %s" % (target, self.shortName()))
+        else:
+            return children[0]
+
+    def getSupportNode(self, target):
+        children = self.getChildren(walk=True, asMeta=True, cAttrs=["SUP_%s" % target])
+        if not children:
+            libUtilities.pyLog.warn("%s support node found on %s" % (target, self.shortName()))
+        else:
+            return children[0]
+
 
 class SubSystem(MetaRig):
     """This is a base system. """
