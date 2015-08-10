@@ -20,16 +20,10 @@ class rig(core.SubSystem):
         super(rig, self).__init__(*args, **kwargs)
         self.JointSystem = None
 
-    def getRigCtrl(self, target):
-        children = self.getChildren(walk=True, asMeta=True, cAttrs=["%s_%s" % (self.CTRL_Prefix, target)])
-        if not children:
-            libUtilities.pyLog.warn("%s ctrl not found on %s" % (target, self.shortName()))
-        else:
-            return children[0]
-
     def create_test_cube(self, targetJoint):
         cube = pm.polyCube(ch=False)[0]
         pm.select(cube.vtx[0:1], cube.vtx[6:7])
+        # TODO: make the base pointy in z
         # Botton Cluster
         clusterBottom = pm.cluster()[1]
         libUtilities.snap(clusterBottom, targetJoint)
@@ -62,20 +56,20 @@ class ik(rig):
         pass
 
     def add_PV(self):
-        mc.addAttr(ikCtrl.ctrl, ln="offset", at="double",
+        pm.addAttr(ctrl.ctrl, ln="offset", at="double",
                    dv=mm.eval("source nilsNoFlipIK;nilsNoFlipIKProc(1, 0, 0,\"%s\");" % ikHndList[0]))
-        mc.setAttr(ikCtrl.ctrl + ".offset", e=1, cb=0)
-        mc.addAttr(ikCtrl.ctrl, ln=self.capitalize(trgLoc[1]), at="double", dv=0)
-        mc.setAttr(ikCtrl.ctrl + (self.capitalize(".%s" % trgLoc[1])), e=1, k=1)
+        pm.setAttr(ikCtrl.ctrl + ".offset", e=1, cb=0)
+        pm.addAttr(ikCtrl.ctrl, ln=self.capitalize(trgLoc[1]), at="double", dv=0)
+        pm.setAttr(ikCtrl.ctrl + (self.capitalize(".%s" % trgLoc[1])), e=1, k=1)
 
-        mc.setAttr(ikHndList[0] + ".poleVectorX", .1)
-        mc.setAttr(ikHndList[0] + ".poleVectorY", 0)
-        mc.setAttr(ikHndList[0] + ".poleVectorZ", 0)
+        pm.setAttr(ikHndList[0] + ".poleVectorX", .1)
+        pm.setAttr(ikHndList[0] + ".poleVectorY", 0)
+        pm.setAttr(ikHndList[0] + ".poleVectorZ", 0)
 
-        ikTwistNode = mc.createNode("plusMinusAverage", n=self.name + "_" + self.sfx + "_twistPMA")
-        mc.connectAttr(ikCtrl.ctrl + ".offset", ikTwistNode + ".input1D[0]")
-        mc.connectAttr(ikCtrl.ctrl + (self.capitalize(".%s" % trgLoc[1])), ikTwistNode + ".input1D[1]")
-        mc.connectAttr(ikTwistNode + ".output1D", ikHndList[0] + ".twist")
+        ikTwistNode = pm.createNode("plusMinusAverage", n=self.name + "_" + self.sfx + "_twistPMA")
+        pm.connectAttr(ikCtrl.ctrl + ".offset", ikTwistNode + ".input1D[0]")
+        pm.connectAttr(ikCtrl.ctrl + (self.capitalize(".%s" % trgLoc[1])), ikTwistNode + ".input1D[1]")
+        pm.connectAttr(ikTwistNode + ".output1D", ikHndList[0] + ".twist")
 
     def build_control(self):
         ikCtrl = core.Ctrl(part=self.part, side=self.side)
@@ -90,14 +84,37 @@ class ik(rig):
     def build_ik(self):
         # Setup the IK handle RP solver
         name = utils.nameMe(self.side, self.part, "IkHandle")
-        ikHandle = \
-        pm.ikHandle(name=name, sj=self.JointSystem.Joints[0], ee=self.JointSystem.Joints[-1], sol="ikRPsolver")[0]
+        ikHandle = pm.ikHandle(name=name,
+                               sj=self.JointSystem.Joints[0],
+                               ee=self.JointSystem.Joints[-1],
+                               sol="ikRPsolver",
+                               sticky="sticky")[0]
         self.ikHandle = core.MetaRig(ikHandle.name(), nodeType="ikHandle")
         self.ikHandle.part = self.part
         self.ikHandle.mirrorSide = self.mirrorSide
         self.ikHandle.rigType = "ikHandle"
         self.addSupportNode(self.ikHandle, "IkHandle")
         self.ikHandle.v = False
+
+    def build_twist(self):
+
+        # TODO https://www.youtube.com/watch?v=KhZHjqHedPI
+        from PKD_Tools.Rigging import nilsNoFlipIK
+        reload(nilsNoFlipIK)
+        offSet = nilsNoFlipIK.nilsNoFlipIKProc(0, 0, 1, self.ikHandle.mNode)
+        ctrl = self.getRigCtrl("MainIK")
+        ctrl.addAttr("offset", offSet, hidden=True)
+
+        ctrl.addAttr("twist", 0.0)
+
+        self.ikHandle.poleVector = [0, 0, 0.1]
+
+        ikTwistNode = pm.createNode("plusMinusAverage", n=utils.nameMe(self.side, self.shortName(), "twistPMA"))
+
+        ctrl.pynode.offset >> ikTwistNode.input1D[0]
+        ctrl.pynode.twist >> ikTwistNode.input1D[1]
+
+        ikTwistNode.output1D >> self.ikHandle.pynode.twist
 
     def test_build(self):
         # Build the joint system
@@ -115,7 +132,7 @@ class ik(rig):
         self.JointSystem.setParent(self)
         self.create_test_cube(self.JointSystem.Joints[0])
         self.getRigCtrl("MainIK").rotateOrder = self.rotateOrder
-
+        self.build_twist()
 
     @property
     def ikHandle(self):
