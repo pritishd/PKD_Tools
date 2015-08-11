@@ -3847,7 +3847,7 @@ class MirrorHierarchy(object):
         # and attribute handling is done for us
         mClass = r9Meta.MetaClass(node)
         if self._validateMirrorEnum(side):
-            mClass.addAttr(self.mirrorSide, attrType='enum', enumName='Centre:Left:Right', hidden=True)
+            mClass.addAttr(self.mirrorSide, attrType='enum', enumName='Centre:Left:Right:Unique', hidden=True)
             mClass.__setattr__(self.mirrorSide, side)
         if slot:
             mClass.addAttr(self.mirrorIndex, slot, hidden=True)
