@@ -60,7 +60,7 @@ class Droid(object):
         fkSystem = subSystem.addMetaSubSystem("FK")
         self.myCtrl = core.Ctrl(side="U", part="Core")
 
-        self.myCtrl.create_ctrl()
+        self.myCtrl.build()
         self.myCtrl.setParent(fkSystem)
         self.myCtrl.debugMode = True
 

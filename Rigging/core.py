@@ -27,12 +27,18 @@ _SUBCOMPONENTS_ = ["FK", "IK", "Dyn"]
 
 class MetaEnhanced(object):
     """Some more custom properties which adds on to the base meta classes"""
+    _pynode_ = None
 
     @property
     def pynode(self):
         import pymel.core as pm
-        return pm.PyNode(self.mNode)
+        if self._pynode_ is None:
+            self._pynode_ = pm.PyNode(self.mNode)
+        return self._pynode_
 
+
+class MetaClass(Red9_Meta.MetaClass, MetaEnhanced):
+    pass
 
 class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
     # Set default values
@@ -92,6 +98,7 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
         return self.pynode.attr("mirrorSide").get(asString=True)[0]
 
     def _relink_meta_internal_variables_(self, internalVariableName):
+        # TODO Replace with properties and use setSupport or getSupport functions
         # Check that there is connection
         if self.__dict__[internalVariableName] is None:
             # Look for the connection
@@ -121,11 +128,21 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
         else:
             return children[0]
 
+    def addRigCtrl(self, data, *args, **kwargs):
+        try:
+            assert isinstance(data, Red9_Meta.MetaClass)
+            super(MetaRig, self).addRigCtrl(data.mNode, *args, **kwargs)
+        except:
+            raise Exception("Input must be MetaClass")
+
     def getSupportNode(self, target):
         children = self.getChildren(walk=True, asMeta=True, cAttrs=["SUP_%s" % target])
         if not children:
             libUtilities.pyLog.warn("%s support node found on %s" % (target, self.shortName()))
         else:
+            if type(children[0]) == Red9_Meta.MetaClass:
+                children[0] = MetaRig(children[0].mNode)
+
             return children[0]
 
 
@@ -167,6 +184,7 @@ class JointSystem(MetaRig):
             pm.PyNode(joint).rotateOrder.set(rotateOrder)
 
 
+
 class Ctrl(MetaRig):
     """This is a base control System"""
 
@@ -186,7 +204,7 @@ class Ctrl(MetaRig):
         self.ctrlShape = "Ball"
         self.hasParentMaster = False
 
-    def create_ctrl(self):
+    def build(self):
         # Create the xtra grp
         self.xtra = MetaRig(part=self.part, side=self.side, endSuffix="Xtra")
         self.addSupportNode(self.xtra, "Xtra")
@@ -350,7 +368,7 @@ if __name__ == '__main__':
 
 
     myCtrl = Ctrl(side="L", part="Hand")
-    myCtrl.create_ctrl()
+    myCtrl.build()
     # myCtrl.add_constrain_node()
     # myCtrl.add_parent_master()
     # myCtrl.setParent(fkSystem)
