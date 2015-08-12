@@ -40,6 +40,7 @@ class MetaEnhanced(object):
 class MetaClass(Red9_Meta.MetaClass, MetaEnhanced):
     pass
 
+
 class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
     # Set default values
     def __init__(self, *args, **kwargs):
@@ -97,30 +98,6 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
     def side(self):
         return self.pynode.attr("mirrorSide").get(asString=True)[0]
 
-    def _relink_meta_internal_variables_(self, internalVariableName):
-        # TODO Replace with properties and use setSupport or getSupport functions
-        # Check that there is connection
-        if self.__dict__[internalVariableName] is None:
-            # Look for the connection
-            nodeAttrName = "SUP_%s" % libUtilities.capitalize(internalVariableName.replace("_", ""))
-            if self.hasAttr(nodeAttrName):
-                # Initialise the parent class
-                self.__dict__[internalVariableName] = eval("self.%s" % nodeAttrName)
-            elif self.debugMode:
-                libUtilities.pyLog.info("%s not found on %s" % (nodeAttrName, self.mNode))
-
-        # Ensure that internal variable are always meta classes
-        if type(self.__dict__[internalVariableName]) == list:
-            self.__dict__[internalVariableName] = MetaRig(self.__dict__[internalVariableName][0])
-        return self.__dict__[internalVariableName]
-
-    def _set_initialise_internal_(self, internalVariableName, data):
-        try:
-            assert isinstance(data, Red9_Meta.MetaClass)
-            self.__dict__[internalVariableName] = data
-        except:
-            raise Exception("Input must be MetaClass")
-
     def getRigCtrl(self, target):
         children = self.getChildren(walk=True, asMeta=True, cAttrs=["%s_%s" % (self.CTRL_Prefix, target)])
         if not children:
@@ -165,16 +142,40 @@ class SubSystem(MetaRig):
         return subSystem
 
 
+class Joint(Red9_Meta.MetaClass, MetaEnhanced):
+    """
+    Example showing that metaData isn't limited to 'network' nodes,
+    by using the 'nodeType' arg in the class __init__ you can modify
+    the general behaviour such that meta creates any type of Maya node.
+    '''
+    def __init__(self,*args,**kwargs):
+        super(MyCameraMeta, self).__init__(nodeType='camera',*args,**kwargs)
+        self.item = None
+    """
+
+    def __init__(self, *args, **kwargs):
+        kwargs["nodeType"] = "joint"
+        kwargs["endSuffix"] = "Jnt"
+        super(Joint, self).__init__(*args, **kwargs)
+
+
 class JointSystem(MetaRig):
     def __init__(self, *args, **kwargs):
         kwargs["nodeType"] = "network"
         kwargs["endSuffix"] = "Sys"
         super(JointSystem, self).__init__(*args, **kwargs)
+        self.joint_data = None
 
     def addJoints(self, joints):
         joints = libUtilities.stringList(joints)
         joints.reverse()
         self.connectChildren(libUtilities.stringList(joints), "Joints")
+
+    def build(self):
+        pass
+
+    def convert_joint_to_meta_joints(self):
+        pass
 
     def setParent(self, targetSystem):
         pm.PyNode(self.Joints[0]).setParent(targetSystem.mNode)
@@ -182,6 +183,7 @@ class JointSystem(MetaRig):
     def setRotateOrder(self, rotateOrder):
         for joint in self.Joints:
             pm.PyNode(joint).rotateOrder.set(rotateOrder)
+
 
 
 
@@ -195,23 +197,20 @@ class Ctrl(MetaRig):
         self.ctrl = self
         self._prnt_ = None
         # Internal Var
-        self._xtra_ = None
-        self._side_ = None
-        self._gimbal_ = None
-        self._parentMasterPH_ = None
-        self._parentMasterSN_ = None
         self.hasGimbalNode = False
         self.ctrlShape = "Ball"
         self.hasParentMaster = False
 
+        self.mirrorData = {'side': self.mirrorSide, 'slot': 1}
+
     def build(self):
         # Create the xtra grp
         self.xtra = MetaRig(part=self.part, side=self.side, endSuffix="Xtra")
-        self.addSupportNode(self.xtra, "Xtra")
+        # self.addSupportNode(self.xtra, "Xtra")
 
         # Create the control
         self.prnt = MetaRig(part=self.part, side=self.side, endSuffix="Prnt")
-        self.addSupportNode(self.prnt, "Prnt")
+        # self.addSupportNode(self.prnt, "Prnt")
 
         tempCtrlShape = utils.build_ctrl_shape(self.ctrlShape)
         # tempCtrlShape = pm.circle(ch=0)[0]
@@ -243,18 +242,17 @@ class Ctrl(MetaRig):
         self.parentMasterSN.pynode.setParent(self.parentMasterPH.mNode)
         self.parentMasterPH.pynode.setParent(self.xtra.mNode)
         # Add support node
-        self.addSupportNode(self.parentMasterSN, "ParentMasterSN")
-        self.addSupportNode(self.parentMasterPH, "ParentMasterPH")
+        # self.addSupportNode(self.parentMasterSN, "ParentMasterSN")
+        # self.addSupportNode(self.parentMasterPH, "ParentMasterPH")
 
-    def add_constrain_node(self):
+    def add_gimbal_node(self):
         self.gimbal = MetaRig(name=utils.nameMe(self.side, self.part, "Gimbal"), nodeType="transform")
         self.gimbal.rigType = "constrain"
         self.gimbal.pynode.setParent(self.mNode)
         self.hasGimbalNode = True
-        self.addSupportNode(self.gimbal, "Gimbal")
 
     def setParent(self, targetSystem):
-        # print isinstance (targetSystem, Red9_Meta.MetaClass)
+        # Instead of the node itself, the parent is reparented
         self.prnt.pynode.setParent(targetSystem.mNode)
 
     @property
@@ -263,48 +261,55 @@ class Ctrl(MetaRig):
 
     @property
     def prnt(self):
-        return self._relink_meta_internal_variables_("_prnt_")
+        return self.getSupportNode("Prnt")
 
     @prnt.setter
     def prnt(self, data):
-        self._set_initialise_internal_("_prnt_", data)
+        self.addSupportNode(data, "Prnt")
 
     @property
     def xtra(self):
-        return self._relink_meta_internal_variables_("_xtra_")
+        return self.getSupportNode("Xtra")
 
     @xtra.setter
     def xtra(self, data):
-        self._set_initialise_internal_("_xtra_", data)
+        self.addSupportNode(data, "Xtra")
 
     @property
     def gimbal(self):
-        return self._relink_meta_internal_variables_("_gimbal_")
+        data = self.getSupportNode("Gimbal")
+        if data is not None:
+            self.hasGimbalNode = True
+        return data
 
     @gimbal.setter
     def gimbal(self, data):
-        data = self._set_initialise_internal_("_gimbal_", data)
+        self.addSupportNode(data, "Gimbal")
         if data is not None:
             self.hasGimbalNode = True
 
     @property
     def parentMasterPH(self):
-        data = self._relink_meta_internal_variables_("_parentMasterPH_")
+        data = self.getSupportNode("ParentMasterPH")
         if data is not None:
             self.hasParentMaster = True
         return data
 
     @parentMasterPH.setter
     def parentMasterPH(self, data):
-        self._set_initialise_internal_("_parentMasterPH_", data)
+        # TODO: Pass the slot number before and axis data
+        self.addSupportNode(data, "ParentMasterPH")
+        if data is not None:
+            self.hasParentMaster = True
 
     @property
     def parentMasterSN(self):
-        return self._relink_meta_internal_variables_("_parentMasterSN_")
+        return self.getSupportNode("ParentMasterSN")
 
     @parentMasterSN.setter
     def parentMasterSN(self, data):
-        self._set_initialise_internal_("_parentMasterSN_", data)
+        # TODO: Pass the slot number before and axis data
+        self.addSupportNode(data, "ParentMasterSN")
 
 
 class Anno_Loc(Red9_Meta.MetaClass, MetaEnhanced):
