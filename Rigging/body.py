@@ -1,12 +1,15 @@
 __author__ = 'pritish.dogra'
 
 from PKD_Tools.Rigging import core
+
 reload(core)
 from PKD_Tools.Rigging import utils
+
 reload(utils)
 
 from PKD_Tools import libUtilities
 from PKD_Tools import libVector
+
 reload(libUtilities)
 import pymel.core as pm
 
@@ -20,10 +23,16 @@ class rig(core.SubSystem):
 
     def create_test_cube(self, targetJoint):
         cube = pm.polyCube(ch=False)[0]
+        pm.select(cube.vtx[0:1])
+        pm.move(0, 0, 0.9, r=1)
+
         pm.select(cube.vtx[0:1], cube.vtx[6:7])
-        # TODO: make the base pointy in z
+
         # Botton Cluster
         clusterBottom = pm.cluster()[1]
+        clusterBottom.setScalePivot([0, 0, 0])
+        clusterBottom.setRotatePivot([0, 0, 0])
+
         libUtilities.snap(clusterBottom, targetJoint)
 
         # Top Cluster
@@ -54,11 +63,12 @@ class ik(rig):
         # Setup the polevector / no flip
         pass
 
-    def add_PV(self):
+    def build_PV(self):
 
         self.pv = core.Ctrl(part="%s_PV" % self.part, side=self.side)
         self.pv.ctrlShape = "Locator"
         self.pv.build()
+        self.pv.setParent(self)
 
         # Position And Align The Pole Vector Control
 
@@ -102,8 +112,7 @@ class ik(rig):
         libUtilities.snap(ikCtrl.prnt.mNode, self.ikHandle.mNode)
         self.ikHandle.pynode.setParent(ikCtrl.pynode)
         ikCtrl.setParent(self)
-        # TODO: Pass the slot number before and axis data
-        self.addRigCtrl(ikCtrl, "MainIK", mirrorData=self.mirrorData)
+        self.mainIK = ikCtrl
 
     def build_ik(self):
         # Setup the IK handle RP solver
@@ -120,24 +129,34 @@ class ik(rig):
         self.ikHandle.v = False
 
     def build_twist(self):
-
-        # TODO https://www.youtube.com/watch?v=KhZHjqHedPI
-        from PKD_Tools.Rigging import nilsNoFlipIK
-        reload(nilsNoFlipIK)
-        offSet = nilsNoFlipIK.nilsNoFlipIKProc(0, 0, 1, self.ikHandle.mNode)
-        ctrl = self.getRigCtrl("MainIK")
-        ctrl.addAttr("offset", offSet, hidden=True)
-
-        ctrl.addAttr("twist", 0.0)
-
-        self.ikHandle.poleVector = [0, 0, 0.1]
-
-        ikTwistNode = pm.createNode("plusMinusAverage", n=utils.nameMe(self.side, self.shortName(), "twistPMA"))
-
-        ctrl.pynode.offset >> ikTwistNode.input1D[0]
-        ctrl.pynode.twist >> ikTwistNode.input1D[1]
-
-        ikTwistNode.output1D >> self.ikHandle.pynode.twist
+        # Check that that a pv exists
+        if self.pv is None:
+            # Create one
+            self.build_PV()
+        # Create a new meta node.
+        self.twist = core.MetaRig(part=self.part, side=self.side, endSuffix="TwistGrp")
+        # Match it to the first joint
+        libUtilities.snap(self.twist.pynode, self.JointSystem.Joints[0])
+        # Parent the PV Control
+        self.pv.setParent(self.twist)
+        # Rotate the new node 90 on first axis of the rotate order
+        primary_axis = self.pynode.rotateOrder.get(asString=True)
+        self.twist.pynode.attr("r%s" % primary_axis[0]).set(90)
+        # Freeze transform on the twist grp
+        libUtilities.freeze_transform(self.twist.pynode)
+        # Parent the PV control to the ik
+        self.twist.setParent(self.mainIK)
+        # offset the twist handle back
+        self.ikHandle.twist = -90
+        # Add a new divider
+        libUtilities.addDivAttr(self.mainIK.mNode, "Twist", "twistLbl")
+        # Add a control attibute
+        # TODO Get the name from the second part if more than two joints. Otherwise from the first joint
+        libUtilities.addAttr(self.mainIK.mNode, "Knee", sn="twist", attrMax=360, attrMin=-360)
+        # Connect the new attribute to the twist offset
+        self.mainIK.pynode.twist >> self.twist.pynode.attr("r%s" % primary_axis[0])
+        # Hide the PV
+        self.pv.prnt.visibility = False
 
     def test_build(self):
         # Build the joint system
@@ -149,14 +168,13 @@ class ik(rig):
         self.connectChild(self.JointSystem, "Joint_System")
         # Build IK
         self.build_ik()
-
         self.build_control()
         # Setup the parent
         self.JointSystem.setParent(self)
         self.create_test_cube(self.JointSystem.Joints[0])
-        self.getRigCtrl("MainIK").rotateOrder = self.rotateOrder
-        self.add_PV()
-        # self.build_twist()
+
+        self.build_PV()
+        self.build_twist()
 
     @property
     def ikHandle(self):
@@ -167,6 +185,14 @@ class ik(rig):
         self.addSupportNode(data, "IKHandle")
 
     @property
+    def twist(self):
+        return self.getSupportNode("Twist")
+
+    @twist.setter
+    def twist(self, data):
+        self.addSupportNode(data, "Twist")
+
+    @property
     def pv(self):
         return self.getRigCtrl("PV")
 
@@ -175,9 +201,19 @@ class ik(rig):
         # TODO: Pass the slot number before and axis data
         self.addRigCtrl(data, ctrType="PV", mirrorData=self.mirrorData)
 
+    @property
+    def mainIK(self):
+        return self.getRigCtrl("MainIK")
+
+    @mainIK.setter
+    def mainIK(self, data):
+        # TODO: Pass the slot number before and axis data
+        self.addRigCtrl(data, ctrType="MainIK", mirrorData=self.mirrorData)
+
 
 class fk(rig):
     """This is base Fk System."""
+    pass
 
 
 class ik3jnt(rig):
