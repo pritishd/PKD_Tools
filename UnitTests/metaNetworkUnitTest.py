@@ -53,10 +53,7 @@ class Droid(object):
         self.mRig.connectChild(subSystem, 'Arm')
         subSystem.setParent(self.mRig)
 
-        # fkSystem = core.SubSystem(side="U", part="FK")
 
-        # fkSystem.setParent(subSystem)
-        # subSystem.connectChild(fkSystem, 'FK_System')
         fkSystem = subSystem.addMetaSubSystem("FK")
         self.myCtrl = core.Ctrl(side="U", part="Core")
 
@@ -88,6 +85,10 @@ class Droid(object):
     def open_file(self):
         pm.openFile(r"D:\TEMP\testMeta.ma")
 
+    def create_advanced_ctrl_meta_network(self):
+        self.create_simple_ctrl_meta_network()
+        self.myCtrl.add_gimbal_node()
+        self.myCtrl.add_parent_master()
 
 class ikDroid(Droid):
     def __init__(self):
@@ -103,14 +104,14 @@ class ikDroid(Droid):
         self.save_file()
         self.new_file()
         self.open_file()
-        from PKD_Tools.Red9 import Red9_Meta
-        reload(Red9_Meta)
+        # from PKD_Tools.Red9 import Red9_Meta
+        # reload(Red9_Meta)
+        #
+        # from PKD_Tools.Rigging import core
+        # reload(core)
 
-        from PKD_Tools.Rigging import core
-        reload(core)
-
-        from PKD_Tools.Rigging import body
-        reload(body)
+        # from PKD_Tools.Rigging import body
+        # reload(body)
 
         self.ikSystem = Red9_Meta.MetaClass("U_Core_Grp")
 
@@ -149,8 +150,6 @@ class BatchTest(libUnitTests.BatchTest):
         self.addTest("test_meta_inheritance", targetNode=self.droid.myCtrl, targetClass=core.Ctrl)
         self.addTest("variable_is_not_none", targetNode=self.droid.myCtrl, variable_name="xtra")
         self.addTest("variable_is_not_none", targetNode=self.droid.myCtrl, variable_name="prnt")
-        self.addTest("is_sub_component", targetNode=self.droid.myCtrl)
-        self.addTest("is_not_sub_component", targetNode=self.droid.mRig)
         self.run_test("Testing meta reopen")
 
     def test_ik_creation(self):
@@ -160,6 +159,7 @@ class BatchTest(libUnitTests.BatchTest):
         self.addTest("test_meta_inheritance", targetNode=self.droid.ikSystem)
         self.addTest("variable_is_not_none", targetNode=self.droid.ikSystem, variable_name="Joint_System")
         self.addTest("variable_is_not_none", targetNode=self.droid.ikSystem, variable_name="ikHandle")
+        self.addTest("variable_is_not_none", targetNode=self.droid.ikSystem, variable_name="mainIK")
         self.run_test("Testing IK")
 
     def test_ik_reopen(self):
@@ -169,11 +169,40 @@ class BatchTest(libUnitTests.BatchTest):
         self.addTest("test_meta_inheritance", targetNode=self.droid.ikSystem)
         self.addTest("variable_is_not_none", targetNode=self.droid.ikSystem, variable_name="Joint_System")
         self.addTest("variable_is_not_none", targetNode=self.droid.ikSystem, variable_name="ikHandle")
+        self.addTest("variable_is_not_none", targetNode=self.droid.ikSystem, variable_name="mainIK")
+        self.addTest("variable_is_not_none", targetNode=self.droid.ikSystem, variable_name="pv")
         self.run_test("Testing IK reopen")
 
+    def test_meta_advanced_create(self):
+        self.droid = Droid()
+        self.droid.create_advanced_ctrl_meta_network()
+        # Setup a batch test suite
+        self.suite = libUnitTests.unittest.TestSuite()
+        self.addTest("variable_is_not_none", targetNode=self.droid.myCtrl, variable_name="parentMasterSN")
+        self.addTest("variable_is_not_none", targetNode=self.droid.myCtrl, variable_name="parentMasterPH")
+        self.addTest("variable_is_not_none", targetNode=self.droid.myCtrl, variable_name="gimbal")
+        self.addTest("variable_is_true", targetNode=self.droid.myCtrl, variable_name="hasGimbalNode")
+        self.addTest("variable_is_true", targetNode=self.droid.myCtrl, variable_name="hasParentMaster")
+        self.run_test("Testing advanced ctrl creation")
+
+    def test_meta_advanced_reopen(self):
+        self.droid = Droid()
+        self.droid.reinitialise_meta_network()
+        self.suite = libUnitTests.unittest.TestSuite()
+        self.addTest("variable_is_not_none", targetNode=self.droid.myCtrl, variable_name="parentMasterSN")
+        self.addTest("variable_is_not_none", targetNode=self.droid.myCtrl, variable_name="parentMasterPH")
+        self.addTest("variable_is_not_none", targetNode=self.droid.myCtrl, variable_name="gimbal")
+        self.addTest("variable_is_true", targetNode=self.droid.myCtrl, variable_name="hasGimbalNode")
+        self.addTest("variable_is_true", targetNode=self.droid.myCtrl, variable_name="hasParentMaster")
+        self.run_test("Testing advanced ctrl reopen")
+
+
 unit = BatchTest()
-# unit.test_meta_simple_create()
-# unit.test_meta_reopen()
+unit.test_meta_simple_create()
+unit.test_meta_reopen()
+
+unit.test_meta_advanced_create()
+unit.test_meta_advanced_reopen()
 unit.test_ik_creation()
 unit.test_ik_reopen()
 

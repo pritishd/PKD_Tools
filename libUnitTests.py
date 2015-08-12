@@ -50,8 +50,11 @@ class UnitTestCase(unittest.TestCase):
 
     def example_test_true(self):
         name = "Pritish"
-
         self.assertTrue("Pritish", name)
+
+    def variable_is_true(self):
+        variable = eval("self.targetNode.%s" % self.variable_name)
+        self.assertTrue(variable, "Testing that variable %s true" % self.variable_name)
 
     def variable_is_not_none(self):
         variable = eval("self.targetNode.%s" % self.variable_name)

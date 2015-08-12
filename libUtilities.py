@@ -529,7 +529,6 @@ def snapBake(source, target):
         pyLog.warning("Unable to set the target scale")
 
 
-
 def melEval(evalStatment, echo=False):
     '''evaluate mel statement line for line. Print out error message for failed eval states
     @param evalStatment (string) the mel command which need to be evaluated. Multiple lines of mel commands can also be evaluated.
@@ -665,6 +664,7 @@ def changeTangents(tangent):
         pm.keyTangent(g=True, itt=tangent)
     pyLog.info("Current Tangents: %s" % tangent.capitalize())
 
+
 def get_animation_time_range():
     """Function to return the Start frame and End Frame
     @return tuple of integer
@@ -698,6 +698,7 @@ def set_lock_status(node, lockStatusDict):
         else:
             node.attr(attr).unlock()
 
+
 def set_visibility(node):
     k = pm.PyNode("asd")
 
@@ -721,9 +722,9 @@ def freeze_transform(transform):
     transform = pm.PyNode(transform)
     childrenLockStatus = {}
     # Check to see if there are any children
-    if transform.getChildren(ad=1,type="transform"):
+    if transform.getChildren(ad=1, type="transform"):
         # Iterate through all the children
-        for childTransform in transform.getChildren(ad=1,type="transform"):
+        for childTransform in transform.getChildren(ad=1, type="transform"):
             # Get the lock status of the children and store it in the dictonary
             childrenLockStatus[childTransform] = get_default_lock_status(childTransform)
             # Unlock the child transform status
@@ -737,8 +738,9 @@ def freeze_transform(transform):
 
     # Reset the children lock status
     for childTransform in childrenLockStatus:
-        set_lock_status(childTransform,childrenLockStatus[childTransform])
-    set_lock_status(transform,defaultLockStatus)
+        set_lock_status(childTransform, childrenLockStatus[childTransform])
+    set_lock_status(transform, defaultLockStatus)
+
 
 def _default_attibute_list_():
     """"Return the list of default maya attributes"""
