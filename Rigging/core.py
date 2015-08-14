@@ -84,8 +84,9 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
         self.pynode.setParent(targetSystem.mNode)
 
     def convertToComponent(self, component="FK"):
-        componentName = "%s_%s" % (component, self.part)
+        componentName = "%s_%s" % (self.part, component)
         self.pynode.rename(self.shortName().replace(self.part, componentName))
+        libUtilities.strip_integer(self.pynode)
         # Add a new attr
         if not hasattr(self, "systemType"):
             self.addAttr("systemType", component)
@@ -133,16 +134,16 @@ class SubSystem(MetaRig):
         super(SubSystem, self).__bindData__(*args, **kwgs)
         self.addAttr('systemType', "")
 
-    def addMetaSubSystem(self, system="FK", **kwargs):
+    def addMetaSubSystem(self, MClass, system="FK", **kwargs):
         # Add subgroup
-        subSystem = SubSystem(side=self.side, part=self.part, **kwargs)
+        subSystem = MClass(side=self.side, part=self.part, **kwargs)
         subSystem.setParent(self)
         self.connectChild(subSystem, "%s_System" % system)
         subSystem.systemType = system
         return subSystem
 
 
-class Joint(Red9_Meta.MetaClass, MetaEnhanced):
+class Joint(MetaRig, MetaEnhanced):
     """
     Example showing that metaData isn't limited to 'network' nodes,
     by using the 'nodeType' arg in the class __init__ you can modify
@@ -155,7 +156,7 @@ class Joint(Red9_Meta.MetaClass, MetaEnhanced):
 
     def __init__(self, *args, **kwargs):
         kwargs["nodeType"] = "joint"
-        kwargs["endSuffix"] = "Jnt"
+        kwargs["endSuffix"] = "Joint"
         super(Joint, self).__init__(*args, **kwargs)
 
 
@@ -166,16 +167,45 @@ class JointSystem(MetaRig):
         super(JointSystem, self).__init__(*args, **kwargs)
         self.joint_data = None
 
-    def addJoints(self, joints):
-        joints = libUtilities.stringList(joints)
-        joints.reverse()
-        self.connectChildren(libUtilities.stringList(joints), "Joints")
-
     def build(self):
-        pass
+        if self.joint_data:
+            metaJoints = []
+            for joint, i in zip(self.joint_data, range(len(self.joint_data))):
+                metaJoint = Joint(side=self.side, part=joint["Name"])
+                metaJoint.pynode.setTranslation(joint["Position"], space="world")
+                metaJoint.pynode.jointOrient.set(joint["JointOrient"])
+                metaJoints.append(metaJoint)
+                if i:
+                    metaJoint.pynode.setParent(metaJoints[i - 1].mNode)
 
-    def convert_joint_to_meta_joints(self):
-        pass
+            metaJoints.reverse()
+            self.Joints = metaJoints
+        else:
+            libUtilities.pyLog.error("No Joint Data Specified")
+
+    def convert_joints_to_meta_joints(self):
+        # Build the joint data map
+        jointData = []
+        pyJoints = []
+        for joint in self.Joints:
+            joint = pm.PyNode(joint.mNode)
+            joint.setParent(w=1)
+            libUtilities.freeze_transform(joint)
+            #TODO: Need to refactorise this when using for anno
+            jointData.append({
+                "Name": joint.shortName(),
+                "JointOrient": joint.jointOrient.get(),
+                "Position": joint.getTranslation(space="world")
+            })
+            pyJoints.append(joint)
+
+        # Delete all the joints
+
+        self.joint_data = jointData
+
+        self.build()
+
+        pm.delete(pyJoints)
 
     def setParent(self, targetSystem):
         pm.PyNode(self.Joints[0]).setParent(targetSystem.mNode)
@@ -185,6 +215,16 @@ class JointSystem(MetaRig):
             pm.PyNode(joint).rotateOrder.set(rotateOrder)
 
 
+
+    @property
+    def Joints(self):
+        return self.getChildren(asMeta=True, walk=True, cAttrs=["SUP_Joints"])
+
+    @Joints.setter
+    def Joints(self, jointList):
+        jointList = [joint.shortName() for joint in jointList]
+        jointList.reverse()
+        self.connectChildren(jointList, "SUP_Joints")
 
 
 class Ctrl(MetaRig):
@@ -358,22 +398,23 @@ if __name__ == '__main__':
     # print cam.mNode
     # print cam.item
     #
-    pm.newFile(f=1)
+    pass
+    # pm.newFile(f=1)
     # cam = MyCameraMeta()
-    subSystem = SubSystem(side="L", part="Core")
+    # subSystem = SubSystem(side="L", part="Core")
+    #
+    # mRig = Red9_Meta.MetaRig(name='CharacterRig', nodeType="transform")
+    # mRig.connectChild(subSystem, 'Arm')
+    # subSystem.setParent(mRig)
 
-    mRig = Red9_Meta.MetaRig(name='CharacterRig', nodeType="transform")
-    mRig.connectChild(subSystem, 'Arm')
-    subSystem.setParent(mRig)
-
-    fkSystem = subSystem.addMetaSubSystem()
+    # fkSystem = subSystem.addMetaSubSystem()
     # fkSystem = SubSystem(side="U", part="Arm")
     # fkSystem.setParent(subSystem)
     # subSystem.connectChild(fkSystem, 'FK_System')
 
 
-    myCtrl = Ctrl(side="L", part="Hand")
-    myCtrl.build()
+    # myCtrl = Ctrl(side="L", part="Hand")
+    # myCtrl.build()
     # myCtrl.add_constrain_node()
     # myCtrl.add_parent_master()
     # myCtrl.setParent(fkSystem)
