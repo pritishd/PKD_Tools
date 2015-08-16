@@ -3,8 +3,10 @@ import pymel.core as pm
 from pymel.internal.plogging import pymelLogger as pyLog
 
 from PKD_Tools import libFile
+from PKD_Tools import libUtilities
 
 reload(libFile)
+reload(libUtilities)
 
 
 def nameMe(partSfx, partName, endSuffix):
@@ -70,12 +72,25 @@ def save_test_joint(parentJoint, systemType):
     current_joint_data = []
 
     parentJoint = pm.PyNode(parentJoint)
+
+    libUtilities.freeze_transform(parentJoint)
+
     for joint in [parentJoint] + pm.listRelatives(parentJoint, ad=1, type="joint"):
-        info = {"orient": list(joint.jointOrient.get()),
+        if joint.getChildren():
+            orient_joint(joint)
+        else:
+            joint.jointOrient.set(0, 0, 0)
+        parent = joint.getParent()
+        joint.setParent(w=1)
+        info = {"name": joint.shortName(),
+                "orient": list(joint.jointOrient.get()),
                 "position": list(joint.getTranslation(space="world"))}
         current_joint_data.append(info)
+        if parent:
+            joint.setParent(parent)
 
     joint_info[systemType] = current_joint_data
+
     libFile.write_json(TEST_JOINTS_INFO, joint_info)
 
 
@@ -85,11 +100,11 @@ def create_test_joint(systemType):
     @param systemType: The test joint associated with the class
     joint -e -zso -oj yzx -sao zup joint1;
     """
-    current_joint_data = libFile.load_json(TEST_JOINTS_INFO)["ik"]
+    current_joint_data = libFile.load_json(TEST_JOINTS_INFO)[systemType]
     joints = []
     for joint, index in zip(current_joint_data, range(len(current_joint_data))):
         pm.select(cl=1)
-        jnt = pm.joint(p=joint["position"])
+        jnt = pm.joint(name=joint["name"], p=joint["position"])
         jnt.jointOrient.set(joint["orient"])
         if index:
             jnt.setParent(joints[index - 1])
@@ -97,6 +112,11 @@ def create_test_joint(systemType):
     return joints
 
 
+def orient_joint(target):
+    pm.joint(target, zso=1, ch=1, e=1, oj='yxz', secondaryAxisOrient='yup')
+
+
 if __name__ == '__main__':
     pm.newFile(f=1)
-    build_all_ctrls_shapes()
+    create_test_joint("ik")
+    #save_test_joint("Clavicle", "ik")
