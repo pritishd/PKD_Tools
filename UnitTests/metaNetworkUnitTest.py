@@ -54,7 +54,7 @@ class Droid(object):
         subSystem.setParent(self.mRig)
 
 
-        fkSystem = subSystem.addMetaSubSystem("FK")
+        fkSystem = subSystem.addMetaSubSystem(core.SubSystem,"FK")
         self.myCtrl = core.Ctrl(side="U", part="Core")
 
         self.myCtrl.build()
@@ -77,13 +77,13 @@ class Droid(object):
         reload(core)
 
         self.mRig = Red9_Meta.MetaClass("CharacterRig")
-        self.myCtrl = Red9_Meta.MetaClass("U_FK_Core_Ctrl")
+        self.myCtrl = Red9_Meta.MetaClass("U_Core_FK_Ctrl")
 
     def save_file(self):
-        self.saved_file = pm.saveAs(r"D:\TEMP\testMeta.ma")
+        self.saved_file = pm.saveAs(r"E:\TEMP\testMeta.ma")
 
     def open_file(self):
-        pm.openFile(r"D:\TEMP\testMeta.ma")
+        pm.openFile(r"E:\TEMP\testMeta.ma")
 
     def create_advanced_ctrl_meta_network(self):
         self.create_simple_ctrl_meta_network()
@@ -198,11 +198,11 @@ class BatchTest(libUnitTests.BatchTest):
 
 
 unit = BatchTest()
-unit.test_meta_simple_create()
-unit.test_meta_reopen()
-
-unit.test_meta_advanced_create()
-unit.test_meta_advanced_reopen()
+# unit.test_meta_simple_create()
+# unit.test_meta_reopen()
+#
+# unit.test_meta_advanced_create()
+# unit.test_meta_advanced_reopen()
 unit.test_ik_creation()
 unit.test_ik_reopen()
 
