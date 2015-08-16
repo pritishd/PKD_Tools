@@ -1,7 +1,6 @@
 __author__ = 'pritish.dogra'
 
 from PKD_Tools.Rigging import core
-
 reload(core)
 from PKD_Tools.Rigging import utils
 
@@ -33,18 +32,18 @@ class rig(core.SubSystem):
         clusterBottom.setScalePivot([0, 0, 0])
         clusterBottom.setRotatePivot([0, 0, 0])
 
-        libUtilities.snap(clusterBottom, targetJoint)
+        libUtilities.snap(clusterBottom, targetJoint.shortName())
 
         # Top Cluster
         pm.select(cube.vtx[2:5])
         clusterTop = pm.cluster()[1]
 
-        childJoint = pm.PyNode("joint1").getChildren(type="joint")[0]
+        childJoint = targetJoint.pynode.getChildren(type="joint")[0]
         libUtilities.snap(clusterTop, childJoint)
 
         pm.delete(cube, ch=True)
 
-        libUtilities.skinGeo(cube, [targetJoint])
+        libUtilities.skinGeo(cube, [targetJoint.mNode])
 
 
 class ik(rig):
@@ -54,6 +53,14 @@ class ik(rig):
         self.rotateOrder = "yxz"
         self.mirrorData = {'side': self.mirrorSide, 'slot': 1}
         self.custom_pv_position = None
+        # TODO Load the 2 bone solver, sprink solver
+
+        self.loadIKPlugin()
+
+    def loadIKPlugin(self):
+        #TODO Load the 2 bone solver
+        pass
+
 
     def build(self):
         # Build the IK System
@@ -75,12 +82,10 @@ class ik(rig):
         default_pole_vector = libVector.vector(list(self.ikHandle.poleVector))
 
         # Check userdefined pos. If not then take then find the vector from the second joint in the chain
-
         pv_position = self.custom_pv_position
         if not self.custom_pv_position:
-            second_joint_position = libVector.vector(pm.joint(self.JointSystem.Joints[1], q=1, p=1))
-            pv_position = (default_pole_vector * [40, 40, 40]) + second_joint_position
-
+            second_joint_position = self.JointSystem.Joints[1].pynode.getTranslation(space="world")
+            pv_position = (default_pole_vector * [20, 20, 20]) + second_joint_position
 
         # Get the Pole vector position that it wants to snap to
         self.pv.prnt.pynode.setTranslation(pv_position, space="world")
@@ -118,8 +123,8 @@ class ik(rig):
         # Setup the IK handle RP solver
         name = utils.nameMe(self.side, self.part, "IkHandle")
         ikHandle = pm.ikHandle(name=name,
-                               sj=self.JointSystem.Joints[0],
-                               ee=self.JointSystem.Joints[-1],
+                               sj=self.JointSystem.Joints[0].shortName(),
+                               ee=self.JointSystem.Joints[-1].shortName(),
                                sol="ikRPsolver",
                                sticky="sticky")[0]
         self.ikHandle = core.MetaRig(ikHandle.name(), nodeType="ikHandle")
@@ -136,7 +141,7 @@ class ik(rig):
         # Create a new meta node.
         self.twist = core.MetaRig(part=self.part, side=self.side, endSuffix="TwistGrp")
         # Match it to the first joint
-        libUtilities.snap(self.twist.pynode, self.JointSystem.Joints[0])
+        libUtilities.snap(self.twist.pynode, self.JointSystem.Joints[0].mNode)
         # Parent the PV Control
         self.pv.setParent(self.twist)
         # Rotate the new node 90 on first axis of the rotate order
@@ -163,7 +168,8 @@ class ik(rig):
         self.JointSystem = core.JointSystem(side="U", part="%sJoints" % self.part)
         # Build the joints
         joints = utils.create_test_joint(self.__class__.__name__)
-        self.JointSystem.addJoints(joints)
+        self.JointSystem.Joints = joints
+        self.JointSystem.convertJointsToMetaJoints()
         self.JointSystem.setRotateOrder(self.rotateOrder)
         self.connectChild(self.JointSystem, "Joint_System")
         # Build IK
@@ -174,7 +180,7 @@ class ik(rig):
         self.create_test_cube(self.JointSystem.Joints[0])
 
         self.build_PV()
-        self.build_twist()
+        #self.build_twist()
 
     @property
     def ikHandle(self):
@@ -249,6 +255,11 @@ if __name__ == '__main__':
 
     # subSystem = SubSystem(side="U", part="Core")
     # print "s"
-    ikSystem = ik(side="U", part="Core")
+
     # print ikSystem
+
+    mainSystem = core.SubSystem(side="U", part="Core")
+
+    ikSystem = mainSystem.addMetaSubSystem(ik,"IK")
     ikSystem.test_build()
+    ikSystem.convertToComponent("IK")
