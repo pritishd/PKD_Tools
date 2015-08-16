@@ -70,12 +70,16 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
             if self.systemType in _SUBCOMPONENTS_:
                 self.isSubComponent = True
 
+        # Return connected as meta
+        self.returnNodesAsMeta = True
+
         # debugMode
         self.debugMode = False
 
     def __bindData__(self, *args, **kwgs):
         # ensure these are added by default
         self.addAttr("part", "")
+        # TODO Remove Unique from all packages
         self.addAttr('mirrorSide', enumName='Centre:Left:Right:Unique',
                      attrType='enum', hidden=True)
         self.addAttr('rigType', '')
@@ -100,7 +104,7 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
         return self.pynode.attr("mirrorSide").get(asString=True)[0]
 
     def getRigCtrl(self, target):
-        children = self.getChildren(walk=True, asMeta=True, cAttrs=["%s_%s" % (self.CTRL_Prefix, target)])
+        children = self.getChildren(walk=True, asMeta=self.returnNodesAsMeta, cAttrs=["%s_%s" % (self.CTRL_Prefix, target)])
         if not children:
             libUtilities.pyLog.warn("%s ctrl not found on %s" % (target, self.shortName()))
         else:
@@ -114,7 +118,7 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
             raise Exception("Input must be MetaClass")
 
     def getSupportNode(self, target):
-        children = self.getChildren(walk=True, asMeta=True, cAttrs=["SUP_%s" % target])
+        children = self.getChildren(walk=True, asMeta=self.returnNodesAsMeta, cAttrs=["SUP_%s" % target])
         if not children:
             libUtilities.pyLog.warn("%s support node found on %s" % (target, self.shortName()))
         else:
@@ -183,7 +187,7 @@ class JointSystem(MetaRig):
         else:
             libUtilities.pyLog.error("No Joint Data Specified")
 
-    def convert_joints_to_meta_joints(self):
+    def convertJointsToMetaJoints(self):
         # Build the joint data map
         jointData = []
         pyJoints = []
@@ -208,17 +212,14 @@ class JointSystem(MetaRig):
         pm.delete(pyJoints)
 
     def setParent(self, targetSystem):
-        pm.PyNode(self.Joints[0]).setParent(targetSystem.mNode)
+        self.Joints[0].pynode.setParent(targetSystem.mNode)
 
     def setRotateOrder(self, rotateOrder):
         for joint in self.Joints:
-            pm.PyNode(joint).rotateOrder.set(rotateOrder)
-
-
-
+            joint.rotateOrder = rotateOrder
     @property
     def Joints(self):
-        return self.getChildren(asMeta=True, walk=True, cAttrs=["SUP_Joints"])
+        return self.getChildren(asMeta=self.returnNodesAsMeta, walk=True, cAttrs=["SUP_Joints"])
 
     @Joints.setter
     def Joints(self, jointList):
