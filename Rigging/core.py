@@ -89,7 +89,14 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
 
     def convertToComponent(self, component="FK"):
         componentName = "%s_%s" % (self.part, component)
-        self.pynode.rename(self.shortName().replace(self.part, componentName))
+        try:
+            self.pynode.rename(self.shortName().replace(self.part, componentName))
+        except Exception, e:
+            libUtilities.pyLog.info(str(e))
+            libUtilities.pyLog.info("Rename failed on:%s" % self.mNode)
+            self.select()
+            raise Exception("Rename Failed")
+
         libUtilities.strip_integer(self.pynode)
         # Add a new attr
         if not hasattr(self, "systemType"):
@@ -104,7 +111,8 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
         return self.pynode.attr("mirrorSide").get(asString=True)[0]
 
     def getRigCtrl(self, target):
-        children = self.getChildren(walk=True, asMeta=self.returnNodesAsMeta, cAttrs=["%s_%s" % (self.CTRL_Prefix, target)])
+        children = self.getChildren(walk=True, asMeta=self.returnNodesAsMeta,
+                                    cAttrs=["%s_%s" % (self.CTRL_Prefix, target)])
         if not children:
             libUtilities.pyLog.warn("%s ctrl not found on %s" % (target, self.shortName()))
         else:
@@ -195,7 +203,7 @@ class JointSystem(MetaRig):
             joint = pm.PyNode(joint.mNode)
             joint.setParent(w=1)
             libUtilities.freeze_transform(joint)
-            #TODO: Need to refactorise this when using for anno
+            # TODO: Need to refactorise this when using for anno
             jointData.append({
                 "Name": joint.shortName(),
                 "JointOrient": joint.jointOrient.get(),
@@ -217,6 +225,7 @@ class JointSystem(MetaRig):
     def setRotateOrder(self, rotateOrder):
         for joint in self.Joints:
             joint.rotateOrder = rotateOrder
+
     @property
     def Joints(self):
         return self.getChildren(asMeta=self.returnNodesAsMeta, walk=True, cAttrs=["SUP_Joints"])
@@ -241,7 +250,6 @@ class Ctrl(MetaRig):
         self.hasGimbalNode = False
         self.ctrlShape = "Ball"
         self.hasParentMaster = False
-
         self.mirrorData = {'side': self.mirrorSide, 'slot': 1}
 
     def build(self):
@@ -282,19 +290,36 @@ class Ctrl(MetaRig):
         self.pynode.setParent(self.parentMasterSN.mNode)
         self.parentMasterSN.pynode.setParent(self.parentMasterPH.mNode)
         self.parentMasterPH.pynode.setParent(self.xtra.mNode)
-        # Add support node
-        # self.addSupportNode(self.parentMasterSN, "ParentMasterSN")
-        # self.addSupportNode(self.parentMasterPH, "ParentMasterPH")
+        # set the parts
+        self.parentMasterSN.part = self.part
+        self.parentMasterPH.part = self.part
 
     def add_gimbal_node(self):
         self.gimbal = MetaRig(name=utils.nameMe(self.side, self.part, "Gimbal"), nodeType="transform")
-        self.gimbal.rigType = "constrain"
+        self.gimbal.part = self.part
+        self.gimbal.rigType = "gimbalHelper"
         self.gimbal.pynode.setParent(self.mNode)
         self.hasGimbalNode = True
 
     def setParent(self, targetSystem):
         # Instead of the node itself, the parent is reparented
         self.prnt.pynode.setParent(targetSystem.mNode)
+
+    def addChild(self, targetNode):
+        if self.hasGimbalNode:
+            pm.parent(targetNode, self.gimbal.mNode)
+        else:
+            pm.parent(targetNode, self.ctrl.mNode)
+
+    def setRotateOrder(self, rotateOrder):
+        self.rotateOrder = rotateOrder
+        self.xtra.rotateOrder = rotateOrder
+        self.prnt.rotateOrder = rotateOrder
+        if self.hasGimbalNode:
+            self.gimbal = rotateOrder
+        if self.hasParentMaster:
+            self.parentMasterPH.rotateOrder = rotateOrder
+            self.parentMasterSN.rotateOrder = rotateOrder
 
     @property
     def side(self):
@@ -399,9 +424,9 @@ if __name__ == '__main__':
     # print cam.mNode
     # print cam.item
     #
-    pass
-    # pm.newFile(f=1)
-    # cam = MyCameraMeta()
+
+    pm.newFile(f=1)
+    cam = MyCameraMeta()
     # subSystem = SubSystem(side="L", part="Core")
     #
     # mRig = Red9_Meta.MetaRig(name='CharacterRig', nodeType="transform")

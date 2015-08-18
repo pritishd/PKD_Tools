@@ -53,14 +53,15 @@ class ik(rig):
         self.rotateOrder = "yxz"
         self.mirrorData = {'side': self.mirrorSide, 'slot': 1}
         self.custom_pv_position = None
-        # TODO Load the 2 bone solver, sprink solver
-
+        #self.ikSolver = "ikRPsolver"
+        self.ikSolver  = "ikSCsolver"
         self.loadIKPlugin()
+        self.endJointNumber = 1
 
     def loadIKPlugin(self):
-        #TODO Load the 2 bone solver
-        pass
-
+        if self.ikSolver not in ["ikRPsolver","ikSCsolver"]:
+            pm.loadPlugin(self.ikSolver,quiet=True)
+            libUtilities.melEval(self.ikSolver)
 
     def build(self):
         # Build the IK System
@@ -113,20 +114,32 @@ class ik(rig):
     def build_control(self):
         ikCtrl = core.Ctrl(part=self.part, side=self.side)
         ikCtrl.ctrlShape = "Box"
+        ikCtrl.setRotateOrder(self.rotateOrder)
         ikCtrl.build()
+        ikCtrl.add_gimbal_node()
         libUtilities.snap(ikCtrl.prnt.mNode, self.ikHandle.mNode)
-        self.ikHandle.pynode.setParent(ikCtrl.pynode)
+        ikCtrl.addChild(self.ikHandle.pynode)
         ikCtrl.setParent(self)
         self.mainIK = ikCtrl
+
 
     def build_ik(self):
         # Setup the IK handle RP solver
         name = utils.nameMe(self.side, self.part, "IkHandle")
+        # ikHandle = pm.ikHandle(name=name,
+        #                        sj=self.JointSystem.Joints[0].shortName(),
+        #                        ee=self.JointSystem.Joints[self.endJointNumber].shortName(),
+        #                        sol="ikRPsolver",
+        #                        sticky="sticky")[0]
+
+        #
         ikHandle = pm.ikHandle(name=name,
                                sj=self.JointSystem.Joints[0].shortName(),
                                ee=self.JointSystem.Joints[-1].shortName(),
-                               sol="ikRPsolver",
+                               sol=self.ikSolver,
                                sticky="sticky")[0]
+        #ikHandle.rotate.set([0,0,0])
+
         self.ikHandle = core.MetaRig(ikHandle.name(), nodeType="ikHandle")
         self.ikHandle.part = self.part
         self.ikHandle.mirrorSide = self.mirrorSide
@@ -141,27 +154,30 @@ class ik(rig):
         # Create a new meta node.
         self.twist = core.MetaRig(part=self.part, side=self.side, endSuffix="TwistGrp")
         # Match it to the first joint
-        libUtilities.snap(self.twist.pynode, self.JointSystem.Joints[0].mNode)
+        libUtilities.snap(self.twist.pynode, self.JointSystem.Joints[self.endJointNumber].mNode)
         # Parent the PV Control
         self.pv.setParent(self.twist)
         # Rotate the new node 90 on first axis of the rotate order
         primary_axis = self.pynode.rotateOrder.get(asString=True)
         self.twist.pynode.attr("r%s" % primary_axis[0]).set(90)
-        # Freeze transform on the twist grp
-        libUtilities.freeze_transform(self.twist.pynode)
+        # Zero out the transform
+        twistPrnt = core.MetaRig(part=self.part, side=self.side, endSuffix="TwistPrnt")
+        libUtilities.snap(twistPrnt.pynode,self.twist.pynode)
+        self.twist.setParent(twistPrnt)
+        self.twist.addSupportNode(twistPrnt, "Prnt")
         # Parent the PV control to the ik
-        self.twist.setParent(self.mainIK)
+        self.mainIK.addChild(twistPrnt.pynode)
         # offset the twist handle back
         self.ikHandle.twist = -90
         # Add a new divider
         libUtilities.addDivAttr(self.mainIK.mNode, "Twist", "twistLbl")
         # Add a control attibute
         # TODO Get the name from the second part if more than two joints. Otherwise from the first joint
-        libUtilities.addAttr(self.mainIK.mNode, "Knee", sn="twist", attrMax=360, attrMin=-360)
+        libUtilities.addAttr(self.mainIK.mNode, "Knee", sn="twist", attrMax=720, attrMin=-720)
         # Connect the new attribute to the twist offset
         self.mainIK.pynode.twist >> self.twist.pynode.attr("r%s" % primary_axis[0])
         # Hide the PV
-        self.pv.prnt.visibility = False
+        #self.pv.prnt.visibility = False
 
     def test_build(self):
         # Build the joint system
@@ -177,10 +193,13 @@ class ik(rig):
         self.build_control()
         # Setup the parent
         self.JointSystem.setParent(self)
-        self.create_test_cube(self.JointSystem.Joints[0])
 
-        self.build_PV()
+
+        # self.build_PV()
+
+
         #self.build_twist()
+        self.create_test_cube(self.JointSystem.Joints[0])
 
     @property
     def ikHandle(self):
@@ -217,12 +236,13 @@ class ik(rig):
         self.addRigCtrl(data, ctrType="MainIK", mirrorData=self.mirrorData)
 
 
+
 class fk(rig):
     """This is base Fk System."""
     pass
 
 
-class ik3jnt(rig):
+class ik2jnt(rig):
     """This is base IK System. with a three or four joint"""
     pass
 

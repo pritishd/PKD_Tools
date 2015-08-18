@@ -90,7 +90,7 @@ import logging
 import maya.cmds as cmds
 import maya.mel as mel
 
-import startup.setup as r9Setup
+import Red9.startup.setup as r9Setup
 import Red9_CoreUtils as r9Core
 import Red9_General as r9General
 import Red9_PoseSaver as r9Pose
@@ -158,7 +158,6 @@ def getNodeAttrStatus(node=None, asDict=True, incLocked=True):
     little misleading and not really what the function is doing in hindsight.
     '''
     return getChannelBoxAttrs(node=None, asDict=True, incLocked=True)
-
 
 def getChannelBoxAttrs(node=None, asDict=True, incLocked=True):
     '''
@@ -3818,8 +3817,8 @@ class MirrorHierarchy(object):
         if not side:
             return False
         if type(side) == int:
-            if not side in range(0, 4):
-                raise ValueError('given mirror side is not a valid int entry: 0, 1, 2,3')
+            if not side in range(0, 3):
+                raise ValueError('given mirror side is not a valid int entry: 0, 1 or 2')
             else:
                 return True
         if not side in self.mirrorDict:
@@ -3847,7 +3846,7 @@ class MirrorHierarchy(object):
         # and attribute handling is done for us
         mClass = r9Meta.MetaClass(node)
         if self._validateMirrorEnum(side):
-            mClass.addAttr(self.mirrorSide, attrType='enum', enumName='Centre:Left:Right:Unique', hidden=True)
+            mClass.addAttr(self.mirrorSide, attrType='enum', enumName='Centre:Left:Right', hidden=True)
             mClass.__setattr__(self.mirrorSide, side)
         if slot:
             mClass.addAttr(self.mirrorIndex, slot, hidden=True)
