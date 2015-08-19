@@ -233,8 +233,7 @@ class JointSystem(MetaRig):
     @Joints.setter
     def Joints(self, jointList):
         jointList = [joint.shortName() for joint in jointList]
-        jointList.reverse()
-        self.connectChildren(jointList, "SUP_Joints")
+        self.connectChildren(jointList, "SUP_Joints",allowIncest=True,cleanCurrent=True)
 
 
 class Ctrl(MetaRig):
@@ -425,8 +424,8 @@ if __name__ == '__main__':
     # print cam.item
     #
 
-    pm.newFile(f=1)
-    cam = MyCameraMeta()
+    # pm.newFile(f=1)
+    # cam = MyCameraMeta()
     # subSystem = SubSystem(side="L", part="Core")
     #
     # mRig = Red9_Meta.MetaRig(name='CharacterRig', nodeType="transform")
@@ -456,7 +455,7 @@ if __name__ == '__main__':
     # fkSystem.convertToComponent("FK")
     # subSystem.connectChildren(fkCtrls, "FK")
 
-    # jntSystem = JointSystem(side="U", part="Cora")
+    jntSystem = JointSystem(side="U", part="Cora")
 
     #
     #

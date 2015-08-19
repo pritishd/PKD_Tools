@@ -49,14 +49,13 @@ class rig(core.SubSystem):
 class ik(rig):
     def __init__(self, *args, **kwargs):
         super(rig, self).__init__(*args, **kwargs)
+        self.ikSolver = "ikSCsolver"
         self.hasParentMaster = False
         self.rotateOrder = "yxz"
         self.mirrorData = {'side': self.mirrorSide, 'slot': 1}
         self.custom_pv_position = None
-        #self.ikSolver = "ikRPsolver"
-        self.ikSolver  = "ikSCsolver"
-        self.loadIKPlugin()
         self.endJointNumber = 1
+
 
     def loadIKPlugin(self):
         if self.ikSolver not in ["ikRPsolver","ikSCsolver"]:
@@ -64,12 +63,14 @@ class ik(rig):
             libUtilities.melEval(self.ikSolver)
 
     def build(self):
+        # Load any IK plugin
+        self.loadIKPlugin()
         # Build the IK System
         self.build_ik()
         # Build the controls
         self.build_control()
-        # Setup the polevector / no flip
-        pass
+
+
 
     def build_PV(self):
 
@@ -114,32 +115,26 @@ class ik(rig):
     def build_control(self):
         ikCtrl = core.Ctrl(part=self.part, side=self.side)
         ikCtrl.ctrlShape = "Box"
-        ikCtrl.setRotateOrder(self.rotateOrder)
         ikCtrl.build()
+        ikCtrl.setRotateOrder(self.rotateOrder)
         ikCtrl.add_gimbal_node()
+        if self.hasParentMaster:
+            ikCtrl.add_parent_master()
         libUtilities.snap(ikCtrl.prnt.mNode, self.ikHandle.mNode)
         ikCtrl.addChild(self.ikHandle.pynode)
         ikCtrl.setParent(self)
         self.mainIK = ikCtrl
 
 
+
     def build_ik(self):
         # Setup the IK handle RP solver
         name = utils.nameMe(self.side, self.part, "IkHandle")
-        # ikHandle = pm.ikHandle(name=name,
-        #                        sj=self.JointSystem.Joints[0].shortName(),
-        #                        ee=self.JointSystem.Joints[self.endJointNumber].shortName(),
-        #                        sol="ikRPsolver",
-        #                        sticky="sticky")[0]
-
-        #
         ikHandle = pm.ikHandle(name=name,
                                sj=self.JointSystem.Joints[0].shortName(),
-                               ee=self.JointSystem.Joints[-1].shortName(),
+                               ee=self.JointSystem.Joints[self.endJointNumber].shortName(),
                                sol=self.ikSolver,
                                sticky="sticky")[0]
-        #ikHandle.rotate.set([0,0,0])
-
         self.ikHandle = core.MetaRig(ikHandle.name(), nodeType="ikHandle")
         self.ikHandle.part = self.part
         self.ikHandle.mirrorSide = self.mirrorSide
@@ -189,16 +184,9 @@ class ik(rig):
         self.JointSystem.setRotateOrder(self.rotateOrder)
         self.connectChild(self.JointSystem, "Joint_System")
         # Build IK
-        self.build_ik()
-        self.build_control()
+        self.build()
         # Setup the parent
         self.JointSystem.setParent(self)
-
-
-        # self.build_PV()
-
-
-        #self.build_twist()
         self.create_test_cube(self.JointSystem.Joints[0])
 
     @property
@@ -242,9 +230,34 @@ class fk(rig):
     pass
 
 
-class ik2jnt(rig):
+class ik2jnt(ik):
     """This is base IK System. with a three or four joint"""
-    pass
+    def __init__(self, *args, **kwargs):
+        super(ik2jnt, self).__init__(*args, **kwargs)
+        self.ikSolver = "ik2Bsolver"
+        self.endJointNumber = 2
+
+
+    def test_build(self):
+        # Build the joint system
+        self.JointSystem = core.JointSystem(side="U", part="%sJoints" % self.part)
+        # Build the joints
+        joints = utils.create_test_joint(self.__class__.__name__)
+        self.JointSystem.Joints = joints
+        print self.JointSystem.Joints
+        ## TODO Fix the ordering for the test joints
+        self.JointSystem.convertJointsToMetaJoints()
+        return
+        print self.JointSystem.Joints
+        self.JointSystem.setRotateOrder(self.rotateOrder)
+        self.connectChild(self.JointSystem, "Joint_System")
+        # Build IK
+        self.build()
+        # Setup the parent
+        self.JointSystem.setParent(self)
+        self.create_test_cube(self.JointSystem.Joints[0])
+
+
 
 
 class ikHand(ik):
@@ -280,6 +293,6 @@ if __name__ == '__main__':
 
     mainSystem = core.SubSystem(side="U", part="Core")
 
-    ikSystem = mainSystem.addMetaSubSystem(ik,"IK")
+    ikSystem = mainSystem.addMetaSubSystem(ik2jnt,"IK")
     ikSystem.test_build()
     ikSystem.convertToComponent("IK")

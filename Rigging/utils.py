@@ -73,14 +73,14 @@ def save_test_joint(parentJoint, systemType):
 
     parentJoint = pm.PyNode(parentJoint)
 
-    libUtilities.freeze_transform(parentJoint)
+    childJoints = pm.listRelatives(parentJoint, ad=1, type="joint")
+    childJoints.reverse()
 
-    for joint in [parentJoint] + pm.listRelatives(parentJoint, ad=1, type="joint"):
-        if joint.getChildren():
-            orient_joint(joint)
-        else:
+    for joint in [parentJoint] + childJoints:
+        if not joint.getChildren():
             joint.jointOrient.set(0, 0, 0)
         parent = joint.getParent()
+        pm.makeIdentity(joint, n=0, s=0, r=1, t=0, apply=True, pn=0)
         joint.setParent(w=1)
         info = {"name": joint.shortName(),
                 "orient": list(joint.jointOrient.get()),
@@ -117,6 +117,8 @@ def orient_joint(target):
 
 
 if __name__ == '__main__':
+
     pm.newFile(f=1)
-    create_test_joint("ik")
-    #save_test_joint("Clavicle", "ik")
+    create_test_joint("ik2jnt")
+    #save_test_joint("Clavicle", "ik2jnt")
+    # save_test_joint("Clavicle", "ik")
