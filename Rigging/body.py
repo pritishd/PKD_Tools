@@ -55,6 +55,7 @@ class ik(rig):
         self.rotateOrder = "yxz"
         self.mirrorData = {'side': self.mirrorSide, 'slot': 1}
         self.custom_pv_position = None
+        self.startJointNumber = 0
         self.endJointNumber = 1
         self.freezeIkHandle = False
 
@@ -128,7 +129,7 @@ class ik(rig):
         # Setup the IK handle RP solver
         name = utils.nameMe(self.side, self.part, "IkHandle")
         ikHandle = pm.ikHandle(name=name,
-                               sj=self.JointSystem.Joints[0].shortName(),
+                               sj=self.JointSystem.Joints[self.startJointNumber].shortName(),
                                ee=self.JointSystem.Joints[self.endJointNumber].shortName(),
                                sol=self.ikSolver,
                                sticky="sticky")[0]
@@ -228,44 +229,57 @@ class fk(rig):
     pass
 
 
-class ik2jnt(ik):
+class ik2Jnt(ik):
     """This is base IK System. with a three joint"""
 
     def __init__(self, *args, **kwargs):
-        super(ik2jnt, self).__init__(*args, **kwargs)
+        super(ik2Jnt, self).__init__(*args, **kwargs)
         self.ikSolver = "ik2Bsolver"
         self.endJointNumber = 2
         self.freezeIkHandle = True
 
     def test_build(self):
-        super(ik2jnt, self).test_build()
+        super(ik2Jnt, self).test_build()
         self.build_PV()
         self.build_twist()
         self.create_test_cube(self.JointSystem.Joints[1])
 
 
-class ikLimb(ik):
+class Arm(ik):
     """This is IK System. with a joint"""
 
     def __init__(self, *args, **kwargs):
-        super(ik2jnt, self).__init__(*args, **kwargs)
+        super(Arm, self).__init__(*args, **kwargs)
         self.ikSolver = "ikRPsolver"
         self.endJointNumber = 2
-        self.freezeIkHandle = True
 
     def test_build(self):
-        super(ik2jnt, self).test_build()
+        super(Arm, self).test_build()
         self.build_PV()
-        self.build_twist()
+        #self.build_twist()
         self.create_test_cube(self.JointSystem.Joints[1])
 
 
-class ikArm(ikLimb):
+
+
+class Hip(Arm):
+    def __init__(self, *args, **kwargs):
+        super(Hip, self).__init__(*args, **kwargs)
+        self.startJointNumber = 1
+        self.endJointNumber = 3
+
+    def test_build(self):
+        super(Hip, self).test_build()
+        self.create_test_cube(self.JointSystem.Joints[2])
+
+
+
+class ikArm(Arm):
     """This is IK hand System."""
     pass
 
 
-class ikFoot(ikLimb):
+class ikFoot(Arm):
     """This is the classic IK foot System."""
     pass
 
@@ -297,6 +311,6 @@ if __name__ == '__main__':
 
     mainSystem = core.SubSystem(side="U", part="Core")
 
-    ikSystem = mainSystem.addMetaSubSystem(ik, "IK")
+    ikSystem = mainSystem.addMetaSubSystem(Quad, "IK")
     ikSystem.test_build()
     ikSystem.convertToComponent("IK")
