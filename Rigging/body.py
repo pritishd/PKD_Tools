@@ -1,6 +1,7 @@
 __author__ = 'pritish.dogra'
 
 from PKD_Tools.Rigging import core
+
 reload(core)
 from PKD_Tools.Rigging import utils
 
@@ -55,11 +56,11 @@ class ik(rig):
         self.mirrorData = {'side': self.mirrorSide, 'slot': 1}
         self.custom_pv_position = None
         self.endJointNumber = 1
-
+        self.freezeIkHandle = False
 
     def loadIKPlugin(self):
-        if self.ikSolver not in ["ikRPsolver","ikSCsolver"]:
-            pm.loadPlugin(self.ikSolver,quiet=True)
+        if self.ikSolver not in ["ikRPsolver", "ikSCsolver"]:
+            pm.loadPlugin(self.ikSolver, quiet=True)
             libUtilities.melEval(self.ikSolver)
 
     def build(self):
@@ -69,8 +70,6 @@ class ik(rig):
         self.build_ik()
         # Build the controls
         self.build_control()
-
-
 
     def build_PV(self):
 
@@ -87,7 +86,7 @@ class ik(rig):
         pv_position = self.custom_pv_position
         if not self.custom_pv_position:
             second_joint_position = self.JointSystem.Joints[1].pynode.getTranslation(space="world")
-            pv_position = (default_pole_vector * [20, 20, 20]) + second_joint_position
+            pv_position = (default_pole_vector * [30, 30, 30]) + second_joint_position
 
         # Get the Pole vector position that it wants to snap to
         self.pv.prnt.pynode.setTranslation(pv_position, space="world")
@@ -125,8 +124,6 @@ class ik(rig):
         ikCtrl.setParent(self)
         self.mainIK = ikCtrl
 
-
-
     def build_ik(self):
         # Setup the IK handle RP solver
         name = utils.nameMe(self.side, self.part, "IkHandle")
@@ -135,6 +132,8 @@ class ik(rig):
                                ee=self.JointSystem.Joints[self.endJointNumber].shortName(),
                                sol=self.ikSolver,
                                sticky="sticky")[0]
+        if self.freezeIkHandle:
+            libUtilities.freeze_transform(ikHandle)
         self.ikHandle = core.MetaRig(ikHandle.name(), nodeType="ikHandle")
         self.ikHandle.part = self.part
         self.ikHandle.mirrorSide = self.mirrorSide
@@ -149,7 +148,7 @@ class ik(rig):
         # Create a new meta node.
         self.twist = core.MetaRig(part=self.part, side=self.side, endSuffix="TwistGrp")
         # Match it to the first joint
-        libUtilities.snap(self.twist.pynode, self.JointSystem.Joints[self.endJointNumber].mNode)
+        libUtilities.snap(self.twist.pynode, self.ikHandle.mNode)
         # Parent the PV Control
         self.pv.setParent(self.twist)
         # Rotate the new node 90 on first axis of the rotate order
@@ -157,7 +156,7 @@ class ik(rig):
         self.twist.pynode.attr("r%s" % primary_axis[0]).set(90)
         # Zero out the transform
         twistPrnt = core.MetaRig(part=self.part, side=self.side, endSuffix="TwistPrnt")
-        libUtilities.snap(twistPrnt.pynode,self.twist.pynode)
+        libUtilities.snap(twistPrnt.pynode, self.twist.pynode)
         self.twist.setParent(twistPrnt)
         self.twist.addSupportNode(twistPrnt, "Prnt")
         # Parent the PV control to the ik
@@ -172,7 +171,7 @@ class ik(rig):
         # Connect the new attribute to the twist offset
         self.mainIK.pynode.twist >> self.twist.pynode.attr("r%s" % primary_axis[0])
         # Hide the PV
-        #self.pv.prnt.visibility = False
+        # self.pv.prnt.visibility = False
 
     def test_build(self):
         # Build the joint system
@@ -224,56 +223,61 @@ class ik(rig):
         self.addRigCtrl(data, ctrType="MainIK", mirrorData=self.mirrorData)
 
 
-
 class fk(rig):
     """This is base Fk System."""
     pass
 
 
 class ik2jnt(ik):
-    """This is base IK System. with a three or four joint"""
+    """This is base IK System. with a three joint"""
+
     def __init__(self, *args, **kwargs):
         super(ik2jnt, self).__init__(*args, **kwargs)
         self.ikSolver = "ik2Bsolver"
         self.endJointNumber = 2
-
+        self.freezeIkHandle = True
 
     def test_build(self):
-        # Build the joint system
-        self.JointSystem = core.JointSystem(side="U", part="%sJoints" % self.part)
-        # Build the joints
-        joints = utils.create_test_joint(self.__class__.__name__)
-        self.JointSystem.Joints = joints
-        print self.JointSystem.Joints
-        ## TODO Fix the ordering for the test joints
-        self.JointSystem.convertJointsToMetaJoints()
-        return
-        print self.JointSystem.Joints
-        self.JointSystem.setRotateOrder(self.rotateOrder)
-        self.connectChild(self.JointSystem, "Joint_System")
-        # Build IK
-        self.build()
-        # Setup the parent
-        self.JointSystem.setParent(self)
-        self.create_test_cube(self.JointSystem.Joints[0])
+        super(ik2jnt, self).test_build()
+        self.build_PV()
+        self.build_twist()
+        self.create_test_cube(self.JointSystem.Joints[1])
 
 
+class ikLimb(ik):
+    """This is IK System. with a joint"""
+
+    def __init__(self, *args, **kwargs):
+        super(ik2jnt, self).__init__(*args, **kwargs)
+        self.ikSolver = "ikRPsolver"
+        self.endJointNumber = 2
+        self.freezeIkHandle = True
+
+    def test_build(self):
+        super(ik2jnt, self).test_build()
+        self.build_PV()
+        self.build_twist()
+        self.create_test_cube(self.JointSystem.Joints[1])
 
 
-class ikHand(ik):
+class ikArm(ikLimb):
     """This is IK hand System."""
     pass
 
 
-class ikFoot(ik):
+class ikFoot(ikLimb):
     """This is the classic IK foot System."""
     pass
 
 
-class ikHoof(ik):
+class ikHoof(ikFoot):
     """This is the IK hoof System."""
     pass
 
+
+class ikPaw(ikFoot):
+    """This is the IK hoof System."""
+    pass
 
 class ikSpline(rig):
     """This is a Spline IK System"""
@@ -293,6 +297,6 @@ if __name__ == '__main__':
 
     mainSystem = core.SubSystem(side="U", part="Core")
 
-    ikSystem = mainSystem.addMetaSubSystem(ik2jnt,"IK")
+    ikSystem = mainSystem.addMetaSubSystem(ik, "IK")
     ikSystem.test_build()
     ikSystem.convertToComponent("IK")
