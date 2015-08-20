@@ -190,7 +190,6 @@ class JointSystem(MetaRig):
                 if i:
                     metaJoint.pynode.setParent(metaJoints[i - 1].mNode)
 
-            metaJoints.reverse()
             self.Joints = metaJoints
         else:
             libUtilities.pyLog.error("No Joint Data Specified")
@@ -410,7 +409,7 @@ Red9_Meta.registerMClassInheritanceMapping()
 Red9_Meta.registerMClassNodeMapping(nodeTypes=['transform', 'camera', 'joint'])
 
 if __name__ == '__main__':
-    # pm.newFile(f=1)
+    pm.newFile(f=1)
     # cam = MyCameraMeta(name="MyCam")
     # cam.item = "test"
     # print cam.mNode
@@ -456,6 +455,7 @@ if __name__ == '__main__':
     # subSystem.connectChildren(fkCtrls, "FK")
 
     jntSystem = JointSystem(side="U", part="Cora")
+    joints = utils.create_test_joint("ik2jnt")
 
     #
     #
