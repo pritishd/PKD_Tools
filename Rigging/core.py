@@ -232,7 +232,7 @@ class JointSystem(MetaRig):
     @Joints.setter
     def Joints(self, jointList):
         jointList = [joint.shortName() for joint in jointList]
-        self.connectChildren(jointList, "SUP_Joints",allowIncest=True,cleanCurrent=True)
+        self.connectChildren(jointList, "SUP_Joints", allowIncest=True, cleanCurrent=True)
 
 
 class Ctrl(MetaRig):
@@ -298,6 +298,14 @@ class Ctrl(MetaRig):
         self.gimbal.rigType = "gimbalHelper"
         self.gimbal.pynode.setParent(self.mNode)
         self.hasGimbalNode = True
+        # Set the shape
+        tempCtrlShape = utils.build_ctrl_shape("Spike")
+        libUtilities.transfer_shape(tempCtrlShape, self.gimbal.mNode)
+        pm.delete(tempCtrlShape)
+        # Add Attribute control the visibility
+        self.addDivAttr("Show", "gimbVis")
+        self.addBoolAttr("Gimbal")
+        self.pynode.Gimbal >> self.gimbal.pynode.v
 
     def setParent(self, targetSystem):
         # Instead of the node itself, the parent is reparented
@@ -314,10 +322,20 @@ class Ctrl(MetaRig):
         self.xtra.rotateOrder = rotateOrder
         self.prnt.rotateOrder = rotateOrder
         if self.hasGimbalNode:
-            self.gimbal = rotateOrder
+            self.gimbal.rotateOrder = rotateOrder
         if self.hasParentMaster:
             self.parentMasterPH.rotateOrder = rotateOrder
             self.parentMasterSN.rotateOrder = rotateOrder
+
+    def addDivAttr(self, label, ln):
+        libUtilities.addDivAttr(self.mNode, label=label, ln=ln)
+
+    def addBoolAttr(self, label, sn=""):
+        libUtilities.addBoolAttr(self.mNode, label=label, sn=sn)
+
+    def addFloatAttr(self, attrName="", attrMax=1, attrMin=0, SV=0, sn="", df=0):
+        libUtilities.addAttr(self.mNode, attrName=attrName, attrMax=attrMax, attrMin=attrMin, SV=0, sn=sn, df=df)
+
 
     @property
     def side(self):

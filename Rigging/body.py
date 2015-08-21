@@ -86,7 +86,8 @@ class ik(rig):
         # Check userdefined pos. If not then take then find the vector from the second joint in the chain
         pv_position = self.custom_pv_position
         if not self.custom_pv_position:
-            second_joint_position = self.JointSystem.Joints[1].pynode.getTranslation(space="world")
+            second_joint_position = self.JointSystem.Joints[self.startJointNumber + 1].pynode.getTranslation(
+                space="world")
             pv_position = (default_pole_vector * [30, 30, 30]) + second_joint_position
 
         # Get the Pole vector position that it wants to snap to
@@ -183,11 +184,12 @@ class ik(rig):
         self.JointSystem.convertJointsToMetaJoints()
         self.JointSystem.setRotateOrder(self.rotateOrder)
         self.connectChild(self.JointSystem, "Joint_System")
-        # Build IK
+        # Build IKf
         self.build()
         # Setup the parent
         self.JointSystem.setParent(self)
-        self.create_test_cube(self.JointSystem.Joints[0])
+        for i in range(len(self.JointSystem.Joints) - 1, ):
+            self.create_test_cube(self.JointSystem.Joints[i])
 
     @property
     def ikHandle(self):
@@ -229,57 +231,88 @@ class fk(rig):
     pass
 
 
-class ik2Jnt(ik):
+class arm(ik):
     """This is base IK System. with a three joint"""
 
     def __init__(self, *args, **kwargs):
-        super(ik2Jnt, self).__init__(*args, **kwargs)
+        super(arm, self).__init__(*args, **kwargs)
         self.ikSolver = "ik2Bsolver"
         self.endJointNumber = 2
         self.freezeIkHandle = True
 
     def test_build(self):
-        super(ik2Jnt, self).test_build()
+        super(arm, self).test_build()
         self.build_PV()
-        self.build_twist()
-        self.create_test_cube(self.JointSystem.Joints[1])
 
 
-class Arm(ik):
-    """This is IK System. with a joint"""
+# class arm(ik2jnt):
+#     """This is IK System. with a joint"""
+#
+#     def __init__(self, *args, **kwargs):
+#         super(arm, self).__init__(*args, **kwargs)
+#         self.ikSolver = "ikRPsolver"
+#         self.endJointNumber = 2
+#
+#     def test_build(self):
+#         super(arm, self).test_build()
+#         self.build_PV()
 
+
+class hip(arm):
     def __init__(self, *args, **kwargs):
-        super(Arm, self).__init__(*args, **kwargs)
-        self.ikSolver = "ikRPsolver"
-        self.endJointNumber = 2
-
-    def test_build(self):
-        super(Arm, self).test_build()
-        self.build_PV()
-        #self.build_twist()
-        self.create_test_cube(self.JointSystem.Joints[1])
-
-
-
-
-class Hip(Arm):
-    def __init__(self, *args, **kwargs):
-        super(Hip, self).__init__(*args, **kwargs)
+        super(hip, self).__init__(*args, **kwargs)
+        # self.ikSolver = "ikRPsolver"
         self.startJointNumber = 1
         self.endJointNumber = 3
 
     def test_build(self):
-        super(Hip, self).test_build()
+        super(hip, self).test_build()
         self.create_test_cube(self.JointSystem.Joints[2])
 
+    def build_ik(self):
+        super(hip, self).build_ik()
+
+        name = utils.nameMe(self.side, self.part, "Clav"
+                                                  "IkHandle")
+        ikHandle = pm.ikHandle(name=name,
+                               sj=self.JointSystem.Joints[self.startJointNumber].shortName(),
+                               ee=self.JointSystem.Joints[self.endJointNumber].shortName(),
+                               sol=self.ikSolver,
+                               sticky="sticky")[0]
+        if self.freezeIkHandle:
+            libUtilities.freeze_transform(ikHandle)
+        self.ikHandle = core.MetaRig(ikHandle.name(), nodeType="ikHandle")
+        self.ikHandle.part = self.part
+        self.ikHandle.mirrorSide = self.mirrorSide
+        self.ikHandle.rigType = "ikHandle"
+        self.ikHandle.v = False
 
 
-class ikArm(Arm):
+class quad(ik):
+    def __init__(self, *args, **kwargs):
+        super(quad, self).__init__(self, *args, **kwargs)
+        self.endJointNumber = 3
+        self.ikSolver = "ikSpringSolver"
+
+    def build_control(self):
+        super(quad, self).build_control()
+        self.mainIK.addDivAttr("SpringBias", "lblSpringBias")
+        self.mainIK.addFloatAttr("Start", sn="StartBias", df=0.5)
+        self.mainIK.addFloatAttr("End", sn="EndBias", df=0.5)
+        self.mainIK.pynode.StartBias >> self.ikHandle.pynode.springAngleBias[0].springAngleBias_FloatValue
+        self.mainIK.pynode.EndBias >> self.ikHandle.pynode.springAngleBias[1].springAngleBias_FloatValue
+
+    def test_build(self):
+        super(quad, self).test_build()
+        self.build_PV()
+
+
+class ikArm(arm):
     """This is IK hand System."""
     pass
 
 
-class ikFoot(Arm):
+class ikFoot(arm):
     """This is the classic IK foot System."""
     pass
 
@@ -292,6 +325,7 @@ class ikHoof(ikFoot):
 class ikPaw(ikFoot):
     """This is the IK hoof System."""
     pass
+
 
 class ikSpline(rig):
     """This is a Spline IK System"""
@@ -311,6 +345,6 @@ if __name__ == '__main__':
 
     mainSystem = core.SubSystem(side="U", part="Core")
 
-    ikSystem = mainSystem.addMetaSubSystem(Quad, "IK")
+    ikSystem = mainSystem.addMetaSubSystem(arm, "IK")
     ikSystem.test_build()
     ikSystem.convertToComponent("IK")

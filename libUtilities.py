@@ -92,32 +92,29 @@ def addAttr(target, attrName="", attrMax=1, attrMin=0, SV=0, sn="", df=0):
     pm.setAttr(target + "." + sn, e=1, k=1)
 
 
-def addDivAttr(target, attrName, sn=""):
+def addDivAttr(target, label, ln):
     """
     Add a divider on a transform node
     @param target: Tranform node
-    @param attrName: The attribute name
-    @param sn: The shortname of the atttribute
+    @param label: The label to be displayed
+    @param ln: The alias name of the attribute
     @return:
     """
-
-    if not (sn):
-        sn = attrName
-    pm.addAttr(target, ln=sn, nn=attrName, at="enum", en="__________:")
-    pm.setAttr(target + "." + sn, lock=1, cb=1)
+    pm.addAttr(target, ln=ln, en="%s:" % label, at="enum", nn="________")
+    pm.setAttr(target + "." + ln, lock=1, cb=1)
 
 
-def addBoolAttr(target, attrName, sn=""):
+def addBoolAttr(target, label, sn=""):
     """
     Add a boolean attribute on a transform node
     @param target: Tranform node
-    @param attrName: The attribute name
+    @param label: The label to be displayed
     @param sn: The shortname of the atttribute
     """
 
     if not (sn):
-        sn = attrName
-    pm.addAttr(target, ln=sn, nn=attrName, at="bool")
+        sn = label
+    pm.addAttr(target, ln=sn, nn=label, at="bool")
     pm.setAttr(target + "." + sn, e=1, k=1)
 
 

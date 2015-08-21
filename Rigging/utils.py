@@ -119,6 +119,8 @@ def orient_joint(target):
 if __name__ == '__main__':
 
     pm.newFile(f=1)
-    create_test_joint("ik2jnt")
-    #save_test_joint("Clavicle", "ik2jnt")
+    # build_all_ctrls_shapes()
+    # current_joint_data = libFile.load_json(TEST_JOINTS_INFO)
+    create_test_joint("quad")
+    save_test_joint("Clavicle", "hip")
     # save_test_joint("Clavicle", "ik")
