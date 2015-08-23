@@ -168,7 +168,8 @@ class Joint(MetaRig, MetaEnhanced):
 
     def __init__(self, *args, **kwargs):
         kwargs["nodeType"] = "joint"
-        kwargs["endSuffix"] = "Joint"
+        if not kwargs.has_key("endSuffix"):
+            kwargs["endSuffix"] = "Joint"
         super(Joint, self).__init__(*args, **kwargs)
 
 
@@ -186,6 +187,8 @@ class JointSystem(MetaRig):
                 metaJoint = Joint(side=self.side, part=joint["Name"])
                 metaJoint.pynode.setTranslation(joint["Position"], space="world")
                 metaJoint.pynode.jointOrient.set(joint["JointOrient"])
+                for attr in ["jointOrientX","jointOrientY","jointOrientZ"]:
+                    metaJoint.pynode.attr(attr).setKeyable(True)
                 metaJoints.append(metaJoint)
                 if i:
                     metaJoint.pynode.setParent(metaJoints[i - 1].mNode)
@@ -246,6 +249,7 @@ class Ctrl(MetaRig):
         self._prnt_ = None
         # Internal Var
         self.hasGimbalNode = False
+        self.hasPivot = True
         self.ctrlShape = "Ball"
         self.hasParentMaster = False
         self.mirrorData = {'side': self.mirrorSide, 'slot': 1}
@@ -278,7 +282,7 @@ class Ctrl(MetaRig):
             node.v.showInChannelBox(True)
             node.v.showInChannelBox(False)
 
-    def add_parent_master(self):
+    def addParentMaster(self):
         # Create the parent master group if need be
         self.parentMasterSN = MetaRig(name="%s_SN" % self.mNodeID, nodeType="transform")
         self.parentMasterSN.rigType = "SN"
@@ -292,7 +296,7 @@ class Ctrl(MetaRig):
         self.parentMasterSN.part = self.part
         self.parentMasterPH.part = self.part
 
-    def add_gimbal_node(self):
+    def addGimbalMode(self):
         self.gimbal = MetaRig(name=utils.nameMe(self.side, self.part, "Gimbal"), nodeType="transform")
         self.gimbal.part = self.part
         self.gimbal.rigType = "gimbalHelper"
@@ -310,6 +314,31 @@ class Ctrl(MetaRig):
     def setParent(self, targetSystem):
         # Instead of the node itself, the parent is reparented
         self.prnt.pynode.setParent(targetSystem.mNode)
+
+    def addPivot(self):
+        self.pivot = MetaRig(name=utils.nameMe(self.side, self.part, "Pivot"), nodeType="transform")
+        self.pivot.part = self.part
+        self.pivot.rigType = "pivot"
+        self.pivot.pynode.setParent(self.mNode)
+        self.hasPivot = True
+        # Set the shape
+        tempCtrlShape = utils.build_ctrl_shape("Locator")
+        libUtilities.transfer_shape(tempCtrlShape, self.pivot.mNode)
+
+        # Snap ctrl
+        libUtilities.snap(self.pivot.mNode,self.mNode)
+
+        self.pivot.pynode.setParent(self.mNode)
+
+        self.pivot.pynode.translate >> self.pynode.rotatePivot
+        self.pivot.pynode.translate >> self.pynode.scalePivot
+
+        # Add Attribute control the visibility
+        self.addDivAttr("Show", "pivotVis")
+        self.addBoolAttr("Pivot")
+        self.pynode.Pivot >> self.pivot.pynode.v
+
+
 
     def addChild(self, targetNode):
         if self.hasGimbalNode:
@@ -336,6 +365,17 @@ class Ctrl(MetaRig):
     def addFloatAttr(self, attrName="", attrMax=1, attrMin=0, SV=0, sn="", df=0):
         libUtilities.addAttr(self.mNode, attrName=attrName, attrMax=attrMax, attrMin=attrMin, SV=0, sn=sn, df=df)
 
+    def snap(self, target):
+        libUtilities.snap(self.prnt.pynode, target)
+
+    def orientConstraint(self, target, mo=True):
+        pm.orientConstraint(target, self.prnt.pynode, mo=mo)
+
+    def pointConstraint(self, target, mo=True):
+        pm.pointConstraint(target, self.prnt.pynode, mo=mo)
+
+    def parentConstraint(self, target, mo=True):
+        pm.parentConstraint(target, self.prnt.pynode, mo=mo)
 
     @property
     def side(self):
@@ -369,6 +409,19 @@ class Ctrl(MetaRig):
         self.addSupportNode(data, "Gimbal")
         if data is not None:
             self.hasGimbalNode = True
+
+    @property
+    def pivot(self):
+        data = self.getSupportNode("Pivot")
+        if data is not None:
+            self.hasPivot = True
+        return data
+
+    @pivot.setter
+    def pivot(self, data):
+        self.addSupportNode(data, "Pivot")
+        if data is not None:
+            self.hasPivot = True
 
     @property
     def parentMasterPH(self):

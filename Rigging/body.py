@@ -47,17 +47,58 @@ class rig(core.SubSystem):
         libUtilities.skinGeo(cube, [targetJoint.mNode])
 
 
+SOLVERS = {
+    "Single": "ikSCsolver",
+    "RotatePlane": "ikRPsolver",
+    "Spring": "ikSpringSolver",
+    "2Bone": "ik2Bsolver"
+}
+
+
+def _build_ik_(metaClass, solver, handleSuffix, startJointNumber, endJointNumber):
+    """Construct a meta Ik Handle and make sure that it is parented"""
+    name = utils.nameMe(metaClass.side, metaClass.part, handleSuffix)
+    startJoint = metaClass.JointSystem.Joints[startJointNumber].shortName()
+    endJoint = metaClass.JointSystem.Joints[endJointNumber].shortName()
+    # TODO Add a meta IKHandle with parent as one of the properties
+    ikHandle = pm.ikHandle(name=name,
+                           sj=startJoint,
+                           ee=endJoint,
+                           sol=solver,
+                           sticky="sticky")[0]
+
+    ikHandleMeta = core.MetaRig(ikHandle.name(), nodeType="ikHandle")
+    ikHandleMeta.part = metaClass.part
+    ikHandleMeta.mirrorSide = metaClass.mirrorSide
+    ikHandleMeta.rigType = "ikHandle"
+    ikHandleMeta.v = False
+
+    # IK Handle needs to be in it's own group in case the polevector is not set. Otherwise if you reparent it
+    # the polevector value changes in relation to the parent space
+
+    # Create the parent meta
+    prnt = core.MetaRig(side=metaClass.side, part=metaClass.part, endSuffix=handleSuffix + "Prnt")
+    ikHandleMeta.addSupportNode(prnt, "Prnt")
+    ikHandleMeta.setParent(prnt)
+
+    # Set the pivot to the endJoint
+    libUtilities.snap_pivot(prnt.mNode, endJoint)
+
+    return ikHandleMeta
+
+
 class ik(rig):
     def __init__(self, *args, **kwargs):
         super(rig, self).__init__(*args, **kwargs)
-        self.ikSolver = "ikSCsolver"
+        self.ikSolver = SOLVERS["Single"]
         self.hasParentMaster = False
-        self.rotateOrder = "yxz"
+        self.rotateOrder = "yzx"
         self.mirrorData = {'side': self.mirrorSide, 'slot': 1}
         self.custom_pv_position = None
         self.startJointNumber = 0
         self.endJointNumber = 1
-        self.freezeIkHandle = False
+        self.ikControlToWorld = False
+        self.hasPivot = False
 
     def loadIKPlugin(self):
         if self.ikSolver not in ["ikRPsolver", "ikSCsolver"]:
@@ -73,7 +114,6 @@ class ik(rig):
         self.build_control()
 
     def build_PV(self):
-
         self.pv = core.Ctrl(part="%s_PV" % self.part, side=self.side)
         self.pv.ctrlShape = "Locator"
         self.pv.build()
@@ -113,34 +153,30 @@ class ik(rig):
         pm.poleVectorConstraint(self.pv.mNode, self.ikHandle.mNode, w=1)
         self.ikHandle.twist = pvTwist
 
+    def align_control(self):
+        libUtilities.snap(self.mainIK.prnt.mNode,
+                          self.JointSystem.Joints[self.endJointNumber].mNode,
+                          r=not self.ikControlToWorld
+                          )
+
     def build_control(self):
-        ikCtrl = core.Ctrl(part=self.part, side=self.side)
-        ikCtrl.ctrlShape = "Box"
-        ikCtrl.build()
-        ikCtrl.setRotateOrder(self.rotateOrder)
-        ikCtrl.add_gimbal_node()
+        self.mainIK = core.Ctrl(part=self.part, side=self.side)
+        self.mainIK.ctrlShape = "Box"
+        self.mainIK.build()
+        self.mainIK.setRotateOrder(self.rotateOrder)
+        self.mainIK.addGimbalMode()
         if self.hasParentMaster:
-            ikCtrl.add_parent_master()
-        libUtilities.snap(ikCtrl.prnt.mNode, self.ikHandle.mNode)
-        ikCtrl.addChild(self.ikHandle.pynode)
-        ikCtrl.setParent(self)
-        self.mainIK = ikCtrl
+            self.mainIK.addParentMaster()
+        if self.hasPivot:
+            self.mainIK.addPivot()
+        # Align based on the control
+        self.align_control()
+        self.mainIK.addChild(self.ikHandle.SUP_Prnt.pynode)
+        self.mainIK.setParent(self)
 
     def build_ik(self):
         # Setup the IK handle RP solver
-        name = utils.nameMe(self.side, self.part, "IkHandle")
-        ikHandle = pm.ikHandle(name=name,
-                               sj=self.JointSystem.Joints[self.startJointNumber].shortName(),
-                               ee=self.JointSystem.Joints[self.endJointNumber].shortName(),
-                               sol=self.ikSolver,
-                               sticky="sticky")[0]
-        if self.freezeIkHandle:
-            libUtilities.freeze_transform(ikHandle)
-        self.ikHandle = core.MetaRig(ikHandle.name(), nodeType="ikHandle")
-        self.ikHandle.part = self.part
-        self.ikHandle.mirrorSide = self.mirrorSide
-        self.ikHandle.rigType = "ikHandle"
-        self.ikHandle.v = False
+        self.ikHandle = _build_ik_(self, self.ikSolver, "IkHandle", self.startJointNumber, self.endJointNumber)
 
     def build_twist(self):
         # Check that that a pv exists
@@ -184,10 +220,11 @@ class ik(rig):
         self.JointSystem.convertJointsToMetaJoints()
         self.JointSystem.setRotateOrder(self.rotateOrder)
         self.connectChild(self.JointSystem, "Joint_System")
-        # Build IKf
+        # Build IK
         self.build()
         # Setup the parent
-        self.JointSystem.setParent(self)
+        if not self.JointSystem.Joints[0].pynode.getParent():
+            self.JointSystem.setParent(self)
         for i in range(len(self.JointSystem.Joints) - 1, ):
             self.create_test_cube(self.JointSystem.Joints[i])
 
@@ -200,12 +237,20 @@ class ik(rig):
         self.addSupportNode(data, "IKHandle")
 
     @property
+    def ikHandlePrnt(self):
+        return self.ikHandle.getSupportNode("prnt")
+
+    @ikHandlePrnt.setter
+    def ikHandlePrnt(self, data):
+        self.ikHandle.addSupportNode(data, "prnt")
+
+    @property
     def twist(self):
-        return self.getSupportNode("Twist")
+        return self.mainIK.getSupportNode("Twist")
 
     @twist.setter
     def twist(self, data):
-        self.addSupportNode(data, "Twist")
+        self.mainIK.addSupportNode(data, "Twist")
 
     @property
     def pv(self):
@@ -236,9 +281,8 @@ class arm(ik):
 
     def __init__(self, *args, **kwargs):
         super(arm, self).__init__(*args, **kwargs)
-        self.ikSolver = "ik2Bsolver"
+        self.ikSolver = SOLVERS["2Bone"]
         self.endJointNumber = 2
-        self.freezeIkHandle = True
 
     def test_build(self):
         super(arm, self).test_build()
@@ -271,31 +315,109 @@ class hip(arm):
 
     def build_ik(self):
         super(hip, self).build_ik()
+        self.hipIKHandle = _build_ik_(self, SOLVERS["Single"], "ClavIkHandle", 0, 1)
 
-        name = utils.nameMe(self.side, self.part, "Clav"
-                                                  "IkHandle")
-        ikHandle = pm.ikHandle(name=name,
-                               sj=self.JointSystem.Joints[self.startJointNumber].shortName(),
-                               ee=self.JointSystem.Joints[self.endJointNumber].shortName(),
-                               sol=self.ikSolver,
-                               sticky="sticky")[0]
-        if self.freezeIkHandle:
-            libUtilities.freeze_transform(ikHandle)
-        self.ikHandle = core.MetaRig(ikHandle.name(), nodeType="ikHandle")
-        self.ikHandle.part = self.part
-        self.ikHandle.mirrorSide = self.mirrorSide
-        self.ikHandle.rigType = "ikHandle"
-        self.ikHandle.v = False
+    def build_control(self):
+        super(hip, self).build_control()
+        # Build the Hip Control
+        hipCtrl = core.Ctrl(part=self.JointSystem.Joints[0].part, side=self.side)
+        hipCtrl.ctrlShape = "Circle"
+        hipCtrl.build()
+        hipCtrl.setRotateOrder(self.rotateOrder)
+        hipCtrl.addGimbalMode()
+        if self.hasParentMaster:
+            hipCtrl.addParentMaster()
+        # First joint alias
+        firstJoint = self.JointSystem.Joints[0]
+        # Align with first joint
+        hipCtrl.snap(firstJoint.pynode)
+        # Parent the hip IkControl
+        self.hipIKHandle.SUP_Prnt.setParent(hipCtrl)
+        # Create a helper joint
+        pm.select(cl=1)
+        self.aimHelper = core.Joint(part=firstJoint.part, side=self.side, endSuffix="AimHelper")
+        # Align with the first joint
+        libUtilities.snap(self.aimHelper.pynode, firstJoint.pynode, r=0)
+
+        # Freeze the rotation on joint
+        self.aimHelper.pynode.jointOrient.set(firstJoint.pynode.jointOrient.get())
+
+        # New upVector
+        second_joint_position = list(
+            self.JointSystem.Joints[self.startJointNumber + 1].pynode.getTranslation(space="world"))
+        default_pole_vector = libVector.vector(list(self.ikHandle.poleVector))
+        aimPosition = (default_pole_vector * [30, 30, 30]) + libVector.vector(second_joint_position)
+        upVector = core.MetaRig(part=firstJoint.part, side=self.side, endSuffix="UpVector")
+        upVector.pynode.setTranslation(aimPosition)
+        self.aimHelper.addSupportNode(upVector, "UpVector")
+
+        # Aim Constraint at mainIk Handle
+        pm.aimConstraint(self.ikHandle.pynode, self.aimHelper.pynode, mo=1, wut="object", wuo=upVector.mNode)
+        # Orient Constraint the Hip Constraint
+        hipCtrl.orientConstraint(self.aimHelper.pynode)
+        # Cleanup
+        self.hipIK = hipCtrl
+
+        # Create main grp
+        mainGrp = core.MetaRig(part=self.part + "Main", side=self.side)
+        hipGrp = core.MetaRig(part=self.part + "Hip", side=self.side)
+
+        # Reparent
+        self.addSupportNode(mainGrp, "MainGrp")
+        self.addSupportNode(hipGrp, "HipGrp")
+
+        # Parent the groups
+        mainGrp.setParent(self)
+        hipGrp.setParent(self)
+
+        # Parent the hip control
+        hipCtrl.setParent(hipGrp)
+        self.aimHelper.setParent(hipGrp)
+        upVector.setParent(hipGrp)
+
+        # Parent the gro
+        self.mainIK.setParent(mainGrp)
+        firstJoint.setParent(mainGrp)
+
+    def build_PV(self):
+        super(hip, self).build_PV()
+        self.pv.setParent(self.getSupportNode("MainGrp"))
+
+    @property
+    def hipIK(self):
+        return self.getRigCtrl("hipIK")
+
+    @hipIK.setter
+    def hipIK(self, data):
+        # TODO: Pass the slot number before and axis data
+        self.addRigCtrl(data, ctrType="hipIK", mirrorData=self.mirrorData)
+
+    @property
+    def hipIKHandle(self):
+        return self.getSupportNode("hipIKHandle")
+
+    @hipIKHandle.setter
+    def hipIKHandle(self, data):
+        self.addSupportNode(data, "hipIKHandle")
+
+    @property
+    def aimHelper(self):
+        return self.getSupportNode("aimHelper")
+
+    @aimHelper.setter
+    def aimHelper(self, data):
+        self.addSupportNode(data, "aimHelper")
 
 
 class quad(ik):
     def __init__(self, *args, **kwargs):
         super(quad, self).__init__(self, *args, **kwargs)
         self.endJointNumber = 3
-        self.ikSolver = "ikSpringSolver"
+        self.ikSolver = SOLVERS["Spring"]
 
     def build_control(self):
         super(quad, self).build_control()
+        # Adding controls to the sprink bias
         self.mainIK.addDivAttr("SpringBias", "lblSpringBias")
         self.mainIK.addFloatAttr("Start", sn="StartBias", df=0.5)
         self.mainIK.addFloatAttr("End", sn="EndBias", df=0.5)
@@ -307,22 +429,108 @@ class quad(ik):
         self.build_PV()
 
 
-class ikArm(arm):
-    """This is IK hand System."""
-    pass
+class hand(object):
+    def build_ik(self):
+        self.palmIKHandle = _build_ik_(self, SOLVERS["Single"], "PalmIKHandle", self.endJointNumber,
+                                       self.endJointNumber + 1)
+
+    def build_control(self):
+        self.palmIKHandle.SUP_Prnt.setParent(self.mainIK)
+        # TODO Add a pivot. the pivot shape to a locator
+
+    @property
+    def palmIK(self):
+        return self.getRigCtrl("palmIK")
+
+    @palmIK.setter
+    def palmIK(self, data):
+        # TODO: Pass the slot number before and axis data
+        self.addRigCtrl(data, ctrType="palmIK", mirrorData=self.mirrorData)
+
+    @property
+    def palmIKHandle(self):
+        return self.getSupportNode("palmIKHandle")
+
+    @palmIKHandle.setter
+    def palmIKHandle(self, data):
+        self.addSupportNode(data, "palmIKHandle")
 
 
-class ikFoot(arm):
+class armHand(arm, hand):
+    def build_control(self):
+        self.hasPivot = True
+        arm.build_control(self)
+        hand.build_control(self)
+
+    def build_ik(self):
+        arm.build_ik(self)
+        hand.build_ik(self)
+
+
+class quadHand(quad, hand):
+    def build_control(self):
+        self.hasPivot = True
+        quad.build_control(self)
+        hand.build_control(self)
+
+    def build_ik(self):
+        quad.build_ik(self)
+        hand.build_ik(self)
+
+
+class hipHand(hip, hand):
+    def build_control(self):
+        self.hasPivot = True
+        hip.build_control(self)
+        hand.build_control(self)
+
+    def build_ik(self):
+        hip.build_ik(self)
+        hand.build_ik(self)
+
+
+class armHoof(arm):
+    """This is the IK hoof System."""
+    # TODO Do the hoop
+    # TODO Combine TipToe and Heel with Tip_Heel Divider name are called Roll
+
+    def align_control(self):
+        super(armHoof, self).align_control()
+        # Remove the x roatation
+        if not self.ikControlToWorld:
+            self.mainIK.prnt.pynode.attr("r%s" % self.rotateOrder[2])/set(0)
+
+    def build_control(self):
+        self.hasPivot = True
+        super(armHoof, self).build_control()
+        # Create the 2 rotate system
+        # Align to Toe and heel
+        # Add atttr called "Roll"
+        # Tip_Heel
+        # Create 2 clamp nodes one for pos and one for negative
+        # Set max and input to same
+        # Connect
+
+
+    def build_ik(self):
+        super(armHoof, self).build_ik()
+        self.ballIKHandle = _build_ik_(self, SOLVERS["Single"], "PalmIKHandle", self.endJointNumber, self.endJointNumber + 1)
+
+    @property
+    def ballIKHandle(self):
+        return self.getSupportNode("ballIKHandle")
+
+    @ballIKHandle.setter
+    def ballIKHandle(self, data):
+        self.addSupportNode(data, "ballIKHandle")
+
+
+class foot(arm):
     """This is the classic IK foot System."""
     pass
 
 
-class ikHoof(ikFoot):
-    """This is the IK hoof System."""
-    pass
-
-
-class ikPaw(ikFoot):
+class paw(arm):
     """This is the IK hoof System."""
     pass
 
@@ -345,6 +553,7 @@ if __name__ == '__main__':
 
     mainSystem = core.SubSystem(side="U", part="Core")
 
-    ikSystem = mainSystem.addMetaSubSystem(arm, "IK")
+    ikSystem = mainSystem.addMetaSubSystem(hipHand, "IK")
+    # ikSystem.ikControlToWorld = True
     ikSystem.test_build()
     ikSystem.convertToComponent("IK")
