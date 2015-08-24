@@ -85,7 +85,13 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
         self.addAttr('rigType', '')
 
     def setParent(self, targetSystem):
-        self.pynode.setParent(targetSystem.mNode)
+        if self.prnt is not None:
+            if targetSystem.pynode.type()=="transform":
+                self.prnt.pynode.setParent(targetSystem.pynode)
+            else:
+                libUtilities.pyLog.warning("%s is not a transform node. Unable to parent %s"%(targetSystem.pynode,self.pynode))
+        else:
+            self.pynode.setParent(targetSystem.pynode)
 
     def convertToComponent(self, component="FK"):
         componentName = "%s_%s" % (self.part, component)
@@ -106,10 +112,6 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
         for child in self.getChildMetaNodes():
             child.convertToComponent(component)
 
-    @property
-    def side(self):
-        return self.pynode.attr("mirrorSide").get(asString=True)[0]
-
     def getRigCtrl(self, target):
         children = self.getChildren(walk=True, asMeta=self.returnNodesAsMeta,
                                     cAttrs=["%s_%s" % (self.CTRL_Prefix, target)])
@@ -128,12 +130,32 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
     def getSupportNode(self, target):
         children = self.getChildren(walk=True, asMeta=self.returnNodesAsMeta, cAttrs=["SUP_%s" % target])
         if not children:
-            libUtilities.pyLog.warn("%s support node found on %s" % (target, self.shortName()))
+            libUtilities.pyLog.warn("%s not support node found on %s" % (target, self.shortName()))
         else:
             if type(children[0]) == Red9_Meta.MetaClass:
                 children[0] = MetaRig(children[0].mNode)
 
             return children[0]
+
+    def addParent(self, endSuffix="", snap=True):
+        if not endSuffix:
+            endSuffix = "Prnt"
+        self.prnt = MetaRig(part=self.part, side=self.side, endSuffix=endSuffix)
+        if snap:
+            libUtilities.snap(self.prnt.pynode, self.pynode)
+        self.pynode.setParent(self.prnt.pynode)
+
+    @property
+    def prnt(self):
+        return self.getSupportNode("Prnt")
+
+    @prnt.setter
+    def prnt(self, data):
+        self.addSupportNode(data, "Prnt")
+
+    @property
+    def side(self):
+        return self.pynode.attr("mirrorSide").get(asString=True)[0]
 
 
 class SubSystem(MetaRig):
@@ -155,6 +177,13 @@ class SubSystem(MetaRig):
         return subSystem
 
 
+class Network(MetaRig):
+    def __init__(self, *args, **kwargs):
+        kwargs["nodeType"] = "network"
+        kwargs["endSuffix"] = "Sys"
+        super(Network, self).__init__(*args, **kwargs)
+
+
 class Joint(MetaRig, MetaEnhanced):
     """
     Example showing that metaData isn't limited to 'network' nodes,
@@ -173,10 +202,8 @@ class Joint(MetaRig, MetaEnhanced):
         super(Joint, self).__init__(*args, **kwargs)
 
 
-class JointSystem(MetaRig):
+class JointSystem(Network):
     def __init__(self, *args, **kwargs):
-        kwargs["nodeType"] = "network"
-        kwargs["endSuffix"] = "Sys"
         super(JointSystem, self).__init__(*args, **kwargs)
         self.joint_data = None
 
@@ -187,7 +214,7 @@ class JointSystem(MetaRig):
                 metaJoint = Joint(side=self.side, part=joint["Name"])
                 metaJoint.pynode.setTranslation(joint["Position"], space="world")
                 metaJoint.pynode.jointOrient.set(joint["JointOrient"])
-                for attr in ["jointOrientX","jointOrientY","jointOrientZ"]:
+                for attr in ["jointOrientX", "jointOrientY", "jointOrientZ"]:
                     metaJoint.pynode.attr(attr).setKeyable(True)
                 metaJoints.append(metaJoint)
                 if i:
@@ -248,7 +275,7 @@ class Ctrl(MetaRig):
         self.ctrl = self
         self._prnt_ = None
         # Internal Var
-        self.hasGimbalNode = False
+        self.hasGimbal = False
         self.hasPivot = True
         self.ctrlShape = "Ball"
         self.hasParentMaster = False
@@ -301,7 +328,7 @@ class Ctrl(MetaRig):
         self.gimbal.part = self.part
         self.gimbal.rigType = "gimbalHelper"
         self.gimbal.pynode.setParent(self.mNode)
-        self.hasGimbalNode = True
+        self.hasGimbal = True
         # Set the shape
         tempCtrlShape = utils.build_ctrl_shape("Spike")
         libUtilities.transfer_shape(tempCtrlShape, self.gimbal.mNode)
@@ -324,9 +351,9 @@ class Ctrl(MetaRig):
         # Set the shape
         tempCtrlShape = utils.build_ctrl_shape("Locator")
         libUtilities.transfer_shape(tempCtrlShape, self.pivot.mNode)
-
+        pm.delete(tempCtrlShape)
         # Snap ctrl
-        libUtilities.snap(self.pivot.mNode,self.mNode)
+        libUtilities.snap(self.pivot.mNode, self.mNode)
 
         self.pivot.pynode.setParent(self.mNode)
 
@@ -338,10 +365,9 @@ class Ctrl(MetaRig):
         self.addBoolAttr("Pivot")
         self.pynode.Pivot >> self.pivot.pynode.v
 
-
-
     def addChild(self, targetNode):
-        if self.hasGimbalNode:
+        # TODO Does not work in some scenairos
+        if self.hasGimbal:
             pm.parent(targetNode, self.gimbal.mNode)
         else:
             pm.parent(targetNode, self.ctrl.mNode)
@@ -350,7 +376,7 @@ class Ctrl(MetaRig):
         self.rotateOrder = rotateOrder
         self.xtra.rotateOrder = rotateOrder
         self.prnt.rotateOrder = rotateOrder
-        if self.hasGimbalNode:
+        if self.hasGimbal:
             self.gimbal.rotateOrder = rotateOrder
         if self.hasParentMaster:
             self.parentMasterPH.rotateOrder = rotateOrder
@@ -382,14 +408,6 @@ class Ctrl(MetaRig):
         return self.pynode.mirrorSide.get(asString=True)[0]
 
     @property
-    def prnt(self):
-        return self.getSupportNode("Prnt")
-
-    @prnt.setter
-    def prnt(self, data):
-        self.addSupportNode(data, "Prnt")
-
-    @property
     def xtra(self):
         return self.getSupportNode("Xtra")
 
@@ -401,14 +419,15 @@ class Ctrl(MetaRig):
     def gimbal(self):
         data = self.getSupportNode("Gimbal")
         if data is not None:
-            self.hasGimbalNode = True
+            self.hasGimbal = True
         return data
 
     @gimbal.setter
     def gimbal(self, data):
         self.addSupportNode(data, "Gimbal")
         if data is not None:
-            self.hasGimbalNode = True
+            self.hasGimbal = True
+        self.hasGimbal = True
 
     @property
     def pivot(self):
