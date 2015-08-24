@@ -77,12 +77,13 @@ def _build_ik_(metaClass, solver, handleSuffix, startJointNumber, endJointNumber
     # the polevector value changes in relation to the parent space
 
     # Create the parent meta
-    prnt = core.MetaRig(side=metaClass.side, part=metaClass.part, endSuffix=handleSuffix + "Prnt")
-    ikHandleMeta.addSupportNode(prnt, "Prnt")
-    ikHandleMeta.setParent(prnt)
-
+    ikHandleMeta.addParent(handleSuffix + "Prnt",snap=False)
+    # prnt = core.MetaRig(side=metaClass.side, part=metaClass.part, endSuffix=handleSuffix + "Prnt")
+    # ikHandleMeta.setParent(prnt)
+    # ikHandleMeta.prnt = prnt
+    #ikHandleMeta.addSupportNode(prnt, "Prnt")
     # Set the pivot to the endJoint
-    libUtilities.snap_pivot(prnt.mNode, endJoint)
+    libUtilities.snap_pivot(ikHandleMeta.prnt.mNode, endJoint)
 
     return ikHandleMeta
 
@@ -99,6 +100,7 @@ class ik(rig):
         self.endJointNumber = 1
         self.ikControlToWorld = False
         self.hasPivot = False
+        self.ctrlShape = "Box"
 
     def loadIKPlugin(self):
         if self.ikSolver not in ["ikRPsolver", "ikSCsolver"]:
@@ -160,16 +162,17 @@ class ik(rig):
                           )
 
     def build_control(self):
-        self.mainIK = core.Ctrl(part=self.part, side=self.side)
-        self.mainIK.ctrlShape = "Box"
-        self.mainIK.build()
-        self.mainIK.setRotateOrder(self.rotateOrder)
-        self.mainIK.addGimbalMode()
+        mainIK = core.Ctrl(part=self.part, side=self.side)
+        mainIK.ctrlShape = self.ctrlShape
+        mainIK.build()
+        mainIK.setRotateOrder(self.rotateOrder)
+        mainIK.addGimbalMode()
         if self.hasParentMaster:
-            self.mainIK.addParentMaster()
+            mainIK.addParentMaster()
         if self.hasPivot:
-            self.mainIK.addPivot()
+            mainIK.addPivot()
         # Align based on the control
+        self.mainIK = mainIK
         self.align_control()
         self.mainIK.addChild(self.ikHandle.SUP_Prnt.pynode)
         self.mainIK.setParent(self)
@@ -190,8 +193,7 @@ class ik(rig):
         # Parent the PV Control
         self.pv.setParent(self.twist)
         # Rotate the new node 90 on first axis of the rotate order
-        primary_axis = self.pynode.rotateOrder.get(asString=True)
-        self.twist.pynode.attr("r%s" % primary_axis[0]).set(90)
+        self.twist.pynode.attr("r%s" % self.primary_axis[0]).set(90)
         # Zero out the transform
         twistPrnt = core.MetaRig(part=self.part, side=self.side, endSuffix="TwistPrnt")
         libUtilities.snap(twistPrnt.pynode, self.twist.pynode)
@@ -219,14 +221,25 @@ class ik(rig):
         self.JointSystem.Joints = joints
         self.JointSystem.convertJointsToMetaJoints()
         self.JointSystem.setRotateOrder(self.rotateOrder)
-        self.connectChild(self.JointSystem, "Joint_System")
         # Build IK
         self.build()
         # Setup the parent
         if not self.JointSystem.Joints[0].pynode.getParent():
             self.JointSystem.setParent(self)
-        for i in range(len(self.JointSystem.Joints) - 1, ):
+        for i in range(len(self.JointSystem.Joints) - 1, 0):
             self.create_test_cube(self.JointSystem.Joints[i])
+
+    @property
+    def JointSystem(self):
+        return self.getSupportNode("JointSystem")
+
+    @JointSystem.setter
+    def JointSystem(self, data):
+        self.addSupportNode(data, "JointSystem")
+
+    @property
+    def primaryAxis(self):
+        return self.pynode.rotateOrder.get(asString=True)
 
     @property
     def ikHandle(self):
@@ -236,13 +249,13 @@ class ik(rig):
     def ikHandle(self, data):
         self.addSupportNode(data, "IKHandle")
 
-    @property
-    def ikHandlePrnt(self):
-        return self.ikHandle.getSupportNode("prnt")
-
-    @ikHandlePrnt.setter
-    def ikHandlePrnt(self, data):
-        self.ikHandle.addSupportNode(data, "prnt")
+    # @property
+    # def ikHandlePrnt(self):
+    #     return self.ikHandle.getSupportNode("prnt")
+    #
+    # @ikHandlePrnt.setter
+    # def ikHandlePrnt(self, data):
+    #     self.ikHandle.addSupportNode(data, "prnt")
 
     @property
     def twist(self):
@@ -498,23 +511,91 @@ class armHoof(arm):
         super(armHoof, self).align_control()
         # Remove the x roatation
         if not self.ikControlToWorld:
-            self.mainIK.prnt.pynode.attr("r%s" % self.rotateOrder[2])/set(0)
+            self.mainIK.prnt.pynode.attr("r%s" % self.primaryAxis[2]).set(0)
 
     def build_control(self):
         self.hasPivot = True
         super(armHoof, self).build_control()
+        self.RollSystem = core.Network(part=self.part + "Roll", side=self.side)
         # Create the 2 rotate system
-        # Align to Toe and heel
-        # Add atttr called "Roll"
-        # Tip_Heel
-        # Create 2 clamp nodes one for pos and one for negative
-        # Set max and input to same
-        # Connect
 
+        toeRoll = core.MetaRig(part=self.part, side=self.side, endSuffix="ToeRoll")
+        toeRoll.addParent("ToeRollPrnt")
+        libUtilities.snap(toeRoll.prnt.mNode, self.JointSystem.Joints[-1].mNode)
+        # self.toeRoll.setParent(self.JointSystem.Joints[-1])
+        heelRoll = core.MetaRig(part=self.part, side=self.side, endSuffix="HeelRoll")
+        heelRoll.addParent("HeelRollPrnt")
+        libUtilities.snap(heelRoll.prnt.mNode, self.JointSystem.Joints[-2].mNode)
+        heelRoll.setParent(toeRoll)
+
+        # Connect to the Roll System
+        self.RollSystem.addSupportNode(toeRoll, "toeRoll")
+        self.RollSystem.addSupportNode(heelRoll, "heelRoll")
+        # Add atttr called "Roll"
+        libUtilities.addDivAttr(self.mainIK.pynode, "Roll", "rollDiv")
+        # Tip_Heel
+        libUtilities.addAttr(self.mainIK.pynode, "Toe_Heel", 270, -270)
+        # Create a negative multiply divide for the toe
+        toeMd = libUtilities.inverseMultiplyDivide(utils.nameMe(self.side,
+                                                             self.part + "ToeInverse",
+                                                             "MD"))
+        toeMdMeta = core.MetaRig(toeMd.name(), nodeType="multiplyDivide")
+        self.mainIK.pynode.Toe_Heel >> toeMd.input1X
+        self.RollSystem.addSupportNode(toeMdMeta, "toeInverseMD")
+
+        # Create a negative multiply divide for the heel
+        heelMd = libUtilities.inverseMultiplyDivide(utils.nameMe(self.side,
+                                                             self.part + "HeelInverse",
+                                                             "MD"))
+        heelMdMeta = core.MetaRig(heelMd.name(), nodeType="multiplyDivide")
+
+
+        self.RollSystem.addSupportNode(heelMdMeta, "toeInverseMD")
+
+
+        # Create 2 clamp nodes one for pos and one for negative
+        clamp = pm.createNode("clamp",
+                              name=utils.nameMe(self.side,
+                                                self.part + "ToeHeel",
+                                                "Clamp"))
+
+        clampMeta = core.MetaRig(clamp.name(), nodeType="clamp")
+        self.RollSystem.addSupportNode(clampMeta, "clamp")
+
+        clamp.maxR.set(270)
+        clamp.maxG.set(270)
+        # Connect to clamp
+        self.mainIK.pynode.Toe_Heel>> clamp.inputR
+        toeMd.outputX >> clamp.inputG
+
+        # Connect to the Rolls
+        clamp.outputR >> heelMd.input1X
+        heelMd.outputX >> heelRoll.pynode.attr("r%s"%self.primaryAxis[2])
+
+        clamp.outputG >> toeRoll.pynode.attr("r%s"%self.primaryAxis[2])
+
+        # Reparent the IK Handles
+        self.ikHandle.setParent(heelRoll)
+        self.ballIKHandle.setParent(heelRoll)
+
+        # Reparent the Syste
+        self.mainIK.hasGimbal = True
+        self.mainIK.addChild(toeRoll.prnt.mNode)
 
     def build_ik(self):
         super(armHoof, self).build_ik()
-        self.ballIKHandle = _build_ik_(self, SOLVERS["Single"], "PalmIKHandle", self.endJointNumber, self.endJointNumber + 1)
+        # Reparent the toe
+        self.JointSystem.Joints[-1].pynode.setParent(self.JointSystem.Joints[-3].pynode)
+        self.ballIKHandle = _build_ik_(self, SOLVERS["Single"], "PalmIKHandle", self.endJointNumber,
+                                       self.endJointNumber + 1)
+
+    @property
+    def RollSystem(self):
+        return self.getSupportNode("RollSystem")
+
+    @RollSystem.setter
+    def RollSystem(self, data):
+        self.addSupportNode(data, "RollSystem")
 
     @property
     def ballIKHandle(self):
@@ -541,7 +622,7 @@ class ikSpline(rig):
 
 
 core.Red9_Meta.registerMClassInheritanceMapping()
-core.Red9_Meta.registerMClassNodeMapping(nodeTypes=['ikHandle'])
+core.Red9_Meta.registerMClassNodeMapping(nodeTypes=['ikHandle', 'multiplyDivide', "clamp"])
 
 if __name__ == '__main__':
     pm.newFile(f=1)
@@ -553,7 +634,7 @@ if __name__ == '__main__':
 
     mainSystem = core.SubSystem(side="U", part="Core")
 
-    ikSystem = mainSystem.addMetaSubSystem(hipHand, "IK")
+    ikSystem = mainSystem.addMetaSubSystem(armHoof, "IK")
     # ikSystem.ikControlToWorld = True
     ikSystem.test_build()
     ikSystem.convertToComponent("IK")
