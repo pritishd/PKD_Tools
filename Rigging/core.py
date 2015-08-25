@@ -127,10 +127,11 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
         except:
             raise Exception("Input must be MetaClass")
 
-    def getSupportNode(self, target):
+    def getSupportNode(self, target,query=False):
         children = self.getChildren(walk=True, asMeta=self.returnNodesAsMeta, cAttrs=["SUP_%s" % target])
         if not children:
-            libUtilities.pyLog.warn("%s not support node found on %s" % (target, self.shortName()))
+            if not query:
+                libUtilities.pyLog.warn("%s not support node found on %s" % (target, self.shortName()))
         else:
             if type(children[0]) == Red9_Meta.MetaClass:
                 children[0] = MetaRig(children[0].mNode)
@@ -147,7 +148,7 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
 
     @property
     def prnt(self):
-        return self.getSupportNode("Prnt")
+        return self.getSupportNode("Prnt",True)
 
     @prnt.setter
     def prnt(self, data):
@@ -273,10 +274,7 @@ class Ctrl(MetaRig):
         super(Ctrl, self).__init__(*args, **kwargs)
         self.mSystemRoot = False
         self.ctrl = self
-        self._prnt_ = None
         # Internal Var
-        self.hasGimbal = False
-        self.hasPivot = True
         self.ctrlShape = "Ball"
         self.hasParentMaster = False
         self.mirrorData = {'side': self.mirrorSide, 'slot': 1}
@@ -328,7 +326,6 @@ class Ctrl(MetaRig):
         self.gimbal.part = self.part
         self.gimbal.rigType = "gimbalHelper"
         self.gimbal.pynode.setParent(self.mNode)
-        self.hasGimbal = True
         # Set the shape
         tempCtrlShape = utils.build_ctrl_shape("Spike")
         libUtilities.transfer_shape(tempCtrlShape, self.gimbal.mNode)
@@ -347,7 +344,6 @@ class Ctrl(MetaRig):
         self.pivot.part = self.part
         self.pivot.rigType = "pivot"
         self.pivot.pynode.setParent(self.mNode)
-        self.hasPivot = True
         # Set the shape
         tempCtrlShape = utils.build_ctrl_shape("Locator")
         libUtilities.transfer_shape(tempCtrlShape, self.pivot.mNode)
@@ -418,29 +414,28 @@ class Ctrl(MetaRig):
     @property
     def gimbal(self):
         data = self.getSupportNode("Gimbal")
-        if data is not None:
-            self.hasGimbal = True
         return data
 
     @gimbal.setter
     def gimbal(self, data):
         self.addSupportNode(data, "Gimbal")
-        if data is not None:
-            self.hasGimbal = True
-        self.hasGimbal = True
+
+    @property
+    def hasGimbal(self):
+        return self.getSupportNode("Gimbal",True) is not None
 
     @property
     def pivot(self):
         data = self.getSupportNode("Pivot")
-        if data is not None:
-            self.hasPivot = True
         return data
 
     @pivot.setter
     def pivot(self, data):
         self.addSupportNode(data, "Pivot")
-        if data is not None:
-            self.hasPivot = True
+
+    @property
+    def hasPivot(self):
+        return self.getSupportNode("Pivot",True) is not None
 
     @property
     def parentMasterPH(self):
@@ -527,8 +522,10 @@ if __name__ == '__main__':
     # subSystem.connectChild(fkSystem, 'FK_System')
 
 
-    # myCtrl = Ctrl(side="L", part="Hand")
-    # myCtrl.build()
+    myCtrl = Ctrl(side="L", part="Hand")
+    myCtrl.build()
+    myCtrl.addGimbalMode()
+    print myCtrl.hasGimbal
     # myCtrl.add_constrain_node()
     # myCtrl.add_parent_master()
     # myCtrl.setParent(fkSystem)
@@ -544,8 +541,8 @@ if __name__ == '__main__':
     # fkSystem.convertToComponent("FK")
     # subSystem.connectChildren(fkCtrls, "FK")
 
-    jntSystem = JointSystem(side="U", part="Cora")
-    joints = utils.create_test_joint("ik2jnt")
+    # jntSystem = JointSystem(side="U", part="Cora")
+    # joints = utils.create_test_joint("ik2jnt")
 
     #
     #

@@ -77,11 +77,11 @@ def _build_ik_(metaClass, solver, handleSuffix, startJointNumber, endJointNumber
     # the polevector value changes in relation to the parent space
 
     # Create the parent meta
-    ikHandleMeta.addParent(handleSuffix + "Prnt",snap=False)
+    ikHandleMeta.addParent(handleSuffix + "Prnt", snap=False)
     # prnt = core.MetaRig(side=metaClass.side, part=metaClass.part, endSuffix=handleSuffix + "Prnt")
     # ikHandleMeta.setParent(prnt)
     # ikHandleMeta.prnt = prnt
-    #ikHandleMeta.addSupportNode(prnt, "Prnt")
+    # ikHandleMeta.addSupportNode(prnt, "Prnt")
     # Set the pivot to the endJoint
     libUtilities.snap_pivot(ikHandleMeta.prnt.mNode, endJoint)
 
@@ -176,6 +176,7 @@ class ik(rig):
         self.align_control()
         self.mainIK.addChild(self.ikHandle.SUP_Prnt.pynode)
         self.mainIK.setParent(self)
+
 
     def build_ik(self):
         # Setup the IK handle RP solver
@@ -502,23 +503,17 @@ class hipHand(hip, hand):
         hand.build_ik(self)
 
 
-class armHoof(arm):
+class hoof(object):
     """This is the IK hoof System."""
-    # TODO Do the hoop
-    # TODO Combine TipToe and Heel with Tip_Heel Divider name are called Roll
 
     def align_control(self):
-        super(armHoof, self).align_control()
         # Remove the x roatation
         if not self.ikControlToWorld:
             self.mainIK.prnt.pynode.attr("r%s" % self.primaryAxis[2]).set(0)
 
     def build_control(self):
-        self.hasPivot = True
-        super(armHoof, self).build_control()
         self.RollSystem = core.Network(part=self.part + "Roll", side=self.side)
         # Create the 2 rotate system
-
         toeRoll = core.MetaRig(part=self.part, side=self.side, endSuffix="ToeRoll")
         toeRoll.addParent("ToeRollPrnt")
         libUtilities.snap(toeRoll.prnt.mNode, self.JointSystem.Joints[-1].mNode)
@@ -579,13 +574,12 @@ class armHoof(arm):
         self.ballIKHandle.setParent(heelRoll)
 
         # Reparent the Syste
-        self.mainIK.hasGimbal = True
         self.mainIK.addChild(toeRoll.prnt.mNode)
 
     def build_ik(self):
-        super(armHoof, self).build_ik()
         # Reparent the toe
-        self.JointSystem.Joints[-1].pynode.setParent(self.JointSystem.Joints[-3].pynode)
+        self.JointSystem.Joints[self.endJointNumber + 2].pynode.setParent(
+            self.JointSystem.Joints[self.endJointNumber].pynode)
         self.ballIKHandle = _build_ik_(self, SOLVERS["Single"], "PalmIKHandle", self.endJointNumber,
                                        self.endJointNumber + 1)
 
@@ -606,12 +600,60 @@ class armHoof(arm):
         self.addSupportNode(data, "ballIKHandle")
 
 
-class foot(arm):
+class armHoof(arm, hoof):
+    def build_control(self):
+        self.hasPivot = True
+        arm.build_control(self)
+        hoof.build_control(self)
+
+    def build_ik(self):
+        arm.build_ik(self)
+        hoof.build_ik(self)
+
+    def align_control(self):
+        arm.align_control(self)
+        hoof.align_control(self)
+
+class hipHoof(hip, hoof):
+    def build_control(self):
+        self.hasPivot = True
+        hip.build_control(self)
+        hoof.build_control(self)
+
+    def build_ik(self):
+        hip.build_ik(self)
+        hoof.build_ik(self)
+
+    def align_control(self):
+        hip.align_control(self)
+        hoof.align_control(self)
+
+class quadHoof(quad, hoof):
+    def build_control(self):
+        self.hasPivot = True
+        quad.build_control(self)
+        hoof.build_control(self)
+
+    def build_ik(self):
+        quad.build_ik(self)
+        hoof.build_ik(self)
+
+    def align_control(self):
+        quad.align_control(self)
+        hoof.align_control(self)
+
+
+
+class foot(hoof):
     """This is the classic IK foot System."""
-    pass
+    def build_ik(self):
+        # Reparent the toe
+        self.JointSystem.Joints[self.endJointNumber + 3].pynode.setParent(
+            self.JointSystem.Joints[self.endJointNumber].pynode)
+        self.ballIKHandle = _build_ik_(self, SOLVERS["Single"], "PalmIKHandle", self.endJointNumber,)
 
 
-class paw(arm):
+class paw(foot):
     """This is the IK hoof System."""
     pass
 
@@ -634,7 +676,7 @@ if __name__ == '__main__':
 
     mainSystem = core.SubSystem(side="U", part="Core")
 
-    ikSystem = mainSystem.addMetaSubSystem(armHoof, "IK")
+    ikSystem = mainSystem.addMetaSubSystem(quadHoof, "IK")
     # ikSystem.ikControlToWorld = True
     ikSystem.test_build()
     ikSystem.convertToComponent("IK")

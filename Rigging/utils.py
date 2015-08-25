@@ -120,9 +120,9 @@ if __name__ == '__main__':
     pm.newFile(f=1)
     # build_all_ctrls_shapes()
     # current_joint_data = libFile.load_json(TEST_JOINTS_INFO)
-    #create_test_joint("armHoof")
-    save_test_joint("Clavicle", "armHoof")
-    # save_test_joint("Clavicle", "quadHand")
+    create_test_joint("hipHoof")
+    save_test_joint("Clavicle", "quadHoof")
+    #save_test_joint("Clavicle", "hipHand")
 
     #print libFile.load_json(TEST_JOINTS_INFO).keys()
     # myDict['hipHand'] = myDict.pop('hipArm')
