@@ -87,8 +87,8 @@ class Droid(object):
 
     def create_advanced_ctrl_meta_network(self):
         self.create_simple_ctrl_meta_network()
-        self.myCtrl.add_gimbal_node()
-        self.myCtrl.add_parent_master()
+        self.myCtrl.addGimbalMode()
+        self.myCtrl.addParentMaster()
 
 class ikDroid(Droid):
     def __init__(self):
@@ -181,7 +181,7 @@ class BatchTest(libUnitTests.BatchTest):
         self.addTest("variable_is_not_none", targetNode=self.droid.myCtrl, variable_name="parentMasterSN")
         self.addTest("variable_is_not_none", targetNode=self.droid.myCtrl, variable_name="parentMasterPH")
         self.addTest("variable_is_not_none", targetNode=self.droid.myCtrl, variable_name="gimbal")
-        self.addTest("variable_is_true", targetNode=self.droid.myCtrl, variable_name="hasGimbalNode")
+        self.addTest("variable_is_true", targetNode=self.droid.myCtrl, variable_name="hasGimbal")
         self.addTest("variable_is_true", targetNode=self.droid.myCtrl, variable_name="hasParentMaster")
         self.run_test("Testing advanced ctrl creation")
 
@@ -192,7 +192,7 @@ class BatchTest(libUnitTests.BatchTest):
         self.addTest("variable_is_not_none", targetNode=self.droid.myCtrl, variable_name="parentMasterSN")
         self.addTest("variable_is_not_none", targetNode=self.droid.myCtrl, variable_name="parentMasterPH")
         self.addTest("variable_is_not_none", targetNode=self.droid.myCtrl, variable_name="gimbal")
-        self.addTest("variable_is_true", targetNode=self.droid.myCtrl, variable_name="hasGimbalNode")
+        self.addTest("variable_is_true", targetNode=self.droid.myCtrl, variable_name="hasGimbal")
         self.addTest("variable_is_true", targetNode=self.droid.myCtrl, variable_name="hasParentMaster")
         self.run_test("Testing advanced ctrl reopen")
 
