@@ -8,9 +8,10 @@ from PKD_Tools.Rigging import utils
 reload(utils)
 
 from PKD_Tools import libUtilities
-from PKD_Tools import libVector
 
 reload(libUtilities)
+from PKD_Tools import libVector
+
 import pymel.core as pm
 
 
@@ -176,7 +177,6 @@ class ik(rig):
         self.align_control()
         self.mainIK.addChild(self.ikHandle.SUP_Prnt.pynode)
         self.mainIK.setParent(self)
-
 
     def build_ik(self):
         # Setup the IK handle RP solver
@@ -532,18 +532,17 @@ class hoof(object):
         libUtilities.addAttr(self.mainIK.pynode, "Toe_Heel", 270, -270)
         # Create a negative multiply divide for the toe
         toeMd = libUtilities.inverseMultiplyDivide(utils.nameMe(self.side,
-                                                             self.part + "ToeInverse",
-                                                             "MD"))
+                                                                self.part + "ToeInverse",
+                                                                "MD"))
         toeMdMeta = core.MetaRig(toeMd.name(), nodeType="multiplyDivide")
         self.mainIK.pynode.Toe_Heel >> toeMd.input1X
         self.RollSystem.addSupportNode(toeMdMeta, "toeInverseMD")
 
         # Create a negative multiply divide for the heel
         heelMd = libUtilities.inverseMultiplyDivide(utils.nameMe(self.side,
-                                                             self.part + "HeelInverse",
-                                                             "MD"))
+                                                                 self.part + "HeelInverse",
+                                                                 "MD"))
         heelMdMeta = core.MetaRig(heelMd.name(), nodeType="multiplyDivide")
-
 
         self.RollSystem.addSupportNode(heelMdMeta, "toeInverseMD")
 
@@ -560,14 +559,14 @@ class hoof(object):
         clamp.maxR.set(270)
         clamp.maxG.set(270)
         # Connect to clamp
-        self.mainIK.pynode.Toe_Heel>> clamp.inputR
+        self.mainIK.pynode.Toe_Heel >> clamp.inputR
         toeMd.outputX >> clamp.inputG
 
         # Connect to the Rolls
         clamp.outputR >> heelMd.input1X
-        heelMd.outputX >> heelRoll.pynode.attr("r%s"%self.primaryAxis[2])
+        heelMd.outputX >> heelRoll.pynode.attr("r%s" % self.primaryAxis[2])
 
-        clamp.outputG >> toeRoll.pynode.attr("r%s"%self.primaryAxis[2])
+        clamp.outputG >> toeRoll.pynode.attr("r%s" % self.primaryAxis[2])
 
         # Reparent the IK Handles
         self.ikHandle.setParent(heelRoll)
@@ -580,7 +579,11 @@ class hoof(object):
         # Reparent the toe
         self.JointSystem.Joints[self.endJointNumber + 2].pynode.setParent(
             self.JointSystem.Joints[self.endJointNumber].pynode)
-        self.ballIKHandle = _build_ik_(self, SOLVERS["Single"], "PalmIKHandle", self.endJointNumber,
+
+        self.ballIKHandle = _build_ik_(self,
+                                       SOLVERS["Single"],
+                                       "PalmIKHandle",
+                                       self.endJointNumber,
                                        self.endJointNumber + 1)
 
     @property
@@ -614,6 +617,7 @@ class armHoof(arm, hoof):
         arm.align_control(self)
         hoof.align_control(self)
 
+
 class hipHoof(hip, hoof):
     def build_control(self):
         self.hasPivot = True
@@ -627,6 +631,7 @@ class hipHoof(hip, hoof):
     def align_control(self):
         hip.align_control(self)
         hoof.align_control(self)
+
 
 class quadHoof(quad, hoof):
     def build_control(self):
@@ -643,14 +648,30 @@ class quadHoof(quad, hoof):
         hoof.align_control(self)
 
 
-
 class foot(hoof):
     """This is the classic IK foot System."""
+
     def build_ik(self):
         # Reparent the toe
+        super(foot, self).build_ik()
         self.JointSystem.Joints[self.endJointNumber + 3].pynode.setParent(
             self.JointSystem.Joints[self.endJointNumber].pynode)
-        self.ballIKHandle = _build_ik_(self, SOLVERS["Single"], "PalmIKHandle", self.endJointNumber,)
+        self.toeIKHandle = _build_ik_(self,
+                                      SOLVERS["Single"],
+                                      "ToeIKHandle",
+                                      self.endJointNumber + 1,
+                                      self.endJointNumber + 2)
+
+    @property
+    def toeIKHandle(self):
+        return self.getSupportNode("toeIKHandle")
+
+    @toeIKHandle.setter
+    def toeIKHandle(self, data):
+        self.addSupportNode(data, "toeIKHandle")
+
+
+
 
 
 class paw(foot):
