@@ -738,6 +738,12 @@ def freeze_transform(transform):
         set_lock_status(childTransform, childrenLockStatus[childTransform])
     set_lock_status(transform, defaultLockStatus)
 
+def freeze_rotation(transform):
+    """Freeze the rotation attribute of a transform node
+    @param transform: The tranform node that is being evaluated
+    """
+    pm.makeIdentity(transform, n=0, s=0, r=1, t=0, apply=True)
+
 
 def _default_attibute_list_():
     """"Return the list of default maya attributes"""
@@ -782,3 +788,16 @@ def _visibility_attribute_list_():
     @return: Return the list of names of the default scale attribute of a maya transform node
     """
     return ["visibility"]
+
+
+def inverseMultiplyDivide(name=""):
+    """
+    Create a multiplyDivide(MD) node which changes the values from positive to negative and vice versa
+    @param name The name of the multiplyDivide node
+    @return: MD node
+    """
+    md = pm.createNode("multiplyDivide")
+    md.input2X.set(-1)
+    if name:
+        md.rename(name)
+    return md

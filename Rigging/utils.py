@@ -117,7 +117,7 @@ def orient_joint(target):
 
 
 if __name__ == '__main__':
-    # pm.newFile(f=1)
+    pm.newFile(f=1)
     # build_all_ctrls_shapes()
     # current_joint_data = libFile.load_json(TEST_JOINTS_INFO)
     create_test_joint("quadFoot")

@@ -498,6 +498,7 @@ class hipHand(hip, hand):
         hip.build_control(self)
         hand.build_control(self)
 
+
     def build_ik(self):
         hip.build_ik(self)
         hand.build_ik(self)
@@ -505,6 +506,11 @@ class hipHand(hip, hand):
 
 class hoof(object):
     """This is the IK hoof System."""
+    def __init__(self,*args, **kwargs):
+        super(hoof, self).__init__(*args, **kwargs)
+        self.toeRollPosition = self.endJointNumber + 2
+        self.heelRollPosition = self.endJointNumber + 1
+
 
     def align_control(self):
         # Remove the x roatation
@@ -516,11 +522,11 @@ class hoof(object):
         # Create the 2 rotate system
         toeRoll = core.MetaRig(part=self.part, side=self.side, endSuffix="ToeRoll")
         toeRoll.addParent("ToeRollPrnt")
-        libUtilities.snap(toeRoll.prnt.mNode, self.JointSystem.Joints[-1].mNode)
+        libUtilities.snap(toeRoll.prnt.mNode, self.JointSystem.Joints[self.toeRollPosition].mNode)
         # self.toeRoll.setParent(self.JointSystem.Joints[-1])
         heelRoll = core.MetaRig(part=self.part, side=self.side, endSuffix="HeelRoll")
         heelRoll.addParent("HeelRollPrnt")
-        libUtilities.snap(heelRoll.prnt.mNode, self.JointSystem.Joints[-2].mNode)
+        libUtilities.snap(heelRoll.prnt.mNode, self.JointSystem.Joints[self.heelRollPosition].mNode)
         heelRoll.setParent(toeRoll)
 
         # Connect to the Roll System
@@ -580,11 +586,12 @@ class hoof(object):
         self.JointSystem.Joints[self.endJointNumber + 2].pynode.setParent(
             self.JointSystem.Joints[self.endJointNumber].pynode)
 
+
         self.ballIKHandle = _build_ik_(self,
                                        SOLVERS["Single"],
-                                       "PalmIKHandle",
+                                       "BallIKHandle",
                                        self.endJointNumber,
-                                       self.endJointNumber + 1)
+                                       self.endJointNumber + 2)
 
     @property
     def RollSystem(self):
@@ -604,6 +611,10 @@ class hoof(object):
 
 
 class armHoof(arm, hoof):
+    def __init__(self,*args, **kwargs):
+        arm.__init__(self,*args, **kwargs)
+        hoof.__init__(self,*args, **kwargs)
+
     def build_control(self):
         self.hasPivot = True
         arm.build_control(self)
@@ -619,6 +630,10 @@ class armHoof(arm, hoof):
 
 
 class hipHoof(hip, hoof):
+    def __init__(self,*args, **kwargs):
+        hip.__init__(self,*args, **kwargs)
+        hoof.__init__(self,*args, **kwargs)
+
     def build_control(self):
         self.hasPivot = True
         hip.build_control(self)
@@ -634,6 +649,10 @@ class hipHoof(hip, hoof):
 
 
 class quadHoof(quad, hoof):
+    def __init__(self,*args, **kwargs):
+        quad.__init__(self,*args, **kwargs)
+        hoof.__init__(self,*args, **kwargs)
+
     def build_control(self):
         self.hasPivot = True
         quad.build_control(self)
@@ -648,19 +667,51 @@ class quadHoof(quad, hoof):
         hoof.align_control(self)
 
 
+
 class foot(hoof):
     """This is the classic IK foot System."""
+    def __init__(self,*args, **kwargs):
+        super(foot, self).__init__(*args, **kwargs)
+        self.toeRollPosition = self.endJointNumber + 3
 
     def build_ik(self):
         # Reparent the toe
-        super(foot, self).build_ik()
         self.JointSystem.Joints[self.endJointNumber + 3].pynode.setParent(
-            self.JointSystem.Joints[self.endJointNumber].pynode)
+            self.JointSystem.Joints[self.endJointNumber+2].pynode)
+
+        super(foot, self).build_ik()
+
         self.toeIKHandle = _build_ik_(self,
                                       SOLVERS["Single"],
                                       "ToeIKHandle",
-                                      self.endJointNumber + 1,
-                                      self.endJointNumber + 2)
+                                      self.endJointNumber + 2,
+                                      self.endJointNumber + 3)
+
+    def build_control(self):
+        super(foot, self).build_control()
+        # Create reverse foot
+        ballRoll = core.MetaRig(part=self.part, side=self.side, endSuffix="BallRoll")
+        ballRoll.addParent("ballRollPrnt")
+        self.RollSystem.addSupportNode(ballRoll,"ballRoll")
+        # Snap to ball
+        libUtilities.snap(ballRoll.prnt.mNode, self.JointSystem.Joints[self.endJointNumber+2].mNode)
+        # Create toe control
+        toeRoll = core.MetaRig(part=self.part, side=self.side, endSuffix="ToeRoll")
+        toeRoll.addParent("toeRollPrnt")
+        self.RollSystem.addSupportNode(toeRoll,"toeRoll")
+        # Snap to toe
+        libUtilities.snap(toeRoll.prnt.mNode, self.JointSystem.Joints[self.endJointNumber+2].mNode)
+        # Parent main ik to reverse
+        self.ikHandle.setParent(ballRoll)
+        # Parent the toe handle to to control
+        self.toeIKHandle.setParent(toeRoll)
+        # Parent reverse foot to heel roll
+        ballRoll.setParent(self.RollSystem.getSupportNode("heelRoll"))
+        # Add attribute ball and toe
+
+        #
+
+
 
     @property
     def toeIKHandle(self):
@@ -670,7 +721,21 @@ class foot(hoof):
     def toeIKHandle(self, data):
         self.addSupportNode(data, "toeIKHandle")
 
+class quadFoot(quad,foot):
 
+    def __init__(self,*args, **kwargs):
+        quad.__init__(self,*args, **kwargs)
+        foot.__init__(self,*args, **kwargs)
+
+
+    def build_control(self):
+        self.hasPivot = True
+        quad.build_control(self)
+        foot.build_control(self)
+
+    def build_ik(self):
+        quad.build_ik(self)
+        foot.build_ik(self)
 
 
 
@@ -697,7 +762,7 @@ if __name__ == '__main__':
 
     mainSystem = core.SubSystem(side="U", part="Core")
 
-    ikSystem = mainSystem.addMetaSubSystem(quadHoof, "IK")
+    ikSystem = mainSystem.addMetaSubSystem(quadFoot, "IK")
     # ikSystem.ikControlToWorld = True
     ikSystem.test_build()
     ikSystem.convertToComponent("IK")
