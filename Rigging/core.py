@@ -291,10 +291,8 @@ class Ctrl(MetaRig):
         tempCtrlShape = utils.build_ctrl_shape(self.ctrlShape)
         # tempCtrlShape = pm.circle(ch=0)[0]
         libUtilities.transfer_shape(tempCtrlShape, self.mNode)
-        self.pynode.getShape().rename("%sShape" % self.shortName())
-
+        libUtilities.fix_shape_name(self.pynode)
         pm.delete(tempCtrlShape)
-
         # Parent the ctrl to the xtra
         # self.pynode.unlock()
         self.pynode.setParent(self.xtra.mNode)
@@ -328,7 +326,8 @@ class Ctrl(MetaRig):
         self.gimbal.pynode.setParent(self.mNode)
         # Set the shape
         tempCtrlShape = utils.build_ctrl_shape("Spike")
-        libUtilities.transfer_shape(tempCtrlShape, self.gimbal.mNode)
+        libUtilities.transfer_shape(tempCtrlShape, self.gimbal.pynode)
+        libUtilities.fix_shape_name(self.gimbal.pynode)
         pm.delete(tempCtrlShape)
         # Add Attribute control the visibility
         self.addDivAttr("Show", "gimbVis")
@@ -346,7 +345,8 @@ class Ctrl(MetaRig):
         self.pivot.pynode.setParent(self.mNode)
         # Set the shape
         tempCtrlShape = utils.build_ctrl_shape("Locator")
-        libUtilities.transfer_shape(tempCtrlShape, self.pivot.mNode)
+        libUtilities.transfer_shape(tempCtrlShape, self.pivot.pynode)
+        libUtilities.fix_shape_name(self.pivot.pynode)
         pm.delete(tempCtrlShape)
         # Snap ctrl
         libUtilities.snap(self.pivot.mNode, self.mNode)
@@ -398,6 +398,10 @@ class Ctrl(MetaRig):
 
     def parentConstraint(self, target, mo=True):
         pm.parentConstraint(target, self.prnt.pynode, mo=mo)
+
+    def aimConstraint(self, target, mo=True):
+        pm.aimConstraint(target, self.prnt.pynode, mo=mo)
+
 
     @property
     def side(self):
