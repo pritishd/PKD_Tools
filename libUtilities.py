@@ -193,36 +193,24 @@ def parZero(target, sfx="Prnt"):
     return group
 
 
-def snap(source, target, t=True, r=True):
+def snap(target, source, t=True, r=True):
     """
-    Snap the first object to the second object. However a preset value can also be given.
-    @param source: The source transform object
-    @param target: The target transform attriute
+    Snap the first object to the second object.
+    @param target: The target transform
+    @param source: The source transform
     @param t: Should we snap the translation?
     @param r: Should we do the rotation?
     @return:
     """
-    ## 
-    ## Snap the first object to second object
-    ##  t = Translate
-    ##  r = rotate
-    ##  preSetVal = first item list relates to a translate, second one relates to rotate
-    source = str(source)
-    target = str(target)
+    target = pm.PyNode(target)
+    source = pm.PyNode(source)
     if t:
-        ## Get the translation values of second object if nothing is given
-        trans = xform(target)
-        ## Assign the translation values on to the first Object
-
-        if len(trans):
-            pm.move(trans[0], trans[1], trans[2], source, rpr=1)
+        # Set the world space translation
+        target.setTranslation(source.getTranslation(space="world"), space="world")
 
     if r:
-        ## Get the rotation values of second object if nothing is given
-        rot = xform(target, 0)
-        ## Always Assign the translation values on to the first Object]
-        if len(rot):
-            pm.xform(source, ws=1, ro=[rot[0], rot[1], rot[2]])
+        # Set the world space rotation
+        target.setRotation(source.getRotation(space="world"), space="world")
 
 
 def xform(target, t=True):
@@ -426,7 +414,6 @@ def transfer_shape(source, target, snapToTarget=True):
         snap(source, target)
         pm.makeIdentity(source, apply=1)
     oldShape = source.getShape()
-
     pm.parent(oldShape, target, shape=1, r=1)
     return oldShape
 
@@ -650,7 +637,7 @@ def mel2pyStr(text):
         print py2mel.mel2pyStr(text, pymelNamespace="pm")
 
 
-def changeTangents(tangent):
+def change_tangents(tangent):
     """Function to change the default tangent based
     @param tangent (string) the type of default in and out tangent
     """
@@ -738,6 +725,7 @@ def freeze_transform(transform):
         set_lock_status(childTransform, childrenLockStatus[childTransform])
     set_lock_status(transform, defaultLockStatus)
 
+
 def freeze_rotation(transform):
     """Freeze the rotation attribute of a transform node
     @param transform: The tranform node that is being evaluated
@@ -801,3 +789,13 @@ def inverseMultiplyDivide(name=""):
     if name:
         md.rename(name)
     return md
+
+
+def fix_shape_name(transform):
+    """
+    Rename the shape name so that it matches the parent
+    @param transform:  The transform name with the wrong shape name
+    @return:
+    """
+    transform = pm.PyNode(transform)
+    transform.getShape().rename("%sShape" % transform.shortName())
