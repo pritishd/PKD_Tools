@@ -42,7 +42,7 @@ class TangentSwapper(libPySide.QDockableWindow):
         super(TangentSwapper, self)._setup_()
         for tangent in ["step", "linear", "clamped", "spline"]:
             push_button = libPySide.QtGui.QPushButton(tangent.capitalize(), self)
-            push_button.clicked.connect(partial(libUtilities.changeTangents, tangent))
+            push_button.clicked.connect(partial(libUtilities.change_tangents, tangent))
             push_button.setFixedWidth(230)
             self.main_layout.addWidget(push_button)
         self.main_layout.addStretch(False)
