@@ -120,8 +120,9 @@ if __name__ == '__main__':
     pm.newFile(f=1)
     # build_all_ctrls_shapes()
     # current_joint_data = libFile.load_json(TEST_JOINTS_INFO)
-    create_test_joint("armFoot")
-    # save_test_joint("Clavicle", "hipFoot")
+    # TODO Make it so that heel is the last joint in the chain. This make the reparent and pivot logic easier
+    create_test_joint("quadFoot")
+    # save_test_joint("Clavicle", "quadPaw")
     # save_test_joint("Clavicle", "armFoot")
 
     #print libFile.load_json(TEST_JOINTS_INFO).keys()
