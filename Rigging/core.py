@@ -146,6 +146,7 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
             libUtilities.snap(self.prnt.pynode, self.pynode)
         self.pynode.setParent(self.prnt.pynode)
 
+
     @property
     def prnt(self):
         return self.getSupportNode("Prnt",True)
@@ -560,3 +561,36 @@ if __name__ == '__main__':
     #
     # k = Red9_Meta.MetaClass("CharacterRig")
     # pm.newFile(f=1)
+
+
+class rig(SubSystem):
+    """This is base System. Transform is the main"""
+
+    def __init__(self, *args, **kwargs):
+        super(rig, self).__init__(*args, **kwargs)
+        self.JointSystem = None
+
+    def create_test_cube(self, targetJoint):
+        cube = pm.polyCube(ch=False)[0]
+        pm.select(cube.vtx[0:1])
+        pm.move(0, 0, 0.9, r=1)
+
+        pm.select(cube.vtx[0:1], cube.vtx[6:7])
+
+        # Botton Cluster
+        clusterBottom = pm.cluster()[1]
+        clusterBottom.setScalePivot([0, 0, 0])
+        clusterBottom.setRotatePivot([0, 0, 0])
+
+        libUtilities.snap(clusterBottom, targetJoint.shortName())
+
+        # Top Cluster
+        pm.select(cube.vtx[2:5])
+        clusterTop = pm.cluster()[1]
+
+        childJoint = targetJoint.pynode.getChildren(type="joint")[0]
+        libUtilities.snap(clusterTop, childJoint)
+
+        pm.delete(cube, ch=True)
+
+        libUtilities.skinGeo(cube, [targetJoint.mNode])
