@@ -29,7 +29,6 @@ def _build_ik_(metaClass, solver, handleSuffix, startJointNumber, endJointNumber
     name = utils.nameMe(metaClass.side, metaClass.part, handleSuffix)
     startJoint = metaClass.JointSystem.Joints[startJointNumber].shortName()
     endJoint = metaClass.JointSystem.Joints[endJointNumber].shortName()
-    # TODO Add a meta IKHandle with parent as one of the properties
     ikHandle = pm.ikHandle(name=name,
                            sj=startJoint,
                            ee=endJoint,
@@ -41,16 +40,10 @@ def _build_ik_(metaClass, solver, handleSuffix, startJointNumber, endJointNumber
     ikHandleMeta.mirrorSide = metaClass.mirrorSide
     ikHandleMeta.rigType = "ikHandle"
     ikHandleMeta.v = False
-
     # IK Handle needs to be in it's own group in case the polevector is not set. Otherwise if you reparent it
     # the polevector value changes in relation to the parent space
-
     # Create the parent meta
     ikHandleMeta.addParent(handleSuffix + "Prnt", snap=False)
-    # prnt = core.MetaRig(side=metaClass.side, part=metaClass.part, endSuffix=handleSuffix + "Prnt")
-    # ikHandleMeta.setParent(prnt)
-    # ikHandleMeta.prnt = prnt
-    # ikHandleMeta.addSupportNode(prnt, "Prnt")
     # Set the pivot to the endJoint
     libUtilities.snap_pivot(ikHandleMeta.prnt.mNode, endJoint)
 
@@ -220,14 +213,6 @@ class ik(core.rig):
     @ikHandle.setter
     def ikHandle(self, data):
         self.addSupportNode(data, "IKHandle")
-
-    # @property
-    # def ikHandlePrnt(self):
-    #     return self.ikHandle.getSupportNode("prnt")
-    #
-    # @ikHandlePrnt.setter
-    # def ikHandlePrnt(self, data):
-    #     self.ikHandle.addSupportNode(data, "prnt")
 
     @property
     def twist(self):
@@ -862,9 +847,6 @@ class quadPaw(quad, paw):
     def align_control(self):
         quad.align_control(self)
         paw.align_control(self)
-
-
-
 
 core.Red9_Meta.registerMClassInheritanceMapping()
 core.Red9_Meta.registerMClassNodeMapping(nodeTypes=['ikHandle', 'multiplyDivide', "clamp"])

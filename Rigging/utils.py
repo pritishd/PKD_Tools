@@ -116,31 +116,52 @@ def orient_joint(target):
     pm.joint(target, zso=1, ch=1, e=1, oj='yxz', secondaryAxisOrient='yup')
 
 
+def create_curve(positions=[], degree=2):
+    """
+    @param positions:
+    @return:
+    """
+    if len(positions) == 2:
+        degree = 1
+    curve = pm.curve(d=degree, p=positions[0])
+    for i in range(1, len(positions)):
+        pm.curve(curve, a=1, p=positions[i])
+    return curve
+
+
 if __name__ == '__main__':
     pm.newFile(f=1)
     # build_all_ctrls_shapes()
     # current_joint_data = libFile.load_json(TEST_JOINTS_INFO)
-    #libFile.load_json(TEST_JOINTS_INFO).keys()
-    create_test_joint('quadPaw')
-    a = [u'hip',
-     u'hipHoof',
-     u'armHand',
-     u'quadHoof',
-     u'hipFoot',
-     u'armFoot',
-     u'ik2jnt',
-     u'quadHand',
-     u'armHoof',
-     u'ik',
-     u'quadFoot',
-     u'quad',
-     u'hipHand',
-     u'quadPaw',
-     u'arm']
+    # print libFile.load_json(TEST_JOINTS_INFO).keys()
+    #create_test_joint('simpleSpine')
+    # a = [u'hip',
+    #      u'hipHoof',
+    #      u'armHand',
+    #      u'quadHoof',
+    #      u'hipFoot',
+    #      u'armFoot',
+    #      u'ik2jnt',
+    #      u'quadHand',
+    #      u'armHoof',
+    #      u'ik',
+    #      u'quadFoot',
+    #      u'quad',
+    #      u'hipHand',
+    #      u'quadPaw',
+    #      u'arm']
     # save_test_joint("Clavicle", "armPaw")
     # save_test_joint("Clavicle", "armFoot")
+    # save_test_joint("Spine01", "simpleSpine")
+    # save_test_joint("Spine01", "ikSpline")
 
-    #print libFile.load_json(TEST_JOINTS_INFO).keys()
+    # print libFile.load_json(TEST_JOINTS_INFO).keys()
     # myDict['hipHand'] = myDict.pop('hipArm')
     # myDict = libFile.load_json(TEST_JOINTS_INFO)
-
+    # pos = [[0, 0, 0],
+    #        [1, 1, 1],
+    #        [2, 2, 2],
+    #        [3, 3, 3]
+    #        ]
+    #
+    # create_curve(pos,3)

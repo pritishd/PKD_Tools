@@ -247,7 +247,6 @@ class JointSystem(Network):
         self.joint_data = jointData
 
         self.build()
-
         pm.delete(pyJoints)
 
     def setParent(self, targetSystem):
@@ -265,6 +264,16 @@ class JointSystem(Network):
     def Joints(self, jointList):
         jointList = [joint.shortName() for joint in jointList]
         self.connectChildren(jointList, "SUP_Joints", allowIncest=True, cleanCurrent=True)
+
+    @property
+    def positions(self):
+        positionList = []
+        if self.joint_data:
+            for joint in self.joint_data:
+                positionList.append(joint["Position"])
+        else:
+           libUtilities.pyLog.error("No joint data found")
+        return positionList
 
 
 class Ctrl(MetaRig):
@@ -485,14 +494,38 @@ class MyCameraMeta(Red9_Meta.MetaClass, MetaEnhanced):
     def __init__(self, *args, **kwargs):
         super(MyCameraMeta, self).__init__(nodeType='camera', *args, **kwargs)
 
+class rig(SubSystem):
+    """This is base System. Transform is the main"""
 
-# class Joint(PKD_Meta):
-#     def __init__(self, *args, **kwargs):
-#         if kwargs.has_key("side") and kwargs.has_key("part"):
-#             full_name = utils.nameMe(kwargs["side"], kwargs["part"], "Ctrl")
-#             super(Joint, self).__init__(name=full_name, nodeType="transform")
-#         else:
-#             super(Joint, self).__init__(nodeType='joint', *args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super(rig, self).__init__(*args, **kwargs)
+        self.HelpJointSystem = None
+
+    def create_test_cube(self, targetJoint):
+        cube = pm.polyCube(ch=False)[0]
+        pm.select(cube.vtx[0:1])
+        pm.move(0, 0, 0.9, r=1)
+
+        pm.select(cube.vtx[0:1], cube.vtx[6:7])
+
+        # Botton Cluster
+        clusterBottom = pm.cluster()[1]
+        clusterBottom.setScalePivot([0, 0, 0])
+        clusterBottom.setRotatePivot([0, 0, 0])
+
+        libUtilities.snap(clusterBottom, targetJoint.shortName())
+
+        # Top Cluster
+        pm.select(cube.vtx[2:5])
+        clusterTop = pm.cluster()[1]
+
+        childJoint = targetJoint.pynode.getChildren(type="joint")[0]
+        libUtilities.snap(clusterTop, childJoint)
+
+        pm.delete(cube, ch=True)
+
+        libUtilities.skinGeo(cube, [targetJoint.mNode])
+
 
 
 Red9_Meta.registerMClassInheritanceMapping()
@@ -563,34 +596,3 @@ if __name__ == '__main__':
     # pm.newFile(f=1)
 
 
-class rig(SubSystem):
-    """This is base System. Transform is the main"""
-
-    def __init__(self, *args, **kwargs):
-        super(rig, self).__init__(*args, **kwargs)
-        self.JointSystem = None
-
-    def create_test_cube(self, targetJoint):
-        cube = pm.polyCube(ch=False)[0]
-        pm.select(cube.vtx[0:1])
-        pm.move(0, 0, 0.9, r=1)
-
-        pm.select(cube.vtx[0:1], cube.vtx[6:7])
-
-        # Botton Cluster
-        clusterBottom = pm.cluster()[1]
-        clusterBottom.setScalePivot([0, 0, 0])
-        clusterBottom.setRotatePivot([0, 0, 0])
-
-        libUtilities.snap(clusterBottom, targetJoint.shortName())
-
-        # Top Cluster
-        pm.select(cube.vtx[2:5])
-        clusterTop = pm.cluster()[1]
-
-        childJoint = targetJoint.pynode.getChildren(type="joint")[0]
-        libUtilities.snap(clusterTop, childJoint)
-
-        pm.delete(cube, ch=True)
-
-        libUtilities.skinGeo(cube, [targetJoint.mNode])

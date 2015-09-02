@@ -5,30 +5,6 @@
 from pymel.all import *
 
 
-def nilsNoFlipIK():
-    if not window('nilsNoFlipIKWin', exists=1):
-        window('nilsNoFlipIKWin', width=240, sizeable=1, title="nilsNoFlipIK 1.0", ret=1, height=140)
-        columnLayout(co=("both", 10))
-        text(label="", height=5)
-        text(label="Enter new poleVector")
-        rowColumnLayout(nc=6, cw=[(1, 15), (2, 55), (3, 15), (4, 55), (5, 15), (6, 55)])
-        text(label="X")
-        floatField('floatFieldPVX', value=0)
-        text(label=" Y ")
-        floatField('floatFieldPVY', value=0)
-        text(label=" Z ")
-        floatField('floatFieldPVZ', value=1)
-        setParent('..')
-        text(label=" ")
-        rowColumnLayout(nc=2, cw=[(1, 65), (2, 80)])
-        text(label="")
-        text(label="Select IKHandle")
-        text(label="")
-        button(command=lambda *args: nilsNoFlipIKWinProc(), label="GO")
-        setParent('..')
-
-    showWindow('nilsNoFlipIKWin')
-
 
 def nilsGetLocalPos(vector, baseX, baseY, baseZ):
     """First is the input-vector given in world space. Argument 2-4 are the baseVectors in target space"""
