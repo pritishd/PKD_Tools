@@ -4,9 +4,9 @@ import pymel.core as pm
 from PKD_Tools import libUnitTests
 from PKD_Tools.Red9 import Red9_Meta
 from PKD_Tools.Rigging import core
-from PKD_Tools.Rigging import body
+from PKD_Tools.Rigging import limb
 
-for module in [libUnitTests, core, body]:
+for module in [libUnitTests, core, limb]:
     reload(module)
 
 
@@ -97,7 +97,7 @@ class ikDroid(Droid):
 
     def create_simple_ik(self):
         self.new_file()
-        self.ikSystem = body.ik(side="U", part="Core")
+        self.ikSystem = limb.ik(side="U", part="Core")
         self.ikSystem.test_build()
 
     def reinitialise_meta_network(self):
