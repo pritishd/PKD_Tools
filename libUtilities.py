@@ -586,15 +586,15 @@ def capitalize(item):
 
 
 def title(item):
-    """Capitalise each word in a string while not formating the other cases
+    """Capitalise each word in a string while not changing the case of the other letters in the world
     @code
     import libUtilities
     libUtilities.title("GI joe is awesome")
     # Result: 'GI Joe Is Awesome' #
     @endcode
     """
-    lst = [word[0].upper() + word[1:] for word in item.split()]
-    return " ".join(lst)
+    wordList = [word[0].upper() + word[1:] for word in item.split()]
+    return " ".join(wordList)
 
 
 def mel2pyStr(text):
@@ -653,11 +653,6 @@ def set_lock_status(node, lockStatusDict):
             node.attr(attr).lock()
         else:
             node.attr(attr).unlock()
-
-
-def set_visibility(node):
-    k = pm.PyNode("asd")
-
 
 def unlock_default_attribute(node):
     """

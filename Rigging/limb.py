@@ -171,7 +171,7 @@ class ik(core.rig):
         # TODO Get the name from the second part if more than two joints. Otherwise from the first joint
         libUtilities.addAttr(self.mainIK.mNode, "Knee", sn="twist", attrMax=720, attrMin=-720)
         # Connect the new attribute to the twist offset
-        self.mainIK.pynode.twist >> self.twist.pynode.attr("r%s" % primary_axis[0])
+        self.mainIK.pynode.twist >> self.twist.pynode.attr("r%s" % self.primary_axis[0])
         # Hide the PV
         # self.pv.prnt.visibility = False
 
