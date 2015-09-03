@@ -86,10 +86,11 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
 
     def setParent(self, targetSystem):
         if self.prnt is not None:
-            if targetSystem.pynode.type()=="transform":
+            if targetSystem.pynode.type() == "transform":
                 self.prnt.pynode.setParent(targetSystem.pynode)
             else:
-                libUtilities.pyLog.warning("%s is not a transform node. Unable to parent %s"%(targetSystem.pynode,self.pynode))
+                libUtilities.pyLog.warning(
+                    "%s is not a transform node. Unable to parent %s" % (targetSystem.pynode, self.pynode))
         else:
             self.pynode.setParent(targetSystem.pynode)
 
@@ -127,7 +128,7 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
         except:
             raise Exception("Input must be MetaClass")
 
-    def getSupportNode(self, target,query=False):
+    def getSupportNode(self, target, query=False):
         children = self.getChildren(walk=True, asMeta=self.returnNodesAsMeta, cAttrs=["SUP_%s" % target])
         if not children:
             if not query:
@@ -146,10 +147,9 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
             libUtilities.snap(self.prnt.pynode, self.pynode)
         self.pynode.setParent(self.prnt.pynode)
 
-
     @property
     def prnt(self):
-        return self.getSupportNode("Prnt",True)
+        return self.getSupportNode("Prnt", True)
 
     @prnt.setter
     def prnt(self, data):
@@ -209,6 +209,11 @@ class JointSystem(Network):
         super(JointSystem, self).__init__(*args, **kwargs)
         self.joint_data = None
 
+    def __bindData__(self, *args, **kwgs):
+        super(JointSystem, self).__bindData__()
+        # ensure these are added by default
+        self.addAttr("joint_data", "")
+
     def build(self):
         if self.joint_data:
             metaJoints = []
@@ -237,8 +242,8 @@ class JointSystem(Network):
             # TODO: Need to refactorise this when using for anno
             jointData.append({
                 "Name": joint.shortName(),
-                "JointOrient": joint.jointOrient.get(),
-                "Position": joint.getTranslation(space="world")
+                "JointOrient": list(joint.jointOrient.get()),
+                "Position": list(joint.getTranslation(space="world"))
             })
             pyJoints.append(joint)
 
@@ -256,6 +261,28 @@ class JointSystem(Network):
         for joint in self.Joints:
             joint.rotateOrder = rotateOrder
 
+    def replicate(self, *args, **kwargs):
+        if self.joint_data:
+            replicateJoint = JointSystem(*args, **kwargs)
+            if kwargs.has_key("supportType"):
+                # Change the system name
+                newSuffix = kwargs["supportType"] + "Sys"
+                replicateJoint.rigType = newSuffix
+                # Rename the joint data
+                joint_data = self.joint_data
+                # Add the suffix to the name for support type
+                for jointInfo in joint_data:
+                    jointInfo["Name"] = jointInfo["Name"] + kwargs["supportType"]
+                replicateJoint.joint_data = joint_data
+            else:
+                replicateJoint.joint_data = self.joint_data
+
+            replicateJoint.setRotateOrder(self.Joints[0].rotateOrder)
+            replicateJoint.build()
+            return replicateJoint
+        else:
+            libUtilities.pyLog.error("Unable to replicate as there is no joint data")
+
     @property
     def Joints(self):
         return self.getChildren(asMeta=self.returnNodesAsMeta, walk=True, cAttrs=["SUP_Joints"])
@@ -272,7 +299,7 @@ class JointSystem(Network):
             for joint in self.joint_data:
                 positionList.append(joint["Position"])
         else:
-           libUtilities.pyLog.error("No joint data found")
+            libUtilities.pyLog.error("No joint data found")
         return positionList
 
 
@@ -344,6 +371,12 @@ class Ctrl(MetaRig):
         self.addBoolAttr("Gimbal")
         self.pynode.Gimbal >> self.gimbal.pynode.v
 
+    def addSpaceLocator(self):
+        # spaceLocator -p 0 0 0;
+
+        self.locator = MetaRig(name=utils.nameMe(self.side, self.part, "Pivot"), nodeType="transform")
+
+
     def setParent(self, targetSystem):
         # Instead of the node itself, the parent is reparented
         self.prnt.pynode.setParent(targetSystem.mNode)
@@ -412,7 +445,6 @@ class Ctrl(MetaRig):
     def aimConstraint(self, target, mo=True):
         pm.aimConstraint(target, self.prnt.pynode, mo=mo)
 
-
     @property
     def side(self):
         return self.pynode.mirrorSide.get(asString=True)[0]
@@ -436,7 +468,7 @@ class Ctrl(MetaRig):
 
     @property
     def hasGimbal(self):
-        return self.getSupportNode("Gimbal",True) is not None
+        return self.getSupportNode("Gimbal", True) is not None
 
     @property
     def pivot(self):
@@ -449,7 +481,21 @@ class Ctrl(MetaRig):
 
     @property
     def hasPivot(self):
-        return self.getSupportNode("Pivot",True) is not None
+        return self.getSupportNode("Pivot", True) is not None
+
+    @property
+    def locator(self):
+        data = self.getSupportNode("Locator")
+        return data
+
+    @locator.setter
+    def locator(self, data):
+        self.addSupportNode(data, "Locator")
+
+    @property
+    def hasLocator(self):
+        return self.getSupportNode("Locator", True) is not None
+
 
     @property
     def parentMasterPH(self):
@@ -494,6 +540,7 @@ class MyCameraMeta(Red9_Meta.MetaClass, MetaEnhanced):
     def __init__(self, *args, **kwargs):
         super(MyCameraMeta, self).__init__(nodeType='camera', *args, **kwargs)
 
+
 class rig(SubSystem):
     """This is base System. Transform is the main"""
 
@@ -526,6 +573,17 @@ class rig(SubSystem):
 
         libUtilities.skinGeo(cube, [targetJoint.mNode])
 
+    @property
+    def JointSystem(self):
+        return self.getSupportNode("JointSystem")
+
+    @JointSystem.setter
+    def JointSystem(self, data):
+        self.addSupportNode(data, "JointSystem")
+
+    @property
+    def primaryAxis(self):
+        return self.pynode.rotateOrder.get(asString=True)
 
 
 Red9_Meta.registerMClassInheritanceMapping()
@@ -558,12 +616,12 @@ if __name__ == '__main__':
     # fkSystem = SubSystem(side="U", part="Arm")
     # fkSystem.setParent(subSystem)
     # subSystem.connectChild(fkSystem, 'FK_System')
+    # l = rig(side="L", part="Test")
 
+    # myCtrl = Ctrl(side="L", part="Hand")
+    # myCtrl.build()
+    # myCtrl.addGimbalMode()
 
-    myCtrl = Ctrl(side="L", part="Hand")
-    myCtrl.build()
-    myCtrl.addGimbalMode()
-    print myCtrl.hasGimbal
     # myCtrl.add_constrain_node()
     # myCtrl.add_parent_master()
     # myCtrl.setParent(fkSystem)
@@ -579,9 +637,11 @@ if __name__ == '__main__':
     # fkSystem.convertToComponent("FK")
     # subSystem.connectChildren(fkCtrls, "FK")
 
-    # jntSystem = JointSystem(side="U", part="Cora")
-    # joints = utils.create_test_joint("ik2jnt")
-
+    jntSystem = JointSystem(side="U", part="Cora")
+    joints = utils.create_test_joint("ik2jnt")
+    jntSystem.Joints = joints
+    jntSystem.convertJointsToMetaJoints()
+    rep = jntSystem.replicate(side="L", part="CoraHelp" ,supportType = "Help")
     #
     #
     # # Need to run this in case of opening and closing file
@@ -594,5 +654,3 @@ if __name__ == '__main__':
     #
     # k = Red9_Meta.MetaClass("CharacterRig")
     # pm.newFile(f=1)
-
-
