@@ -1,12 +1,8 @@
-from PKD_Tools.Rigging.core import rig
-
 __author__ = 'pritish.dogra'
-
 from PKD_Tools.Rigging import core
-
-reload(core)
 from PKD_Tools.Rigging import utils
 
+reload(core)
 reload(utils)
 
 from PKD_Tools import libUtilities
@@ -51,8 +47,9 @@ def _build_ik_(metaClass, solver, handleSuffix, startJointNumber, endJointNumber
 
 
 class ik(core.rig):
+    # TODO Rename ik to limbIk and push the common properties between splineIk to a new class called iK in the core package
     def __init__(self, *args, **kwargs):
-        super(rig, self).__init__(*args, **kwargs)
+        super(ik, self).__init__(*args, **kwargs)
         self.ikSolver = SOLVERS["Single"]
         self.hasParentMaster = False
         self.rotateOrder = "yzx"
@@ -193,18 +190,6 @@ class ik(core.rig):
             self.JointSystem.setParent(self)
         for i in range(len(self.JointSystem.Joints) - 1, 0):
             self.create_test_cube(self.JointSystem.Joints[i])
-
-    @property
-    def JointSystem(self):
-        return self.getSupportNode("JointSystem")
-
-    @JointSystem.setter
-    def JointSystem(self, data):
-        self.addSupportNode(data, "JointSystem")
-
-    @property
-    def primaryAxis(self):
-        return self.pynode.rotateOrder.get(asString=True)
 
     @property
     def ikHandle(self):
@@ -858,10 +843,10 @@ if __name__ == '__main__':
     # print "s"
 
     # print ikSystem
-
+    # ik(side="U", part="Core")
     mainSystem = core.SubSystem(side="U", part="Core")
-
+    #
     ikSystem = mainSystem.addMetaSubSystem(hipPaw, "IK")
-    # ikSystem.ikControlToWorld = True
+    # # ikSystem.ikControlToWorld = True
     ikSystem.test_build()
     ikSystem.convertToComponent("IK")

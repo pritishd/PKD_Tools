@@ -15,12 +15,22 @@ import pymel.core as pm
 class ikSpline(core.rig):
     """This is a Spline IK System"""
 
-    def build_ik(self):
+    def build_helper_joints(self):
+        # Build the help joint system
+        self.HelpJointSystem = self.JointSystem.replicate(side="U", part="%sHelpJoints" % self.part,supportType="Help")
 
-        # Build a single degree curve
-        baseCurve = utils.create_curve(self.HelpJointSystem.positions, degree=1)
+
+    def build_solver(self):
+        # Decide which joints has the solver
+        if self.HelpJointSystem:
+            jntSystem = self.HelpJointSystem
+        else:
+            jntSystem = self.JointSystem
+
+        # Build the main single degree curve
+        baseCurve = utils.create_curve(jntSystem.positions, degree=1)
         baseCurve.rename(utils.nameMe(self.side, self.part + "Base", "Curve"))
-        # Build the ik curve
+        # Build the bspline ik curve
         ikCurve, fitNode = pm.fitBspline(baseCurve,
                                          ch=1,
                                          tol=0.01,
@@ -29,8 +39,8 @@ class ikSpline(core.rig):
         # Build the spline IK
         fitNode.rename(utils.nameMe(self.side, self.part + "IK", "bSpline"))
         name = utils.nameMe(self.side, self.part, "IkHandle")
-        startJoint = self.HelpJointSystem.Joints[0].shortName()
-        endJoint = self.HelpJointSystem.Joints[-1].shortName()
+        startJoint = jntSystem.Joints[0].shortName()
+        endJoint = jntSystem.Joints[-1].shortName()
 
         # TODO Add a meta IKHandle with parent as one of the properties
         ikHandle = pm.ikHandle(name=name,
@@ -40,6 +50,7 @@ class ikSpline(core.rig):
                                curve=ikCurve,
                                createCurve=False,
                                freezeJoints=False,
+                               rootOnCurve = False
                                )[0]
 
         ikHandleMeta = core.MetaRig(ikHandle.name(), nodeType="ikHandle")
@@ -51,42 +62,23 @@ class ikSpline(core.rig):
         ikHandleMeta.addParent("IkHandlePrnt", snap=False)
         self.ikHandle = ikHandleMeta
 
+
+    def build_ik(self):
+        self.build_helper_joints()
+        # Build a single degree curve
+        self.build_solver()
         # Reparent the main joints to the helperjoints
         for joint, helpJoint in zip(self.JointSystem.Joints, self.HelpJointSystem.Joints):
             joint.setParent(helpJoint)
 
     def test_build(self):
-
-
         # Build the help joints
         self.JointSystem = core.JointSystem(side="U", part="%sJoints" % self.part)
         joints = utils.create_test_joint(self.__class__.__name__)
         self.JointSystem.Joints = joints
         self.JointSystem.convertJointsToMetaJoints()
         self.JointSystem.setRotateOrder(self.rotateOrder)
-        print self.JointSystem.joint_data
-
-        # # Build the help joint system
-        self.HelpJointSystem = core.JointSystem(side="U", part="%sHelpJoints" % self.part)
-        # Build the help joints
-        helpJoints = utils.create_test_joint(self.__class__.__name__)
-        self.HelpJointSystem.Joints = helpJoints
-        self.HelpJointSystem.convertJointsToMetaJoints()
-        print self.HelpJointSystem.joint_data
-        for helpJoint in helpJoints:
-            helpJoint.rename("Help" + helpJoint.name())
-        self.HelpJointSystem.setRotateOrder(self.rotateOrder)
-
-
         self.build()
-
-    @property
-    def JointSystem(self):
-        return self.getSupportNode("JointSystem")
-
-    @JointSystem.setter
-    def JointSystem(self, data):
-        self.addSupportNode(data, "JointSystem")
 
     @property
     def HelpJointSystem(self):
