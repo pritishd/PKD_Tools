@@ -47,7 +47,6 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li class="current"><a href="namespaces.html"><span>Packages</span></a></li>
       <li><a href="annotated.html"><span>Classes</span></a></li>
       <li>
@@ -127,8 +126,8 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_p_k_d___tools_1_1lib_g_u_i_1_1_manager_g_u_i.html">ManagerGUI</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Setup a generic deformer weight import/exporter gui.  <a href="class_p_k_d___tools_1_1lib_g_u_i_1_1_manager_g_u_i.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_p_k_d___tools_1_1lib_g_u_i_1_1_obj_export_g_u_i.html">ObjExportGUI</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Bonus tool for exporting out the selected geometery as obj to a single destination folder.  <a href="class_p_k_d___tools_1_1lib_g_u_i_1_1_obj_export_g_u_i.html#details">More...</a><br /></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_p_k_d___tools_1_1lib_g_u_i_1_1_obj_manager_g_u_i.html">ObjManagerGUI</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Bonus tool for exporting out the selected geometery as obj to a single destination folder.  <a href="class_p_k_d___tools_1_1lib_g_u_i_1_1_obj_manager_g_u_i.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_p_k_d___tools_1_1lib_g_u_i_1_1_skin_manager_g_u_i.html">SkinManagerGUI</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Setup the Skin Import/Exporter Gui.  <a href="class_p_k_d___tools_1_1lib_g_u_i_1_1_skin_manager_g_u_i.html#details">More...</a><br /></td></tr>
@@ -148,9 +147,9 @@ Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:ae3914d8852121722d47e46c7d5da9f52"><td class="memItemLeft" align="right" valign="top">string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespace_p_k_d___tools_1_1lib_g_u_i.html#ae3914d8852121722d47e46c7d5da9f52">localPath</a> = r&quot;C:\Users\admin\Documents\maya\scripts\PKD_Tools&quot;</td></tr>
-<tr class="separator:ae3914d8852121722d47e46c7d5da9f52"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af40718b7e9fa08a3c38e45c27b001d7c"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespace_p_k_d___tools_1_1lib_g_u_i.html#af40718b7e9fa08a3c38e45c27b001d7c">win</a> = <a class="el" href="class_p_k_d___tools_1_1lib_g_u_i_1_1_obj_export_g_u_i.html">ObjExportGUI</a>()</td></tr>
+<tr class="memitem:a295fe52050dd0d16b111846c72f05ca0"><td class="memItemLeft" align="right" valign="top">string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespace_p_k_d___tools_1_1lib_g_u_i.html#a295fe52050dd0d16b111846c72f05ca0">localPath</a> = r&quot;C:\Users\admin\Documents\maya\scripts\PKD_Tools&quot;</td></tr>
+<tr class="separator:a295fe52050dd0d16b111846c72f05ca0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af40718b7e9fa08a3c38e45c27b001d7c"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespace_p_k_d___tools_1_1lib_g_u_i.html#af40718b7e9fa08a3c38e45c27b001d7c">win</a> = <a class="el" href="class_p_k_d___tools_1_1lib_g_u_i_1_1_obj_manager_g_u_i.html">ObjManagerGUI</a>()</td></tr>
 <tr class="separator:af40718b7e9fa08a3c38e45c27b001d7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
@@ -188,7 +187,7 @@ Variables</h2></td></tr>
 
 <p>A Simple Yes No Dialog. </p>
 
-<p>Definition at line <a class="el" href="lib_g_u_i_8py_source.html#l00436">436</a> of file <a class="el" href="lib_g_u_i_8py_source.html">libGUI.py</a>.</p>
+<p>Definition at line <a class="el" href="lib_g_u_i_8py_source.html#l00442">442</a> of file <a class="el" href="lib_g_u_i_8py_source.html">libGUI.py</a>.</p>
 
 </div>
 </div>
@@ -207,12 +206,12 @@ Variables</h2></td></tr>
 
 <p>Bring the error message in case nothing is selected. </p>
 
-<p>Definition at line <a class="el" href="lib_g_u_i_8py_source.html#l00427">427</a> of file <a class="el" href="lib_g_u_i_8py_source.html">libGUI.py</a>.</p>
+<p>Definition at line <a class="el" href="lib_g_u_i_8py_source.html#l00433">433</a> of file <a class="el" href="lib_g_u_i_8py_source.html">libGUI.py</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Variable Documentation</h2>
-<a class="anchor" id="ae3914d8852121722d47e46c7d5da9f52"></a>
+<a class="anchor" id="a295fe52050dd0d16b111846c72f05ca0"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
@@ -231,12 +230,12 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">tuple PKD_Tools.libGUI.win = <a class="el" href="class_p_k_d___tools_1_1lib_g_u_i_1_1_obj_export_g_u_i.html">ObjExportGUI</a>()</td>
+          <td class="memname">tuple PKD_Tools.libGUI.win = <a class="el" href="class_p_k_d___tools_1_1lib_g_u_i_1_1_obj_manager_g_u_i.html">ObjManagerGUI</a>()</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="lib_g_u_i_8py_source.html#l00452">452</a> of file <a class="el" href="lib_g_u_i_8py_source.html">libGUI.py</a>.</p>
+<p>Definition at line <a class="el" href="lib_g_u_i_8py_source.html#l00458">458</a> of file <a class="el" href="lib_g_u_i_8py_source.html">libGUI.py</a>.</p>
 
 </div>
 </div>
@@ -246,7 +245,7 @@ Variables</h2></td></tr>
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><a class="el" href="namespace_p_k_d___tools.html">PKD_Tools</a></li><li class="navelem"><a class="el" href="namespace_p_k_d___tools_1_1lib_g_u_i.html">libGUI</a></li>
-    <li class="footer">Generated on Tue Jul 21 2015 22:59:07 for PKD_Tools by
+    <li class="footer">Generated on Fri Sep 4 2015 00:36:06 for PKD_Tools by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.9.1 </li>
   </ul>

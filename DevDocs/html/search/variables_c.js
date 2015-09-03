@@ -1,6 +1,4 @@
 var searchData=
 [
-  ['tabsize',['tabSize',['../class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html#ac44a95d180c7695267fd9afb9ee6087f',1,'PKD_Tools::libPySide::VerticalTabBar']]],
-  ['target',['target',['../class_p_k_d___tools_1_1lib_weights_1_1_weights.html#a7aef1027fec8cad876d4bf7134591d12',1,'PKD_Tools::libWeights::Weights']]],
-  ['togglecollapse',['toggleCollapse',['../class_p_k_d___tools_1_1lib_py_side_1_1_q_group_box.html#a0fb32a0da7e50aa392f539f6303d291d',1,'PKD_Tools::libPySide::QGroupBox']]]
+  ['suite',['suite',['../class_p_k_d___tools_1_1lib_unit_tests_1_1_batch_test.html#af129a644a9933612557c9f702c9fd2fc',1,'PKD_Tools::libUnitTests::BatchTest']]]
 ];

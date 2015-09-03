@@ -174,6 +174,7 @@ def has_extension(path, extension):
 
 def listfolders(path):
     """
+    List the folders for the path
     @param path (string) Path that is queried for folders
     @return list of folders for this path
     """
@@ -183,6 +184,7 @@ def listfolders(path):
 
 def listfiles(path, extension=''):
     """
+    List the files for the path
     @param path (string) Path that is queried for files
     @param extension (string) Filter result based on certain extension
     @return list of files in that folder
@@ -243,7 +245,8 @@ def open_folder_in_windows_explorer(path):
 
 def current_working_directory():
     """
-    @return (string) returns the location where this module is being excecuted.
+    Returns the location where this module is being excecuted
+    @return (string) path on the drive.
     """
     currentPath = os.path.normpath(os.path.dirname(inspect.getfile(inspect.currentframe())))
     return currentPath
@@ -251,6 +254,7 @@ def current_working_directory():
 
 def search_pattern_in_folder(searchPattern, folder):
     """
+    Search for certain files in a folder based on a pattern
     @param searchPattern (string) search pattern that is queried
     @param folder (string) The target folder
     @return list of file names that matches the pattern

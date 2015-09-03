@@ -9,7 +9,6 @@ import pymel.core as pm
 from pymel.internal.plogging import pymelLogger as pyLog
 
 import libXml
-from libVector import vector
 
 reload(libXml)
 
@@ -148,20 +147,6 @@ def lockAttr(target, attributes, lock=True):
         for i in range(3):
             pm.setAttr(target + "." + attributes[i], l=0)
 
-
-def name_me(Description="", attributeType="", side=""):
-    """
-    Return a naming convention for a node
-    @param Description: Short discription of the node
-    @param attributeType: What type of node is it
-    @param side: Which side does it belong to
-    """
-    if side:
-        return "%s_%s_%s" % (side, Description, attributeType)
-    else:
-        return "%s_%s" % (Description, attributeType)
-
-
 def colorCurve(target, col):
     """
     Override Color for shape object
@@ -211,19 +196,6 @@ def snap(target, source, t=True, r=True):
     if r:
         # Set the world space rotation
         target.setRotation(source.getRotation(space="world"), space="world")
-
-
-def xform(target, t=True):
-    """
-    Query the world space translate or rotate
-    @param target: The target transform
-    @param t: are we quering translation or rotation
-    @return:
-    """
-    if t:
-        return vector(pm.xform(target, q=1, ws=1, rp=1))
-    else:
-        return pm.xform(target, q=1, ws=1, ro=1)
 
 
 def indexize_vertice_group(vertice_group):
@@ -456,7 +428,7 @@ def remove_cv_from_deformer(deformerSet, vertices):
 
 def get_centre_piv_pos(geo):
     """
-    Get the center point of geo with help of cluster
+    Get the center point of a geo with help of cluster
     @param geo: The target geo
     """
     cluster = pm.cluster(geo)[1]

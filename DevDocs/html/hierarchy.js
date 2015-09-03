@@ -2,6 +2,8 @@ var hierarchy =
 [
     [ "object", null, [
       [ "PKD_Tools.libGeo.ObjManager", "class_p_k_d___tools_1_1lib_geo_1_1_obj_manager.html", null ],
+      [ "PKD_Tools.libUnitTests.BatchTest", "class_p_k_d___tools_1_1lib_unit_tests_1_1_batch_test.html", null ],
+      [ "PKD_Tools.libUnitTests.Droid", "class_p_k_d___tools_1_1lib_unit_tests_1_1_droid.html", null ],
       [ "PKD_Tools.libWeights.WeightManager", "class_p_k_d___tools_1_1lib_weights_1_1_weight_manager.html", [
         [ "PKD_Tools.libWeights.BlendsWeightManager", "class_p_k_d___tools_1_1lib_weights_1_1_blends_weight_manager.html", null ],
         [ "PKD_Tools.libWeights.ClusterWeightManager", "class_p_k_d___tools_1_1lib_weights_1_1_cluster_weight_manager.html", null ],
@@ -30,7 +32,7 @@ var hierarchy =
           [ "PKD_Tools.libGUI.ManagerGUI", "class_p_k_d___tools_1_1lib_g_u_i_1_1_manager_g_u_i.html", [
             [ "PKD_Tools.libGUI.BlendshapeManagerGUI", "class_p_k_d___tools_1_1lib_g_u_i_1_1_blendshape_manager_g_u_i.html", null ],
             [ "PKD_Tools.libGUI.ClusterManagerGUI", "class_p_k_d___tools_1_1lib_g_u_i_1_1_cluster_manager_g_u_i.html", null ],
-            [ "PKD_Tools.libGUI.ObjExportGUI", "class_p_k_d___tools_1_1lib_g_u_i_1_1_obj_export_g_u_i.html", null ],
+            [ "PKD_Tools.libGUI.ObjManagerGUI", "class_p_k_d___tools_1_1lib_g_u_i_1_1_obj_manager_g_u_i.html", null ],
             [ "PKD_Tools.libGUI.SkinManagerGUI", "class_p_k_d___tools_1_1lib_g_u_i_1_1_skin_manager_g_u_i.html", null ]
           ] ],
           [ "PKD_Tools.libGUI.TangentSwapper", "class_p_k_d___tools_1_1lib_g_u_i_1_1_tangent_swapper.html", null ]
@@ -46,6 +48,9 @@ var hierarchy =
     ] ],
     [ "QTabBar", null, [
       [ "PKD_Tools.libPySide.VerticalTabBar", "class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html", null ]
+    ] ],
+    [ "TestCase", null, [
+      [ "PKD_Tools.libUnitTests.UnitTestCase", "class_p_k_d___tools_1_1lib_unit_tests_1_1_unit_test_case.html", null ]
     ] ],
     [ "PKD_Tools.libVector.vector", "class_p_k_d___tools_1_1lib_vector_1_1vector.html", null ]
 ];

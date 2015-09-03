@@ -47,7 +47,6 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Packages</span></a></li>
       <li><a href="annotated.html"><span>Classes</span></a></li>
       <li>
@@ -390,208 +389,209 @@ $(document).ready(function(){initNavTree('lib_py_side_8py_source.html','');});
 <div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;                                                   content=self.objectName(),</div>
 <div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;                                                   floatChangeCommand=self.<a class="code" href="class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window.html#a4b49171b60b11705893591a961a56a1f">_auto_resize_</a></div>
 <div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;                                                   )</div>
-<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;        <span class="keywordflow">except</span>:</div>
-<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;            pyLog.info(<span class="stringliteral">&quot;Maya dock window failed&quot;</span>)</div>
-<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;</div>
-<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;        super(QDockableWindow, self).<a class="code" href="class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window.html#a2094109c9183af650f7a5d88bd7edcd9">show</a>()</div>
-<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;</div>
-<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;    <span class="keyword">def </span>_auto_resize_(self):</div>
-<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;        sizeHint = self.sizeHint()</div>
-<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;        <span class="comment"># pyLog.info(&quot;Recommend Size:%s&quot; % sizeHint)</span></div>
-<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;        <span class="comment"># pyLog.info(&quot;Current Central Size:%s&quot; % self.centralWidget().size())</span></div>
-<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;        self.resize(sizeHint)</div>
-<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;        <span class="comment"># if cmds.dockControl(self._dockedwidget_, q=1, floating=1):</span></div>
-<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;        <span class="comment">#     pyLog.info(cmds.dockControl(self._dockedwidget_, q=1, w=1))</span></div>
-<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;        <span class="comment">#     pyLog.info(cmds.dockControl(self._dockedwidget_, q=1, h=1))</span></div>
-<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;        <span class="comment"># cmds.dockControl(self._dockedwidget_, e=1, w=278,h=296)</span></div>
-<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;</div>
-<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;<span class="comment"># @cond DOXYGEN_SHOULD_SKIP_THIS</span></div>
-<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;<span class="comment">##</span></div>
-<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;<span class="comment"># A test GUI</span></div>
-<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;<span class="keyword">class </span>TestGUI(<a class="code" href="class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window.html">QDockableWindow</a>):</div>
-<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;</div>
-<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;    <span class="keyword">def </span><a class="code" href="class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window.html#a977f91ec0d4968cdb469f5cbba09ef71">__init__</a>(self):</div>
-<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;        super(TestGUI, self).<a class="code" href="class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window.html#a977f91ec0d4968cdb469f5cbba09ef71">__init__</a>()</div>
-<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;        <span class="comment"># Set the name of the window</span></div>
-<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;        self.setWindowTitle(<span class="stringliteral">&quot;Test GUI&quot;</span>)</div>
-<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;        <span class="comment"># Create a list of rows and buttons</span></div>
-<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;        self.rows = [<span class="stringliteral">&quot;Row1&quot;</span>, <span class="stringliteral">&quot;Row2&quot;</span>, <span class="stringliteral">&quot;Row3&quot;</span>]</div>
-<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;        self.buttons = [<span class="stringliteral">&quot;Button1&quot;</span>, <span class="stringliteral">&quot;Button2&quot;</span>, <span class="stringliteral">&quot;Button3&quot;</span>]</div>
-<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;</div>
-<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;    <span class="keyword">def </span>_setup_(self):</div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;        super(TestGUI, self)._setup_()</div>
-<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;        pyLog.info(<span class="stringliteral">&quot;Child Info Called&quot;</span>)</div>
-<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;        <span class="comment"># Create a series of rows, and in each row, put our buttons</span></div>
-<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;        <span class="keywordflow">for</span> row <span class="keywordflow">in</span> self.rows:</div>
-<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;</div>
-<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;            self.row_Hbox = QtGui.QGroupBox()</div>
-<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;            self.layout = QtGui.QGridLayout()</div>
-<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;</div>
-<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;            <span class="keywordflow">for</span> button <span class="keywordflow">in</span> self.buttons:</div>
-<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;                <span class="comment"># Label the button with it&#39;s list name</span></div>
-<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;                self.push_button = QtGui.QPushButton(button, self)</div>
-<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;</div>
-<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;                <span class="comment"># Give each button a unique object name</span></div>
-<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;                self.b_name = row + <span class="stringliteral">&quot;_&quot;</span> + button</div>
-<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;                self.push_button.setObjectName(self.b_name)</div>
-<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;</div>
-<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;                <span class="comment"># Add a QLine Edit to each particular button</span></div>
-<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;                self.q_line_name = self.b_name + <span class="stringliteral">&quot;_TextEdit&quot;</span></div>
-<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;                self.my_line_edit = QtGui.QLineEdit()</div>
-<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;                self.my_line_edit.setText(<span class="stringliteral">&quot;Hi! I&#39;m &quot;</span> + self.q_line_name)</div>
-<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;</div>
-<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;                <span class="comment"># Also give it a unique name</span></div>
-<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;                self.my_line_edit.setObjectName(self.q_line_name)</div>
-<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;</div>
-<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;                <span class="comment"># Offset each button in the layout by it&#39;s index number</span></div>
-<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;                self.layout.addWidget(self.push_button, 0, self.buttons.index(button))</div>
-<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;</div>
-<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;                <span class="comment"># Offset each QLine Edit in the layout to be underneath each button</span></div>
-<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;                self.layout.addWidget(self.my_line_edit, 1, self.buttons.index(button))</div>
-<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;</div>
-<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;                <span class="comment"># Connect the button to an event</span></div>
-<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;                self.push_button.clicked.connect(self.on_button_event)</div>
-<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;</div>
-<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;            <span class="comment"># Add the buttons to our layout</span></div>
-<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;            self.row_Hbox.setLayout(self.layout)</div>
-<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;            self.main_layout.addWidget(self.row_Hbox)</div>
-<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;</div>
-<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;    <span class="keyword">def </span>on_button_event(self):</div>
-<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;</div>
-<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;        sender = self.sender()</div>
-<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;        <span class="keywordflow">print</span> sender.objectName() + <span class="stringliteral">&#39; was pressed&#39;</span></div>
-<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;</div>
-<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;        <span class="comment"># Get the text from the text line edit linked with the button</span></div>
-<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;        self.line_edit_name = sender.objectName() + <span class="stringliteral">&quot;_TextEdit&quot;</span></div>
-<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;        self.line_edit = self.findChild(QtGui.QLineEdit, self.line_edit_name)</div>
-<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;        <span class="keywordflow">print</span> self.line_edit</div>
-<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;        <span class="keywordflow">print</span> self.line_edit.text()</div>
-<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;<span class="comment"># @endcond</span></div>
-<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;</div>
-<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;<span class="comment">##</span></div>
-<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;<span class="comment"># A tab bar with a vertical side bar with text written horizontally instead of vertically</span></div>
-<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;<span class="comment">#     @details This is a modification of the following http://stackoverflow.com/questions/3607709/how-to-change-text-alignment-in-qtabwidget</span></div>
-<div class="line"><a name="l00370"></a><span class="lineno"><a class="line" href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html">  370</a></span>&#160;<span class="keyword">class </span><a class="code" href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html">VerticalTabBar</a>(QtGui.QTabBar):</div>
-<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;</div>
-<div class="line"><a name="l00372"></a><span class="lineno"><a class="line" href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html#a2222dfb20cecb83c716e124e3ff16c95">  372</a></span>&#160;    <span class="keyword">def </span><a class="code" href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html#a2222dfb20cecb83c716e124e3ff16c95">__init__</a>(self, *args, **kwargs):</div>
-<div class="line"><a name="l00373"></a><span class="lineno"><a class="line" href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html#ac44a95d180c7695267fd9afb9ee6087f">  373</a></span>&#160;        self.<a class="code" href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html#ac44a95d180c7695267fd9afb9ee6087f">tabSize</a> = QtCore.QSize(kwargs.pop(<span class="stringliteral">&#39;width&#39;</span>), kwargs.pop(<span class="stringliteral">&#39;height&#39;</span>))</div>
-<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;        super(VerticalTabBar, self).<a class="code" href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html#a2222dfb20cecb83c716e124e3ff16c95">__init__</a>(*args, **kwargs)</div>
-<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;</div>
-<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;    <span class="comment">##</span></div>
-<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;    <span class="comment"># Write the text horizontally instead of vertically</span></div>
-<div class="line"><a name="l00378"></a><span class="lineno"><a class="line" href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html#acda7f6ad53144c1a3ebc31b46a132a0f">  378</a></span>&#160;    <span class="keyword">def </span><a class="code" href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html#acda7f6ad53144c1a3ebc31b46a132a0f">paintEvent</a>(self, event):</div>
-<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;        super(VerticalTabBar, self).<a class="code" href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html#acda7f6ad53144c1a3ebc31b46a132a0f">paintEvent</a>(event)</div>
-<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;        painter = QtGui.QStylePainter(self)</div>
-<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;        option = QtGui.QStyleOptionTab()</div>
-<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;</div>
-<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;        painter.begin(self)</div>
-<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;        <span class="keywordflow">for</span> index <span class="keywordflow">in</span> range(self.count()):</div>
-<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;            self.initStyleOption(option, index)</div>
-<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;            tabRect = self.tabRect(index)</div>
-<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;            tabRect.moveLeft(10)</div>
-<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;            painter.drawControl(QtGui.QStyle.CE_TabBarTabShape, option)</div>
-<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;            <span class="comment"># Take care of mnemonic keys when redrawing the text</span></div>
-<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;            painter.drawText(tabRect,</div>
-<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;                             QtCore.Qt.AlignVCenter | QtCore.Qt.TextDontClip,</div>
-<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;                             self.tabText(index).replace(<span class="stringliteral">&quot;&amp;&quot;</span>, <span class="stringliteral">&quot;&quot;</span>))</div>
-<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;        painter.end()</div>
-<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;    <span class="comment"># @cond DOXYGEN_SHOULD_SKIP_THIS</span></div>
-<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;    <span class="keyword">def </span>tabSizeHint(self, index):</div>
-<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;        <span class="keywordflow">return</span> self.<a class="code" href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html#ac44a95d180c7695267fd9afb9ee6087f">tabSize</a></div>
-<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;    <span class="comment"># @endcond</span></div>
-<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;<span class="comment"># @cond DOXYGEN_SHOULD_SKIP_THIS</span></div>
-<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;<span class="comment">##</span></div>
-<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;<span class="comment"># A vertical tab test</span></div>
-<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;<span class="keyword">class </span>VerticalTabTest(<a class="code" href="class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window.html">QMainWindow</a>):</div>
-<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;</div>
-<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;    <span class="keyword">def </span>_setup_(self):</div>
-<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;        super(VerticalTabTest, self)._setup_()</div>
-<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;        tabs = QtGui.QTabWidget()</div>
-<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;        tabs.setTabBar(<a class="code" href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html">VerticalTabBar</a>(width=100, height=25))</div>
-<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;        digits = [<span class="stringliteral">&#39;Thumb&#39;</span>, <span class="stringliteral">&#39;Pointer&#39;</span>, <span class="stringliteral">&#39;Rude&#39;</span>, <span class="stringliteral">&#39;Ring&#39;</span>, <span class="stringliteral">&#39;Pinky&#39;</span>]</div>
-<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;        <span class="keywordflow">for</span> i, d <span class="keywordflow">in</span> enumerate(digits):</div>
-<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;            widget = QtGui.QLabel(<span class="stringliteral">&quot;Area #%s &lt;br&gt; %s Finger&quot;</span> % (i, d))</div>
-<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160;            tabs.addTab(widget, d)</div>
-<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160;        tabs.setTabPosition(QtGui.QTabWidget.West)</div>
-<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160;        tabs.show()</div>
-<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;        self.main_layout.addWidget(tabs)</div>
-<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;<span class="comment"># @endcond DOXYGEN_SHOULD_SKIP_THIS</span></div>
-<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;</div>
-<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;<span class="comment">##</span></div>
-<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;<span class="comment"># Return a horizontal divider</span></div>
-<div class="line"><a name="l00418"></a><span class="lineno"><a class="line" href="namespace_p_k_d___tools_1_1lib_py_side.html#a97d265c5fe8565e9c5bed159f96f3466">  418</a></span>&#160;<span class="keyword">def </span><a class="code" href="namespace_p_k_d___tools_1_1lib_py_side.html#a97d265c5fe8565e9c5bed159f96f3466">horizontal_divider</a>():</div>
-<div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160;    divider = QtGui.QFrame()</div>
-<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;    divider.setFrameShape(QtGui.QFrame.HLine)</div>
-<div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;    divider.setFrameShadow(QtGui.QFrame.Sunken)</div>
-<div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;    <span class="keywordflow">return</span> divider</div>
-<div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160;</div>
+<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;        <span class="keywordflow">except</span> Exception, e:</div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;            pyLog.info(str(e))</div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;            pyLog.info(<span class="stringliteral">&quot;Maya dock window failed&quot;</span>)</div>
+<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;</div>
+<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;        super(QDockableWindow, self).<a class="code" href="class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window.html#a2094109c9183af650f7a5d88bd7edcd9">show</a>()</div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;</div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;    <span class="keyword">def </span>_auto_resize_(self):</div>
+<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;        sizeHint = self.sizeHint()</div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;        <span class="comment"># pyLog.info(&quot;Recommend Size:%s&quot; % sizeHint)</span></div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;        <span class="comment"># pyLog.info(&quot;Current Central Size:%s&quot; % self.centralWidget().size())</span></div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;        self.resize(sizeHint)</div>
+<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;        <span class="comment"># if cmds.dockControl(self._dockedwidget_, q=1, floating=1):</span></div>
+<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;        <span class="comment">#     pyLog.info(cmds.dockControl(self._dockedwidget_, q=1, w=1))</span></div>
+<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;        <span class="comment">#     pyLog.info(cmds.dockControl(self._dockedwidget_, q=1, h=1))</span></div>
+<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;        <span class="comment"># cmds.dockControl(self._dockedwidget_, e=1, w=278,h=296)</span></div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;</div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;<span class="comment"># @cond DOXYGEN_SHOULD_SKIP_THIS</span></div>
+<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;<span class="comment">##</span></div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;<span class="comment"># A test GUI</span></div>
+<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;<span class="keyword">class </span>TestGUI(<a class="code" href="class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window.html">QDockableWindow</a>):</div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;</div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;    <span class="keyword">def </span><a class="code" href="class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window.html#a977f91ec0d4968cdb469f5cbba09ef71">__init__</a>(self):</div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;        super(TestGUI, self).<a class="code" href="class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window.html#a977f91ec0d4968cdb469f5cbba09ef71">__init__</a>()</div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;        <span class="comment"># Set the name of the window</span></div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;        self.setWindowTitle(<span class="stringliteral">&quot;Test GUI&quot;</span>)</div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;        <span class="comment"># Create a list of rows and buttons</span></div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;        self.rows = [<span class="stringliteral">&quot;Row1&quot;</span>, <span class="stringliteral">&quot;Row2&quot;</span>, <span class="stringliteral">&quot;Row3&quot;</span>]</div>
+<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;        self.buttons = [<span class="stringliteral">&quot;Button1&quot;</span>, <span class="stringliteral">&quot;Button2&quot;</span>, <span class="stringliteral">&quot;Button3&quot;</span>]</div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;</div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;    <span class="keyword">def </span>_setup_(self):</div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;        super(TestGUI, self)._setup_()</div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;        pyLog.info(<span class="stringliteral">&quot;Child Info Called&quot;</span>)</div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;        <span class="comment"># Create a series of rows, and in each row, put our buttons</span></div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;        <span class="keywordflow">for</span> row <span class="keywordflow">in</span> self.rows:</div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;</div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;            self.row_Hbox = QtGui.QGroupBox()</div>
+<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;            self.layout = QtGui.QGridLayout()</div>
+<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;</div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;            <span class="keywordflow">for</span> button <span class="keywordflow">in</span> self.buttons:</div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;                <span class="comment"># Label the button with it&#39;s list name</span></div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;                self.push_button = QtGui.QPushButton(button, self)</div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;</div>
+<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;                <span class="comment"># Give each button a unique object name</span></div>
+<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;                self.b_name = row + <span class="stringliteral">&quot;_&quot;</span> + button</div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;                self.push_button.setObjectName(self.b_name)</div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;                <span class="comment"># Add a QLine Edit to each particular button</span></div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;                self.q_line_name = self.b_name + <span class="stringliteral">&quot;_TextEdit&quot;</span></div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;                self.my_line_edit = QtGui.QLineEdit()</div>
+<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;                self.my_line_edit.setText(<span class="stringliteral">&quot;Hi! I&#39;m &quot;</span> + self.q_line_name)</div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;</div>
+<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;                <span class="comment"># Also give it a unique name</span></div>
+<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;                self.my_line_edit.setObjectName(self.q_line_name)</div>
+<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;</div>
+<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;                <span class="comment"># Offset each button in the layout by it&#39;s index number</span></div>
+<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;                self.layout.addWidget(self.push_button, 0, self.buttons.index(button))</div>
+<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;</div>
+<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;                <span class="comment"># Offset each QLine Edit in the layout to be underneath each button</span></div>
+<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;                self.layout.addWidget(self.my_line_edit, 1, self.buttons.index(button))</div>
+<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;</div>
+<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;                <span class="comment"># Connect the button to an event</span></div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;                self.push_button.clicked.connect(self.on_button_event)</div>
+<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;</div>
+<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;            <span class="comment"># Add the buttons to our layout</span></div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;            self.row_Hbox.setLayout(self.layout)</div>
+<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;            self.main_layout.addWidget(self.row_Hbox)</div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;</div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;    <span class="keyword">def </span>on_button_event(self):</div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;</div>
+<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;        sender = self.sender()</div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;        <span class="keywordflow">print</span> sender.objectName() + <span class="stringliteral">&#39; was pressed&#39;</span></div>
+<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;</div>
+<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;        <span class="comment"># Get the text from the text line edit linked with the button</span></div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;        self.line_edit_name = sender.objectName() + <span class="stringliteral">&quot;_TextEdit&quot;</span></div>
+<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;        self.line_edit = self.findChild(QtGui.QLineEdit, self.line_edit_name)</div>
+<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;        <span class="keywordflow">print</span> self.line_edit</div>
+<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;        <span class="keywordflow">print</span> self.line_edit.text()</div>
+<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;<span class="comment"># @endcond</span></div>
+<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;</div>
+<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;<span class="comment">##</span></div>
+<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;<span class="comment"># A tab bar with a vertical side bar with text written horizontally instead of vertically</span></div>
+<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;<span class="comment">#     @details This is a modification of the following http://stackoverflow.com/questions/3607709/how-to-change-text-alignment-in-qtabwidget</span></div>
+<div class="line"><a name="l00371"></a><span class="lineno"><a class="line" href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html">  371</a></span>&#160;<span class="keyword">class </span><a class="code" href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html">VerticalTabBar</a>(QtGui.QTabBar):</div>
+<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;</div>
+<div class="line"><a name="l00373"></a><span class="lineno"><a class="line" href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html#a2222dfb20cecb83c716e124e3ff16c95">  373</a></span>&#160;    <span class="keyword">def </span><a class="code" href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html#a2222dfb20cecb83c716e124e3ff16c95">__init__</a>(self, *args, **kwargs):</div>
+<div class="line"><a name="l00374"></a><span class="lineno"><a class="line" href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html#ac44a95d180c7695267fd9afb9ee6087f">  374</a></span>&#160;        self.<a class="code" href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html#ac44a95d180c7695267fd9afb9ee6087f">tabSize</a> = QtCore.QSize(kwargs.pop(<span class="stringliteral">&#39;width&#39;</span>), kwargs.pop(<span class="stringliteral">&#39;height&#39;</span>))</div>
+<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;        super(VerticalTabBar, self).<a class="code" href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html#a2222dfb20cecb83c716e124e3ff16c95">__init__</a>(*args, **kwargs)</div>
+<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;</div>
+<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;    <span class="comment">##</span></div>
+<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;    <span class="comment"># Write the text horizontally instead of vertically</span></div>
+<div class="line"><a name="l00379"></a><span class="lineno"><a class="line" href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html#acda7f6ad53144c1a3ebc31b46a132a0f">  379</a></span>&#160;    <span class="keyword">def </span><a class="code" href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html#acda7f6ad53144c1a3ebc31b46a132a0f">paintEvent</a>(self, event):</div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;        super(VerticalTabBar, self).<a class="code" href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html#acda7f6ad53144c1a3ebc31b46a132a0f">paintEvent</a>(event)</div>
+<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;        painter = QtGui.QStylePainter(self)</div>
+<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;        option = QtGui.QStyleOptionTab()</div>
+<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;</div>
+<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;        painter.begin(self)</div>
+<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;        <span class="keywordflow">for</span> index <span class="keywordflow">in</span> range(self.count()):</div>
+<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;            self.initStyleOption(option, index)</div>
+<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;            tabRect = self.tabRect(index)</div>
+<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;            tabRect.moveLeft(10)</div>
+<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;            painter.drawControl(QtGui.QStyle.CE_TabBarTabShape, option)</div>
+<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;            <span class="comment"># Take care of mnemonic keys when redrawing the text</span></div>
+<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;            painter.drawText(tabRect,</div>
+<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;                             QtCore.Qt.AlignVCenter | QtCore.Qt.TextDontClip,</div>
+<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;                             self.tabText(index).replace(<span class="stringliteral">&quot;&amp;&quot;</span>, <span class="stringliteral">&quot;&quot;</span>))</div>
+<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;        painter.end()</div>
+<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;    <span class="comment"># @cond DOXYGEN_SHOULD_SKIP_THIS</span></div>
+<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;    <span class="keyword">def </span>tabSizeHint(self, index):</div>
+<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;        <span class="keywordflow">return</span> self.<a class="code" href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html#ac44a95d180c7695267fd9afb9ee6087f">tabSize</a></div>
+<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;    <span class="comment"># @endcond</span></div>
+<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;<span class="comment"># @cond DOXYGEN_SHOULD_SKIP_THIS</span></div>
+<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;<span class="comment">##</span></div>
+<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;<span class="comment"># A vertical tab test</span></div>
+<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;<span class="keyword">class </span>VerticalTabTest(<a class="code" href="class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window.html">QMainWindow</a>):</div>
+<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;</div>
+<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;    <span class="keyword">def </span>_setup_(self):</div>
+<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;        super(VerticalTabTest, self)._setup_()</div>
+<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;        tabs = QtGui.QTabWidget()</div>
+<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;        tabs.setTabBar(<a class="code" href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html">VerticalTabBar</a>(width=100, height=25))</div>
+<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;        digits = [<span class="stringliteral">&#39;Thumb&#39;</span>, <span class="stringliteral">&#39;Pointer&#39;</span>, <span class="stringliteral">&#39;Rude&#39;</span>, <span class="stringliteral">&#39;Ring&#39;</span>, <span class="stringliteral">&#39;Pinky&#39;</span>]</div>
+<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;        <span class="keywordflow">for</span> i, d <span class="keywordflow">in</span> enumerate(digits):</div>
+<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160;            widget = QtGui.QLabel(<span class="stringliteral">&quot;Area #%s &lt;br&gt; %s Finger&quot;</span> % (i, d))</div>
+<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160;            tabs.addTab(widget, d)</div>
+<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160;        tabs.setTabPosition(QtGui.QTabWidget.West)</div>
+<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;        tabs.show()</div>
+<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;        self.main_layout.addWidget(tabs)</div>
+<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;<span class="comment"># @endcond DOXYGEN_SHOULD_SKIP_THIS</span></div>
+<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;</div>
+<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;<span class="comment">##</span></div>
+<div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;<span class="comment"># Return a horizontal divider</span></div>
+<div class="line"><a name="l00419"></a><span class="lineno"><a class="line" href="namespace_p_k_d___tools_1_1lib_py_side.html#a97d265c5fe8565e9c5bed159f96f3466">  419</a></span>&#160;<span class="keyword">def </span><a class="code" href="namespace_p_k_d___tools_1_1lib_py_side.html#a97d265c5fe8565e9c5bed159f96f3466">horizontal_divider</a>():</div>
+<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;    divider = QtGui.QFrame()</div>
+<div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;    divider.setFrameShape(QtGui.QFrame.HLine)</div>
+<div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;    divider.setFrameShadow(QtGui.QFrame.Sunken)</div>
+<div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160;    <span class="keywordflow">return</span> divider</div>
 <div class="line"><a name="l00424"></a><span class="lineno">  424</span>&#160;</div>
-<div class="line"><a name="l00425"></a><span class="lineno">  425</span>&#160;<span class="comment">##</span></div>
-<div class="line"><a name="l00426"></a><span class="lineno">  426</span>&#160;<span class="comment"># Return a vertical divider</span></div>
-<div class="line"><a name="l00427"></a><span class="lineno"><a class="line" href="namespace_p_k_d___tools_1_1lib_py_side.html#ab26658f88d5b0df7856d4ad72fef5468">  427</a></span>&#160;<span class="keyword">def </span><a class="code" href="namespace_p_k_d___tools_1_1lib_py_side.html#ab26658f88d5b0df7856d4ad72fef5468">vLine_divider</a>():</div>
-<div class="line"><a name="l00428"></a><span class="lineno">  428</span>&#160;    divider = QtGui.QFrame()</div>
-<div class="line"><a name="l00429"></a><span class="lineno">  429</span>&#160;    divider.setFrameShape(QtGui.QFrame.VLine)</div>
-<div class="line"><a name="l00430"></a><span class="lineno">  430</span>&#160;    divider.setFrameShadow(QtGui.QFrame.Sunken)</div>
-<div class="line"><a name="l00431"></a><span class="lineno">  431</span>&#160;    <span class="keywordflow">return</span> divider</div>
-<div class="line"><a name="l00432"></a><span class="lineno">  432</span>&#160;</div>
+<div class="line"><a name="l00425"></a><span class="lineno">  425</span>&#160;</div>
+<div class="line"><a name="l00426"></a><span class="lineno">  426</span>&#160;<span class="comment">##</span></div>
+<div class="line"><a name="l00427"></a><span class="lineno">  427</span>&#160;<span class="comment"># Return a vertical divider</span></div>
+<div class="line"><a name="l00428"></a><span class="lineno"><a class="line" href="namespace_p_k_d___tools_1_1lib_py_side.html#ab26658f88d5b0df7856d4ad72fef5468">  428</a></span>&#160;<span class="keyword">def </span><a class="code" href="namespace_p_k_d___tools_1_1lib_py_side.html#ab26658f88d5b0df7856d4ad72fef5468">vLine_divider</a>():</div>
+<div class="line"><a name="l00429"></a><span class="lineno">  429</span>&#160;    divider = QtGui.QFrame()</div>
+<div class="line"><a name="l00430"></a><span class="lineno">  430</span>&#160;    divider.setFrameShape(QtGui.QFrame.VLine)</div>
+<div class="line"><a name="l00431"></a><span class="lineno">  431</span>&#160;    divider.setFrameShadow(QtGui.QFrame.Sunken)</div>
+<div class="line"><a name="l00432"></a><span class="lineno">  432</span>&#160;    <span class="keywordflow">return</span> divider</div>
 <div class="line"><a name="l00433"></a><span class="lineno">  433</span>&#160;</div>
-<div class="line"><a name="l00434"></a><span class="lineno">  434</span>&#160;<span class="keywordflow">if</span> __name__ == <span class="stringliteral">&#39;__main__&#39;</span>:</div>
-<div class="line"><a name="l00435"></a><span class="lineno"><a class="line" href="namespace_p_k_d___tools_1_1lib_py_side.html#a52048a418b54a20fa4b5230cad0ffe7d">  435</a></span>&#160;    win = VerticalTabTest()</div>
-<div class="line"><a name="l00436"></a><span class="lineno">  436</span>&#160;    win.show()</div>
-<div class="line"><a name="l00437"></a><span class="lineno">  437</span>&#160;</div>
-<div class="line"><a name="l00438"></a><span class="lineno">  438</span>&#160;    <span class="comment"># input = QInputDialog()</span></div>
-<div class="line"><a name="l00439"></a><span class="lineno">  439</span>&#160;    <span class="comment"># input.setWindowTitle(&quot;ChuckTesta&quot;)</span></div>
-<div class="line"><a name="l00440"></a><span class="lineno">  440</span>&#160;    <span class="comment"># input.setLabelText(&quot;Gloworms&quot;)</span></div>
-<div class="line"><a name="l00441"></a><span class="lineno">  441</span>&#160;    <span class="comment"># input.setDoubleValue(1.545454)</span></div>
-<div class="line"><a name="l00442"></a><span class="lineno">  442</span>&#160;    <span class="comment"># input.setDoubleDecimals(3)</span></div>
-<div class="line"><a name="l00443"></a><span class="lineno">  443</span>&#160;    <span class="comment"># res, ok = input.getDouble()</span></div>
-<div class="line"><a name="l00444"></a><span class="lineno">  444</span>&#160;    <span class="comment"># print res, ok</span></div>
-<div class="line"><a name="l00445"></a><span class="lineno">  445</span>&#160;</div>
+<div class="line"><a name="l00434"></a><span class="lineno">  434</span>&#160;</div>
+<div class="line"><a name="l00435"></a><span class="lineno">  435</span>&#160;<span class="keywordflow">if</span> __name__ == <span class="stringliteral">&#39;__main__&#39;</span>:</div>
+<div class="line"><a name="l00436"></a><span class="lineno"><a class="line" href="namespace_p_k_d___tools_1_1lib_py_side.html#a52048a418b54a20fa4b5230cad0ffe7d">  436</a></span>&#160;    win = VerticalTabTest()</div>
+<div class="line"><a name="l00437"></a><span class="lineno">  437</span>&#160;    win.show()</div>
+<div class="line"><a name="l00438"></a><span class="lineno">  438</span>&#160;</div>
+<div class="line"><a name="l00439"></a><span class="lineno">  439</span>&#160;    <span class="comment"># input = QInputDialog()</span></div>
+<div class="line"><a name="l00440"></a><span class="lineno">  440</span>&#160;    <span class="comment"># input.setWindowTitle(&quot;ChuckTesta&quot;)</span></div>
+<div class="line"><a name="l00441"></a><span class="lineno">  441</span>&#160;    <span class="comment"># input.setLabelText(&quot;Gloworms&quot;)</span></div>
+<div class="line"><a name="l00442"></a><span class="lineno">  442</span>&#160;    <span class="comment"># input.setDoubleValue(1.545454)</span></div>
+<div class="line"><a name="l00443"></a><span class="lineno">  443</span>&#160;    <span class="comment"># input.setDoubleDecimals(3)</span></div>
+<div class="line"><a name="l00444"></a><span class="lineno">  444</span>&#160;    <span class="comment"># res, ok = input.getDouble()</span></div>
+<div class="line"><a name="l00445"></a><span class="lineno">  445</span>&#160;    <span class="comment"># print res, ok</span></div>
 <div class="line"><a name="l00446"></a><span class="lineno">  446</span>&#160;</div>
 <div class="line"><a name="l00447"></a><span class="lineno">  447</span>&#160;</div>
-<div class="line"><a name="l00448"></a><span class="lineno">  448</span>&#160;    <span class="comment"># pySideWindow = TangentSwapper()</span></div>
-<div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160;    <span class="comment"># pySideWindow.exec_()</span></div>
-<div class="line"><a name="l00450"></a><span class="lineno">  450</span>&#160;    <span class="comment">#</span></div>
-<div class="line"><a name="l00451"></a><span class="lineno">  451</span>&#160;    <span class="comment"># pySideWindow = ABCTools()</span></div>
-<div class="line"><a name="l00452"></a><span class="lineno">  452</span>&#160;    <span class="comment"># pySideWindow.show()</span></div>
-<div class="line"><a name="l00453"></a><span class="lineno">  453</span>&#160;    <span class="comment"># nothing_selected_box()</span></div>
-<div class="line"><a name="l00454"></a><span class="lineno">  454</span>&#160;    <span class="comment"># print confirm_box(&quot;Test&quot;,&quot;Blah blah blah&quot;)</span></div>
-<div class="line"><a name="l00455"></a><span class="lineno">  455</span>&#160;    <span class="comment"># icon = r&quot;C:\Users\admin\Pictures\bat.JPG&quot;</span></div>
-<div class="line"><a name="l00456"></a><span class="lineno">  456</span>&#160;    <span class="comment"># pySideWindow.setWindowIcon(icon)</span></div>
+<div class="line"><a name="l00448"></a><span class="lineno">  448</span>&#160;</div>
+<div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160;    <span class="comment"># pySideWindow = TangentSwapper()</span></div>
+<div class="line"><a name="l00450"></a><span class="lineno">  450</span>&#160;    <span class="comment"># pySideWindow.exec_()</span></div>
+<div class="line"><a name="l00451"></a><span class="lineno">  451</span>&#160;    <span class="comment">#</span></div>
+<div class="line"><a name="l00452"></a><span class="lineno">  452</span>&#160;    <span class="comment"># pySideWindow = ABCTools()</span></div>
+<div class="line"><a name="l00453"></a><span class="lineno">  453</span>&#160;    <span class="comment"># pySideWindow.show()</span></div>
+<div class="line"><a name="l00454"></a><span class="lineno">  454</span>&#160;    <span class="comment"># nothing_selected_box()</span></div>
+<div class="line"><a name="l00455"></a><span class="lineno">  455</span>&#160;    <span class="comment"># print confirm_box(&quot;Test&quot;,&quot;Blah blah blah&quot;)</span></div>
+<div class="line"><a name="l00456"></a><span class="lineno">  456</span>&#160;    <span class="comment"># icon = r&quot;C:\Users\admin\Pictures\bat.JPG&quot;</span></div>
+<div class="line"><a name="l00457"></a><span class="lineno">  457</span>&#160;    <span class="comment"># pySideWindow.setWindowIcon(icon)</span></div>
 <div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_q_input_dialog_html_a66dcbd3661d678c8c79d7771e3442cad"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_q_input_dialog.html#a66dcbd3661d678c8c79d7771e3442cad">PKD_Tools.libPySide.QInputDialog.getDouble</a></div><div class="ttdeci">def getDouble(self)</div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00158">libPySide.py:158</a></div></div>
 <div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_q_group_box_html_a7bad6e870e1913486f4ac503f84b519c"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_q_group_box.html#a7bad6e870e1913486f4ac503f84b519c">PKD_Tools.libPySide.QGroupBox.form</a></div><div class="ttdeci">form</div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00096">libPySide.py:96</a></div></div>
 <div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_q_warning_box_html"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_q_warning_box.html">PKD_Tools.libPySide.QWarningBox</a></div><div class="ttdoc">A message box with a warning icon. </div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00075">libPySide.py:75</a></div></div>
 <div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window_html_a2094109c9183af650f7a5d88bd7edcd9"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window.html#a2094109c9183af650f7a5d88bd7edcd9">PKD_Tools.libPySide.QDockableWindow.show</a></div><div class="ttdeci">def show(self, args, kwargs)</div><div class="ttdoc">Create Dockable UI. </div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00271">libPySide.py:271</a></div></div>
 <div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window_html_a22dc67669a9c2f7a557466cfcf8ccaaa"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window.html#a22dc67669a9c2f7a557466cfcf8ccaaa">PKD_Tools.libPySide.QMainWindow._closeExistingWindow_</a></div><div class="ttdeci">def _closeExistingWindow_(self)</div><div class="ttdoc">Ensures there is only instance of the PySide GUI. </div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00226">libPySide.py:226</a></div></div>
 <div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_q_group_box_html_a602666f58e307a12585443619d13ce98"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_q_group_box.html#a602666f58e307a12585443619d13ce98">PKD_Tools.libPySide.QGroupBox.isCollapsable</a></div><div class="ttdeci">isCollapsable</div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00104">libPySide.py:104</a></div></div>
-<div class="ttc" id="namespace_p_k_d___tools_1_1lib_py_side_html_ab26658f88d5b0df7856d4ad72fef5468"><div class="ttname"><a href="namespace_p_k_d___tools_1_1lib_py_side.html#ab26658f88d5b0df7856d4ad72fef5468">PKD_Tools.libPySide.vLine_divider</a></div><div class="ttdeci">def vLine_divider()</div><div class="ttdoc">Return a vertical divider. </div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00427">libPySide.py:427</a></div></div>
-<div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar_html"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html">PKD_Tools.libPySide.VerticalTabBar</a></div><div class="ttdoc">A tab bar with a vertical side bar with text written horizontally instead of vertically. </div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00370">libPySide.py:370</a></div></div>
+<div class="ttc" id="namespace_p_k_d___tools_1_1lib_py_side_html_ab26658f88d5b0df7856d4ad72fef5468"><div class="ttname"><a href="namespace_p_k_d___tools_1_1lib_py_side.html#ab26658f88d5b0df7856d4ad72fef5468">PKD_Tools.libPySide.vLine_divider</a></div><div class="ttdeci">def vLine_divider()</div><div class="ttdoc">Return a vertical divider. </div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00428">libPySide.py:428</a></div></div>
+<div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar_html"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html">PKD_Tools.libPySide.VerticalTabBar</a></div><div class="ttdoc">A tab bar with a vertical side bar with text written horizontally instead of vertically. </div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00371">libPySide.py:371</a></div></div>
 <div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_q_input_dialog_html"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_q_input_dialog.html">PKD_Tools.libPySide.QInputDialog</a></div><div class="ttdoc">Convience class for QInput dialog. </div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00141">libPySide.py:141</a></div></div>
 <div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_q_critical_box_html_ac4f761eea850304dac2084b1b9b4828b"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_q_critical_box.html#ac4f761eea850304dac2084b1b9b4828b">PKD_Tools.libPySide.QCriticalBox.__init__</a></div><div class="ttdeci">def __init__(self)</div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00068">libPySide.py:68</a></div></div>
 <div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window_html"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window.html">PKD_Tools.libPySide.QMainWindow</a></div><div class="ttdoc">Common Functions used in various pySide GUI. </div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00166">libPySide.py:166</a></div></div>
 <div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_q_warning_box_html_a893970f98535997443eaf58d2c80ae9b"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_q_warning_box.html#a893970f98535997443eaf58d2c80ae9b">PKD_Tools.libPySide.QWarningBox.__init__</a></div><div class="ttdeci">def __init__(self)</div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00076">libPySide.py:76</a></div></div>
 <div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_q_group_box_html_a1df902c1a6765c0a933f96c5c27acff3"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_q_group_box.html#a1df902c1a6765c0a933f96c5c27acff3">PKD_Tools.libPySide.QGroupBox.collapse</a></div><div class="ttdeci">def collapse(self)</div><div class="ttdoc">Force the collapse state. </div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00122">libPySide.py:122</a></div></div>
 <div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_q_group_box_html"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_q_group_box.html">PKD_Tools.libPySide.QGroupBox</a></div><div class="ttdoc">A collapsable group box widget with form layout as the default layout. </div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00091">libPySide.py:91</a></div></div>
-<div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar_html_a2222dfb20cecb83c716e124e3ff16c95"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html#a2222dfb20cecb83c716e124e3ff16c95">PKD_Tools.libPySide.VerticalTabBar.__init__</a></div><div class="ttdeci">def __init__(self, args, kwargs)</div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00372">libPySide.py:372</a></div></div>
+<div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar_html_a2222dfb20cecb83c716e124e3ff16c95"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html#a2222dfb20cecb83c716e124e3ff16c95">PKD_Tools.libPySide.VerticalTabBar.__init__</a></div><div class="ttdeci">def __init__(self, args, kwargs)</div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00373">libPySide.py:373</a></div></div>
 <div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_q_line_edit_html"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_q_line_edit.html">PKD_Tools.libPySide.QLineEdit</a></div><div class="ttdoc">Qline widget which make sure that your cursor always go to the end of the current text...</div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00132">libPySide.py:132</a></div></div>
 <div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_q_question_box_html_aee76044a56c51ad22d346285aa7a5587"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_q_question_box.html#aee76044a56c51ad22d346285aa7a5587">PKD_Tools.libPySide.QQuestionBox.__init__</a></div><div class="ttdeci">def __init__(self)</div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00084">libPySide.py:84</a></div></div>
 <div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_q_input_dialog_html_a0bb52f4fde34b4a9c971d97506d4406a"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_q_input_dialog.html#a0bb52f4fde34b4a9c971d97506d4406a">PKD_Tools.libPySide.QInputDialog.__init__</a></div><div class="ttdeci">def __init__(self, args, kwargs)</div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00143">libPySide.py:143</a></div></div>
 <div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window_html_a1904546214d0dee031bd34ab0c8b4d28"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window.html#a1904546214d0dee031bd34ab0c8b4d28">PKD_Tools.libPySide.QMainWindow.__init__</a></div><div class="ttdeci">def __init__(self)</div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00168">libPySide.py:168</a></div></div>
 <div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_q_group_box_html_a3b79a75b6d8560eaddb8339c61807a2a"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_q_group_box.html#a3b79a75b6d8560eaddb8339c61807a2a">PKD_Tools.libPySide.QGroupBox.mouseDoubleClickEvent</a></div><div class="ttdeci">def mouseDoubleClickEvent(self, args, kwargs)</div><div class="ttdoc">Event which toggles the collapse state. </div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00108">libPySide.py:108</a></div></div>
 <div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_q_input_dialog_html_a056735710c2eb735f80fb220a12a73b9"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_q_input_dialog.html#a056735710c2eb735f80fb220a12a73b9">PKD_Tools.libPySide.QInputDialog.getInt</a></div><div class="ttdeci">def getInt(self)</div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00154">libPySide.py:154</a></div></div>
-<div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar_html_acda7f6ad53144c1a3ebc31b46a132a0f"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html#acda7f6ad53144c1a3ebc31b46a132a0f">PKD_Tools.libPySide.VerticalTabBar.paintEvent</a></div><div class="ttdeci">def paintEvent(self, event)</div><div class="ttdoc">Write the text horizontally instead of vertically. </div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00378">libPySide.py:378</a></div></div>
-<div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window_html_a4b49171b60b11705893591a961a56a1f"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window.html#a4b49171b60b11705893591a961a56a1f">PKD_Tools.libPySide.QDockableWindow._auto_resize_</a></div><div class="ttdeci">def _auto_resize_(self)</div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00294">libPySide.py:294</a></div></div>
+<div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar_html_acda7f6ad53144c1a3ebc31b46a132a0f"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html#acda7f6ad53144c1a3ebc31b46a132a0f">PKD_Tools.libPySide.VerticalTabBar.paintEvent</a></div><div class="ttdeci">def paintEvent(self, event)</div><div class="ttdoc">Write the text horizontally instead of vertically. </div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00379">libPySide.py:379</a></div></div>
+<div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window_html_a4b49171b60b11705893591a961a56a1f"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window.html#a4b49171b60b11705893591a961a56a1f">PKD_Tools.libPySide.QDockableWindow._auto_resize_</a></div><div class="ttdeci">def _auto_resize_(self)</div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00295">libPySide.py:295</a></div></div>
 <div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_q_question_box_html"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_q_question_box.html">PKD_Tools.libPySide.QQuestionBox</a></div><div class="ttdoc">A message box with a question icon. </div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00083">libPySide.py:83</a></div></div>
 <div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_q_message_box_html_a26abe966250c071120d72ace795e021c"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_q_message_box.html#a26abe966250c071120d72ace795e021c">PKD_Tools.libPySide.QMessageBox.__init__</a></div><div class="ttdeci">def __init__(self)</div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00036">libPySide.py:36</a></div></div>
 <div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window_html_ac6ebd486e97530bfbaff8db5a97f51f5"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window.html#ac6ebd486e97530bfbaff8db5a97f51f5">PKD_Tools.libPySide.QMainWindow._connect_signals_</a></div><div class="ttdeci">def _connect_signals_(self)</div><div class="ttdoc">Connect the command with the gui object. </div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00198">libPySide.py:198</a></div></div>
 <div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window_html_ad81240f8555b9402b0116092215347d9"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window.html#ad81240f8555b9402b0116092215347d9">PKD_Tools.libPySide.QMainWindow.setWindowIcon</a></div><div class="ttdeci">def setWindowIcon(self, iconPath)</div><div class="ttdoc">Set the icon for via QIcon. </div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00203">libPySide.py:203</a></div></div>
-<div class="ttc" id="namespace_p_k_d___tools_1_1lib_py_side_html_a97d265c5fe8565e9c5bed159f96f3466"><div class="ttname"><a href="namespace_p_k_d___tools_1_1lib_py_side.html#a97d265c5fe8565e9c5bed159f96f3466">PKD_Tools.libPySide.horizontal_divider</a></div><div class="ttdeci">def horizontal_divider()</div><div class="ttdoc">Return a horizontal divider. </div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00418">libPySide.py:418</a></div></div>
+<div class="ttc" id="namespace_p_k_d___tools_1_1lib_py_side_html_a97d265c5fe8565e9c5bed159f96f3466"><div class="ttname"><a href="namespace_p_k_d___tools_1_1lib_py_side.html#a97d265c5fe8565e9c5bed159f96f3466">PKD_Tools.libPySide.horizontal_divider</a></div><div class="ttdeci">def horizontal_divider()</div><div class="ttdoc">Return a horizontal divider. </div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00419">libPySide.py:419</a></div></div>
 <div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window_html_a5a036de745ab97e016865b4af1e303bd"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window.html#a5a036de745ab97e016865b4af1e303bd">PKD_Tools.libPySide.QMainWindow.show</a></div><div class="ttdeci">def show(self, args, kwargs)</div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00216">libPySide.py:216</a></div></div>
 <div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_q_group_box_html_a6fd46ed9a818645a61d0a4fdc629d6c8"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_q_group_box.html#a6fd46ed9a818645a61d0a4fdc629d6c8">PKD_Tools.libPySide.QGroupBox.isCollapsed</a></div><div class="ttdeci">isCollapsed</div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00103">libPySide.py:103</a></div></div>
 <div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window_html_a992001b3d18cfcdbc70ff71bdd093554"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window.html#a992001b3d18cfcdbc70ff71bdd093554">PKD_Tools.libPySide.QMainWindow.resize_window</a></div><div class="ttdeci">def resize_window(self, args, kwargs)</div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00235">libPySide.py:235</a></div></div>
 <div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_q_line_edit_html_a846eddd0ffb44abf400b8e662ca7da11"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_q_line_edit.html#a846eddd0ffb44abf400b8e662ca7da11">PKD_Tools.libPySide.QLineEdit.mousePressEvent</a></div><div class="ttdeci">def mousePressEvent(self, e)</div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00134">libPySide.py:134</a></div></div>
 <div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_q_message_box_html"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_q_message_box.html">PKD_Tools.libPySide.QMessageBox</a></div><div class="ttdoc">Setup up of convience message boxes. </div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00034">libPySide.py:34</a></div></div>
-<div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar_html_ac44a95d180c7695267fd9afb9ee6087f"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html#ac44a95d180c7695267fd9afb9ee6087f">PKD_Tools.libPySide.VerticalTabBar.tabSize</a></div><div class="ttdeci">tabSize</div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00373">libPySide.py:373</a></div></div>
+<div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar_html_ac44a95d180c7695267fd9afb9ee6087f"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html#ac44a95d180c7695267fd9afb9ee6087f">PKD_Tools.libPySide.VerticalTabBar.tabSize</a></div><div class="ttdeci">tabSize</div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00374">libPySide.py:374</a></div></div>
 <div class="ttc" id="namespace_p_k_d___tools_1_1lib_py_side_html_a6eb47d879f1545b1e8ef8ce5f7b81768"><div class="ttname"><a href="namespace_p_k_d___tools_1_1lib_py_side.html#a6eb47d879f1545b1e8ef8ce5f7b81768">PKD_Tools.libPySide.getMayaMainWindow</a></div><div class="ttdeci">def getMayaMainWindow()</div><div class="ttdoc">Setup so that any Pyside window are a child within the maya application. </div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00028">libPySide.py:28</a></div></div>
 <div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_q_message_box_html_a0ac374d2922a7cef80aec10f3a7cbcd3"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_q_message_box.html#a0ac374d2922a7cef80aec10f3a7cbcd3">PKD_Tools.libPySide.QMessageBox.event</a></div><div class="ttdeci">def event(self, e)</div><div class="ttdoc">Make it a resizable window. </div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00045">libPySide.py:45</a></div></div>
 <div class="ttc" id="class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window_html_aae83a251625ba7fc2dd10434f975819a"><div class="ttname"><a href="class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window.html#aae83a251625ba7fc2dd10434f975819a">PKD_Tools.libPySide.QDockableWindow.init_float_state</a></div><div class="ttdeci">init_float_state</div><div class="ttdef"><b>Definition:</b> <a href="lib_py_side_8py_source.html#l00250">libPySide.py:250</a></div></div>
@@ -609,7 +609,7 @@ $(document).ready(function(){initNavTree('lib_py_side_8py_source.html','');});
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><b>libPySide.py</b></li>
-    <li class="footer">Generated on Tue Jul 21 2015 22:59:06 for PKD_Tools by
+    <li class="footer">Generated on Fri Sep 4 2015 00:36:06 for PKD_Tools by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.9.1 </li>
   </ul>
