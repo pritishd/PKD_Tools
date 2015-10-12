@@ -25,10 +25,10 @@
     
     Thanks for trying the workflows, all comments more than welcomed
 
-    PLEASE NOTE: this code is in the process of being re-built for the
+    PLEASE NOTE: this code is in the process of being re-built for the 
     Red9 ProPack where we intend to bind HIK to the remapping by default
-
-
+    
+    
 ########################################################################
 '''
 
@@ -492,14 +492,14 @@ class AnimBinderUI(object):
                     c=lambda x:BindNodeAim(pm.selected()[0], pm.selected()[1], pm.selected()[2], settings=self.settings).AddBinderNode())
         cmds.separator(h=15, style="none")
         cmds.rowColumnLayout(numberOfColumns=2,columnWidth=[(1,147),(2,147)])
-
+        
         cmds.button(label="Add BakeMarker", al="center", \
                     ann="Add the BoundCtrl / Bake Marker to the selected nodes", \
                     c=lambda x:addBindMarkers(cmds.ls(sl=True,l=True)))
         cmds.button(label="remove BakeMarker", al="center", \
                     ann="Remove the BoundCtrl / Bake Marker from the selected nodes", \
                     c=lambda x:removeBindMarker(cmds.ls(sl=True,l=True)))
-
+        
         cmds.button(label="Select BindNodes", al="center", \
                     ann="Select Top Group Node of the Source Binder", \
                     c=lambda x:pm.select(GetBindNodes(cmds.ls(sl=True,l=True))))
@@ -536,7 +536,7 @@ class AnimBinderUI(object):
     @classmethod
     def Show(cls):
         cls()._UI()
-
+        
 
 def GetBindNodes(rootNode=None):
     '''
@@ -703,7 +703,7 @@ def addBindMarkers(ctrls=None, *args):
     for ctr in ctrls:
         print pm.PyNode(ctr)
         BindNodeBase.AddBindMarkers(pm.PyNode(ctr))
-
+        
 def removeBindMarker(ctrls=None, *args):
     '''
     remove the bind markers from nodes, these dictate what gets baked
@@ -712,4 +712,5 @@ def removeBindMarker(ctrls=None, *args):
         ctrls=cmds.ls(sl=True,l=True)
     for ctr in ctrls:
         cmds.deleteAttr('%s.%s' % (ctr, BAKE_MARKER))
-
+    
+        
