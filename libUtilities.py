@@ -210,16 +210,16 @@ def indexize_vertice_group(vertice_group):
     return vertices
 
 
-def snap_pivot(source, target):
+def snap_pivot(target, source):
     """
     Snap the pivot of source tranform to target transform
     """
 
-    source = pm.PyNode(source)
     target = pm.PyNode(target)
-    pivPos = xform(target)
-    pm.setAttr(source.scalePivot, pivPos)
-    pm.setAttr(source.rotatePivot, pivPos)
+    source = pm.PyNode(source)
+
+    target.scalePivot.set(source.scalePivot.get())
+    target.rotatePivot.set(source.rotatePivot.get())
 
 
 def set_persp():
@@ -762,7 +762,5 @@ def fix_shape_name(transform):
     """
     Rename the shape name so that it matches the parent
     @param transform:  The transform name with the wrong shape name
-    @return:
     """
-    transform = pm.PyNode(transform)
     transform.getShape().rename("%sShape" % transform.shortName())

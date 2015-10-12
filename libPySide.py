@@ -2,8 +2,9 @@
 @package PKD_Tools.libPySide
  @brief Here we do a basic PySide setup so that all GUIs are inside of maya and that they follow some common formatting
   to bring about consistency
- @details This is following documentation on best practice for Pyside in maya
- 
+ @details We also build our custom extended widgets or convience classes here.
+
+ This is following documentation on best practice for Pyside in maya
  http://knowledge.autodesk.com/search-result/caas/CloudHelp/cloudhelp/2015/ENU/Maya-SDK/files/GUID-66ADA1FF-3E0F-469C-84C7-74CEB36D42EC-htm.html"""
 
 from shiboken import wrapInstance
@@ -19,6 +20,7 @@ import libFile
 AppIcon = libFile.join(libFile.current_working_directory(), r"Icons/WinIcon.png")
 AppLabel = libFile.join(libFile.current_working_directory(), r"Icons/WinLabel.png")
 
+
 # This is a function that is run from your class object to get a handle
 # to the main Maya window, it uses a combination of the Maya API as well as the SIP module
 
@@ -26,6 +28,7 @@ def getMayaMainWindow():
     """Setup so that any Pyside window are a child within the maya application"""
     accessMainWindow = OpenMayaUI.MQtUtil.mainWindow()
     return wrapInstance(long(accessMainWindow), QtGui.QMainWindow)
+
 
 class QMessageBox(QtGui.QMessageBox):
     """ Setup up of convience message boxes"""
@@ -35,7 +38,6 @@ class QMessageBox(QtGui.QMessageBox):
         icon = QtGui.QIcon(AppIcon)
         self.setWindowIcon(icon)
         self.setSizeGripEnabled(True)
-
 
     def event(self, e):
         """Make it a resizable window. Used most in the context of detailed box"""
@@ -60,6 +62,7 @@ class QMessageBox(QtGui.QMessageBox):
 
 class QCriticalBox(QMessageBox):
     """ A message box with a critical icon"""
+
     def __init__(self):
         super(QCriticalBox, self).__init__()
         self.setIcon(QtGui.QMessageBox.Icon.Critical)
@@ -67,6 +70,7 @@ class QCriticalBox(QMessageBox):
 
 class QWarningBox(QMessageBox):
     """ A message box with a warning icon"""
+
     def __init__(self):
         super(QWarningBox, self).__init__()
         self.setIcon(QtGui.QMessageBox.Icon.Warning)
@@ -74,6 +78,7 @@ class QWarningBox(QMessageBox):
 
 class QQuestionBox(QMessageBox):
     """ A message box with a question icon"""
+
     def __init__(self):
         super(QQuestionBox, self).__init__()
         self.setIcon(QtGui.QMessageBox.Icon.Question)
@@ -283,6 +288,7 @@ class QDockableWindow(QMainWindow):
         #     pyLog.info(cmds.dockControl(self._dockedwidget_, q=1, h=1))
         # cmds.dockControl(self._dockedwidget_, e=1, w=278,h=296)
 
+
 # @cond DOXYGEN_SHOULD_SKIP_THIS
 class TestGUI(QDockableWindow):
     """A test GUI"""
@@ -343,6 +349,8 @@ class TestGUI(QDockableWindow):
         self.line_edit = self.findChild(QtGui.QLineEdit, self.line_edit_name)
         print self.line_edit
         print self.line_edit.text()
+
+
 # @endcond
 
 class VerticalTabBar(QtGui.QTabBar):
@@ -370,10 +378,13 @@ class VerticalTabBar(QtGui.QTabBar):
                              QtCore.Qt.AlignVCenter | QtCore.Qt.TextDontClip,
                              self.tabText(index).replace("&", ""))
         painter.end()
+
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     def tabSizeHint(self, index):
         return self.tabSize
-    # @endcond
+        # @endcond
+
+
 # @cond DOXYGEN_SHOULD_SKIP_THIS
 class VerticalTabTest(QMainWindow):
     """A vertical tab test"""
@@ -389,7 +400,33 @@ class VerticalTabTest(QMainWindow):
         tabs.setTabPosition(QtGui.QTabWidget.West)
         tabs.show()
         self.main_layout.addWidget(tabs)
+
+
 # @endcond DOXYGEN_SHOULD_SKIP_THIS
+
+class QProgressDialog(QtGui.QProgressDialog):
+    """Convience class for QProgressDialog dialog"""
+
+    def __init__(self):
+        super(QProgressDialog, self).__init__(parent=getMayaMainWindow())
+        self.setCancelButton(None)
+        self.currentProgress = 1
+        self.setValue(self.currentProgress)
+        self.currentTarget = None
+        self.currentProcess = ""
+        self.setFixedWidth(300)
+
+
+    def update(self, *args, **kwargs):
+        """Update function that moves the progress bar forward. Also sets the label"""
+        if self.currentProgress <= self.maximum():
+            self.setValue(self.currentProgress)
+            self.setLabelText("%s %s" % (self.currentProcess, self.currentTarget))
+            self.currentProgress += 1
+
+        if self.maximum() == 1:
+            self.cancel()
+
 
 def horizontal_divider():
     """Return a horizontal divider"""

@@ -10,6 +10,7 @@ import pymel.core as pm
 if __name__ == '__main__':
     localPath = r"C:\Users\admin\Documents\maya\scripts\PKD_Tools"
     import sys
+
     if localPath not in sys.path:
         sys.path.append(localPath)
 
@@ -27,6 +28,7 @@ import libGeo
 
 for module in libWeights, libUtilities, libPySide, libFile, libGeo:
     reload(module)
+
 
 class TangentSwapper(libPySide.QDockableWindow):
     """A PySide based tangent swapper"""
@@ -60,6 +62,7 @@ class ManagerGUI(libPySide.QDockableWindow):
         self.setMinimumWidth(450)
         # self.setFixedHeight(130)
         self.init_float_state = True
+        self.weightManagerObj = None
 
     def _setup_(self):
         super(ManagerGUI, self)._setup_()
@@ -105,18 +108,22 @@ class ManagerGUI(libPySide.QDockableWindow):
         """Export the weights"""
 
         self._check_user_input_path_()
-        weightManager = self._initialise_manager_class_()
-        success = weightManager.export_all()
-        if not success:
+        self.weightManagerObj = self._initialise_manager_class_()
+        self.weightManagerObj.current_mode = "Export"
+        if self.weightManagerObj.targets:
+            self._initialise_progress_win_("Export")
+            self.weightManagerObj.export_all()
+        else:
             nothing_selected_box()
 
     def _import_data_(self):
         """Import the weights"""
         self._check_user_input_path_()
         if libFile.exists(self.infoPath):
-            weightManager = self._initialise_manager_class_()
-            weightManager.info_file = self.infoPath
-            weightManager.import_all()
+            self.weightManagerObj = self._initialise_manager_class_()
+            self.weightManagerObj.current_mode = "Import"
+            self._initialise_progress_win_("Import")
+            self.weightManagerObj.import_all()
         else:
             noFileBox = libPySide.QCriticalBox()
             noFileBox.setText("No exported data found")
@@ -143,6 +150,16 @@ class ManagerGUI(libPySide.QDockableWindow):
             noFileBox.setDetailedText("The following path does not exists on disk:\n%s" % current_path)
             noFileBox.exec_()
             pm.error("The following path does not exists on disk:\n%s" % current_path)
+
+    def _initialise_progress_win_(self, mode):
+        """initialse the progress window"""
+        progress_tracker = libPySide.QProgressDialog()
+        self.weightManagerObj.progress_tracker = progress_tracker
+        progress_tracker.setWindowModality(libPySide.QtCore.Qt.WindowModal)
+        progress_tracker.setMaximum(len(self.weightManagerObj.targets))
+        progress_tracker.setWindowTitle(("%sing %s Weights" % (mode, self.deformer)))
+        progress_tracker.currentProcess = ("%sing" % mode)
+        progress_tracker.show()
 
     @property
     def infoPath(self):
@@ -211,12 +228,12 @@ class ClusterManagerGUI(ManagerGUI):
         """
         return libWeights.ClusterWeightManager
 
-    # @endcond
-
-    @property
-    def infoPath(self):
-        """Return the user defined folder"""
-        return libFile.linux_path(self.folder_path_line.text())
+        # @endcond
+        #
+        # @property
+        # def infoPath(self):
+        #     """Return the user defined folder"""
+        #     return libFile.linux_path(self.folder_path_line.text())
 
 
 class BlendshapeManagerGUI(ManagerGUI):
@@ -259,6 +276,7 @@ class ObjManagerGUI(ManagerGUI):
     def __init__(self):
         super(ObjManagerGUI, self).__init__()
         self.setWindowTitle("Obj Manager")
+        self.objManager = None
 
     def _setup_(self):
         super(ObjManagerGUI, self)._setup_()
@@ -358,25 +376,29 @@ Otherwise this tool would work on the first top group which is determined by May
         congratsWin.exec_()
 
     def _cleanse_geo_(self):
-        objManager = self._initialise_manager_class_()
-        objManager.cleansing_mode = True
-        objManager.cleanse_geo()
+        self.objManager = self._initialise_manager_class_()
+        self.objManager.cleansing_mode = True
+        self._initialise_progress_win_("Export")
+        self.objManager.export_all()
+        self.objManager.setup_cleanse_scene()
+        self._initialise_progress_win_("Import")
+        self.objManager.import_all()
 
     def _export_data_(self):
         """Export the weights"""
         self._check_user_input_path_()
-        objManager = self._initialise_manager_class_()
-        objManager.export_all()
+        self.objManager = self._initialise_manager_class_()
+        self._initialise_progress_win_("Export")
+        self.objManager.export_all()
 
     def _import_data_(self):
         """Import the weights"""
         self._check_user_input_path_()
-
-        objManager = self._initialise_manager_class_()
-        objManager.info_file = self.infoPath
+        self.objManager = self._initialise_manager_class_()
+        self.objManager.info_file = self.infoPath
 
         # Error out if no information is found
-        if not (libFile.exists(objManager.geoListPath) and libFile.exists(objManager.datapath)):
+        if not (libFile.exists(self.objManager.geoListPath) and libFile.exists(self.objManager.datapath)):
             noFileBox = libPySide.QCriticalBox()
             noFileBox.setText("No exported data found")
             noFileBox.setWindowTitle("Export Data Error")
@@ -384,7 +406,8 @@ Otherwise this tool would work on the first top group which is determined by May
             noFileBox.exec_()
             pm.error("No export obj data found at \n%s" % self.infoPath)
 
-        objManager.import_all()
+        self._initialise_progress_win_("Import")
+        self.objManager.import_all()
 
     def _initialise_manager_class_(self):
         """initialse the weight manager class and set the info file"""
@@ -392,6 +415,17 @@ Otherwise this tool would work on the first top group which is determined by May
         if libFile.exists(self.infoPath):
             self.objManager.export_dir = self.infoPath
         return self.objManager
+
+    def _initialise_progress_win_(self, mode):
+        """initialse the progress window"""
+        progress_tracker = libPySide.QProgressDialog()
+        self.objManager.progress_tracker = progress_tracker
+        self.objManager.current_mode = mode
+        progress_tracker.setWindowModality(libPySide.QtCore.Qt.WindowModal)
+        progress_tracker.setMaximum(len(self.objManager.geo_list))
+        progress_tracker.setWindowTitle(("%sing Objs" % mode))
+        progress_tracker.currentProcess = ("%sing" % mode)
+        progress_tracker.show()
 
     @property
     def infoPath(self):
@@ -431,3 +465,19 @@ def confirm_box(title, message, detailedMessage=""):
 if __name__ == '__main__':
     win = ObjManagerGUI()
     win.show()
+
+    # ProgressGroupBox = libPySide.QGroupBox()
+    # ProgressGroupBox.setAlignment(libPySide.QtCore.Qt.AlignHCenter)
+    # progress = libPySide.QtGui.QProgressBar()
+    #
+    # progress.setMinimum(0)
+    # progress.setMaximum(100)
+    # progress.setFormat("Exporting: %p%")
+    # ProgressGroupBox.form.addWidget(progress)
+    # win.main_layout.addWidget(ProgressGroupBox )
+
+    # for i in range(0,103):
+    #     progress.setValue(i)
+    #     time.sleep(.3)
+    #
+    # progress.reset()

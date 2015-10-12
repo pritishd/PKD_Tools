@@ -92,15 +92,20 @@ class ObjManager(object):
         @brief The file which contains all the heirachy information such as structure and pivots
         @property geo_file_info
         @brief The file which contains information about all geo that was exported and it's current path
+        @property progress_tracker
+        @brief The PyQt object which updates
 
         """
         self._top_node_ = None
         self._export_dir_ = None
         self._geo_list_ = []
         # Load the objExport
-        cmds.loadPlugin("objExport.mll")
+        cmds.loadPlugin("objExport.mll",quiet = True)
         self.new_scene = False
         self.cleansing_mode = False
+        self.progress_tracker = None
+        self.current_target = None
+        self.current_mode = ""
 
     def write_heirachy_data(self):
         """Write the current scale and rotate pivots of all the transform in the heirachy to a json file"""
@@ -127,12 +132,12 @@ class ObjManager(object):
         # Reverse the geo list so that the deepest geo is deleted first in case there is a geo inside geo
         geo_list = self.geo_list
         geo_list.reverse()
-        for geo in geo_list:
-            pm.delete(geo, ch=1)
-            parent = pm.listRelatives(geo, parent=True)
-            pm.parent(geo, w=True)
-            pm.select(geo)
-            path = libFile.linux_path(libFile.join(self.export_dir, geo + ".obj"))
+        for self.current_target in geo_list:
+            pm.delete(self.current_target, ch=1)
+            parent = pm.listRelatives(self.current_target, parent=True)
+            pm.parent(self.current_target, w=True)
+            pm.select(self.current_target)
+            path = libFile.linux_path(libFile.join(self.export_dir, self.current_target + ".obj"))
             # Load the obj plugin
             cmds.file(path,
                       pr=1,
@@ -140,13 +145,15 @@ class ObjManager(object):
                       force=1,
                       options="groups=0;ptgroups=0;materials=0;smoothing=0;normals=0",
                       es=1)
-            fileInfo[geo] = path
-            pyLog.info("Exporting\n%s" % fileInfo[geo])
+            fileInfo[self.current_target] = path
+            pyLog.info("Exporting\n%s" % fileInfo[self.current_target])
             if not self.new_scene and self.cleansing_mode:
-                pm.delete(geo)
+                pm.delete(self.current_target)
                 pm.refresh()
             else:
-                pm.parent(geo, parent)
+                pm.parent(self.current_target, parent)
+
+            self.update_progress()
 
         # Write the geo file_info
         self.geo_file_info = fileInfo
@@ -154,8 +161,8 @@ class ObjManager(object):
     def import_heirachy_geo(self):
         """Import all the obj objects"""
         fileInfo = self.geo_file_info
-        for geo in fileInfo.keys():
-            cmds.file(fileInfo[geo],
+        for self.current_target in fileInfo.keys():
+            cmds.file(fileInfo[self.current_target],
                       rpr="PKD_Temp",
                       i=1,
                       type="OBJ",
@@ -165,22 +172,23 @@ class ObjManager(object):
                       options="mo=1")
             # Delete Existing geo if it exists
             if not self.cleansing_mode:
-                if pm.objExists(geo):
-                    pm.delete(geo)
-            pyLog.info("Importing\n%s" % fileInfo[geo])
+                if pm.objExists(self.current_target):
+                    pm.delete(self.current_target)
+            pyLog.info("Importing\n%s" % fileInfo[self.current_target])
             if self.cleansing_mode:
-                os.remove(fileInfo[geo])
+                os.remove(fileInfo[self.current_target])
             for top in pm.ls(assemblies=True, ud=True):
                 if top.getShape():
                     if top.getShape().type() == "mesh" and top.name() == "PKD_Temp_Mesh":
                         # pm.parent(top, self.top_node)
-                        top.rename(geo)
-                        pm.select(geo)
-                        mel.eval("polySoftEdge -a 180 %s" % geo)
+                        top.rename(self.current_target)
+                        pm.select(self.current_target)
+                        mel.eval("polySoftEdge -a 180 -ch 1 %s" % self.current_target)
                         mel.eval("polySetToFaceNormal")
-                        mel.eval("polySoftEdge -a 180 %s" % geo)
-                        pm.delete(geo, ch=1)
+                        mel.eval("polySoftEdge -a 180 -ch 1 %s" % self.current_target)
+                        pm.delete(self.current_target, ch=1)
                         pm.refresh()
+            self.update_progress()
 
     def rebuild_heirachy(self):
         """ Rebuild the heirachy by reading the heirachy info file"""
@@ -216,9 +224,13 @@ class ObjManager(object):
     def cleanse_geo(self):
         """Cleanse the model of all issues with the help of obj"""
         self.export_all()
+        self.setup_cleanse_scene()
+        self.import_all()
+        pyLog.info("Scene Is Cleansed")
+
+    def setup_cleanse_scene(self):
         if self.new_scene:
             cmds.file(new=1, f=1)
-
         libUtilities.set_persp()
         if self.new_scene:
             pm.createNode("transform", n=self.top_node)
@@ -228,25 +240,32 @@ class ObjManager(object):
         topNode.scale.unlock()
         topNode.translate.unlock()
 
-        self.import_all()
-        pyLog.info("Geo Is Cleansed")
 
     def export_all(self):
         """Export All Geo and heirachy info"""
         libUtilities.freeze_transform(self.top_node)
+        self.current_mode = "Export"
         self.write_heirachy_data()
         self.export_heirachy_obj()
 
     def import_all(self):
         """Import All Geo and heirachy info"""
+        self.current_mode = "Import"
         self.import_heirachy_geo()
         pm.select(cl=1)
         mel.eval("FrameAll;")
         self.rebuild_heirachy()
-
         return self._geo_list_
 
-    # @cond DOXYGEN_SHOULD_SKIP_THIS
+    def update_progress(self):
+        # Update the progress tracker
+        if self.progress_tracker is not None:
+            #self.progress_tracker.set_current_status()
+            self.progress_tracker.currentTarget = self.current_target
+            self.progress_tracker.update()
+
+
+# @cond DOXYGEN_SHOULD_SKIP_THIS
     @property
     def top_node(self):
         """Get the top node name. If it is defined then find it by searching the top group"""
@@ -264,8 +283,11 @@ class ObjManager(object):
     def geo_list(self):
         """Get a string list of geos"""
         if not self._geo_list_:
-            self._geo_list_ = [geo.getParent().name() for geo in
-                               pm.listRelatives(self.top_node, type="mesh", ad=1, ni=True)]
+            if self.current_mode == "Export":
+                self._geo_list_ = [geo.getParent().name() for geo in
+                                   pm.listRelatives(self.top_node, type="mesh", ad=1, ni=True)]
+            else:
+                self._geo_list_ = self.geo_file_info.keys()
         return self._geo_list_
 
     @property
@@ -308,13 +330,15 @@ class ObjManager(object):
         """Read the heirachy info from a json file"""
         if not libFile.exists(self.datapath):
             raise Exception("No geo has been exported to this path")
-        return libFile.load_json(self.datapath)        
+        return libFile.load_json(self.datapath)
 
     @heirachy_file_info.setter
     def heirachy_file_info(self, heirachy_info):
         """Write the heirachy info into a json file"""
         libFile.write_json(self.datapath,heirachy_info)
         # @endcond
+
+
 
 
 def convert_joint_to_cluster(targetGeo, skipList=[]):
@@ -451,3 +475,9 @@ def create_wrap(*args, **kwargs):
     cmds.connectAttr(source + '.dropoff', wrapNode + '.dropoff[0]')
 
     return pm.PyNode(wrapNode)
+
+
+if __name__ == '__main__':
+    win = ObjManager()
+    win.cleansing_mode = True
+    win.cleanse_geo()

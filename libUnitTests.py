@@ -3,10 +3,13 @@
 @brief Templates for the unit tests
 @details Basic unit tests structure to be used to test for various modules such as as rigging or other tools. It follows
 the principle of a scientific hypothesis
-1) First we recreate the test conditions through the help of the Droid
-2) Then we test those values of various nodes to the ones we expect and also to check for potential failures. This is
+-# First we recreate the test conditions through the help of the Droid
+-# Then we test those values of various nodes to the ones we expect and also to check for potential failures. This is
 done with the help of UnitTestCase
-3) Display the result through the BatchTest
+-# Display the result through the BatchTest
+
+All of these unit test need to run in mayapy so in order for the maya commands to work. Ideally this should be setup in your IDE's Python console
+
 """
 import sys
 
@@ -36,13 +39,12 @@ class UnitTestCase(unittest.TestCase):
     def __init__(self, testName, **kwargs):
         """
         @param testName: The name of the scenario you are testing
+        @param kwargs: All variables that need to be tested must be passed as kwargs. These can then be accessed as an internal vaiable
         """
         super(UnitTestCase, self).__init__(testName)
         self.unitTestId = "Base Unit Test Case"
-        if kwargs.has_key("targetNode"):
-            self.targetNode = kwargs["targetNode"]
-        if kwargs.has_key("variable_name"):
-            self.variable_name = kwargs["variable_name"]
+        for keyword in kwargs:
+            exec('self.%s = kwargs["%s"]' % (keyword, keyword))
 
     def example_test_success_case(self):
         """
@@ -88,10 +90,10 @@ class UnitTestCase(unittest.TestCase):
         self.assertNotEqual(variable, None, "Testing that variable %s is not None" % self.variable_name)
 
 
-
-
 class BatchTest(object):
-    """Base batch example"""
+    """A batch test allows to run multiple suites/collection of tests at the same time.
+    This is great if you want to see if a script has done the multiple outcomes that you have expected."""
+
     def __init__(self):
         """Initialise variables"""
         self.droid = Droid()
@@ -108,7 +110,8 @@ class BatchTest(object):
         """
         Here the test are added to the suite. This functions needs to copy pasted in inherited packages so that it picks
         up the testCase classes defined in those files
-        @param testName: The name of the test to be addes
+        @param testName: The name of the test to be added
+        @param kwargs: Any keyword arguements that need to be passed to the UnitTestCase class such as a variable that is to be tested
         """
         # Generalised function to add a test to a suite
         self.suite.addTest(UnitTestCase(testName, **kwargs))
@@ -145,7 +148,6 @@ class BatchTest(object):
 
 
 if __name__ == '__main__':
-    unittest.main()
     # print "Generalised Tests"
-    # unit = BatchTest()
-    # unit.batch_test()
+    unit = BatchTest()
+    unit.batch_test()

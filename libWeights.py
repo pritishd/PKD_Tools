@@ -658,42 +658,59 @@ class WeightManager(object):
         @property command_mode
         @brief boolean flag that is used in @ref libUtilities.get_selected command. By default set to False
 
+        @property progress_tracker
+        @brief custom PyQt @ref libPySide.QProgressDialog QProgressDialog to track the progress of a window
+
+        @property current_geo
+        @brief the current geo that is being processed
+
+        @property current_mode
+        @brief Is it import mode or export mode?
+
         '''
 
         self._xml_file_ = None
         self.weight_class = None
         self.command_mode = False
         self._deformer_ = None
+        self.progress_tracker = None
+        self.current_geo = None
+        self.current_mode = ""
+
 
     def export_all(self):
         """Exports the weights and deformer data of the selected objects using the @ref weight_class"""
         # get the selected geo
-        sel = libUtilities.get_selected(stringMode=True, scriptEditorWarning=self.command_mode)
-        if not sel:
+
+        if not self.targets:
             # In nothing has been selected
             return False
 
         # Setup the geo dictionary
         geoInfo = {}
+        targets = self.targets
         # Iterate through all the geo
-        for geo in sel:
+        for self.current_geo in self.targets:
             # Ensure the geometry has the deformer
-            if not libUtilities.get_target_defomer(geo, self.deformer, multiple=True):
-                print ("No %s Found for %s" % (self.deformer.capitalize(), geo))
+            if not libUtilities.get_target_defomer(self.current_geo, self.deformer, multiple=True):
+                print ("No %s Found for %s" % (self.deformer.capitalize(), self.current_geo))
+                self.update_progress()
                 continue
             # Initialise the weight class
-            deformerWeight = self._initialise_class_(geo)
+            deformerWeight = self._initialise_class_(self.current_geo)
             # Export the weight
             deformerWeight.export_weights()
             # Get the export data
-            geoInfo[geo] = deformerWeight.data
+            geoInfo[self.current_geo] = deformerWeight.data
+            self.update_progress()
 
         # Save out the xml file
         if geoInfo:
             deformerType = self.deformer.capitalize()
             print ("========%s Info Path========\n%s" % (deformerType, self.info_file))
             libXml.write_xml(self.info_file, {"%sInfo" % deformerType: geoInfo})
-        cmds.select(sel)
+
+        pm.select(targets)
 
         # Return a success result
         return True
@@ -702,17 +719,18 @@ class WeightManager(object):
         """Import the exported weights and data using the @ref weight_class"""
         # Import all Weights for selected object based on the information in the skinInfo
         geoInfo = libXml.ConvertXmlToDict(self.info_file)["%sInfo" % self.deformer.capitalize()]
-        for geo in geoInfo.keys():
-            if pm.objExists(geo):
+        for self.current_geo in geoInfo:
+            if pm.objExists(self.current_geo):
                 # Initialise the weight class
-                deformerWeight = self._initialise_class_(geo)
+                deformerWeight = self._initialise_class_(self.current_geo)
                 # Set the deformer data
-                deformerWeight.data = geoInfo[geo]
+                deformerWeight.data = geoInfo[self.current_geo]
                 # Import the weights
                 deformerWeight.import_weights()
             else:
                 # Ensure the geometry exists
-                print "GEO DOES NOT EXISTS: " + geo
+                print "GEO DOES NOT EXISTS: " + self.current_geo
+            self.update_progress()
         pm.select(cl=1)
 
     def _initialise_class_(self, geo):
@@ -744,6 +762,12 @@ class WeightManager(object):
         # Set the XML path
         self._xml_file_ = libFile.linux_path(path)
 
+    def update_progress(self):
+        '''Update the progress tracker'''
+        if self.progress_tracker is not None:
+            self.progress_tracker.currentTarget = self.current_geo
+            self.progress_tracker.update()
+
     ##
     # @property info_file
     #User defined data path which contains the @ref Weights.data "deformer data" of all the processed geometry.
@@ -761,7 +785,18 @@ class WeightManager(object):
     def folder(self):
         #Return the parent folder of the info file
         return libFile.get_parent_folder(self.info_file)
-        # @endcond
+
+    @property
+    def targets(self):
+        if self.current_mode == "Export":
+            return libUtilities.get_selected(stringMode=True, scriptEditorWarning=self.command_mode)
+        else:
+            return libXml.ConvertXmlToDict(self.info_file)["%sInfo" % self.deformer.capitalize()].keys()
+
+        #Return the parent folder of the info file
+        return
+
+    # @endcond
 
 
 class SkinWeightManager(WeightManager):
