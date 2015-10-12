@@ -134,7 +134,7 @@ if __name__ == '__main__':
     # build_all_ctrls_shapes()
     # current_joint_data = libFile.load_json(TEST_JOINTS_INFO)
     # print libFile.load_json(TEST_JOINTS_INFO).keys()
-    #create_test_joint('simpleSpine')
+    create_test_joint('armPaw')
     # a = [u'hip',
     #      u'hipHoof',
     #      u'armHand',

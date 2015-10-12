@@ -1,6 +1,6 @@
 __author__ = 'pritish.dogra'
 
-from PKD_Tools.Red9 import Red9_Meta
+from PKD_Tools.Red9 import Red9_Meta, Red9_CoreUtils
 
 reload(Red9_Meta)
 from PKD_Tools.Rigging import utils
@@ -376,7 +376,6 @@ class Ctrl(MetaRig):
 
         self.locator = MetaRig(name=utils.nameMe(self.side, self.part, "Pivot"), nodeType="transform")
 
-
     def setParent(self, targetSystem):
         # Instead of the node itself, the parent is reparented
         self.prnt.pynode.setParent(targetSystem.mNode)
@@ -496,7 +495,6 @@ class Ctrl(MetaRig):
     def hasLocator(self):
         return self.getSupportNode("Locator", True) is not None
 
-
     @property
     def parentMasterPH(self):
         data = self.getSupportNode("ParentMasterPH")
@@ -548,30 +546,29 @@ class rig(SubSystem):
         super(rig, self).__init__(*args, **kwargs)
         self.HelpJointSystem = None
 
-    def create_test_cube(self, targetJoint):
-        cube = pm.polyCube(ch=False)[0]
-        pm.select(cube.vtx[0:1])
-        pm.move(0, 0, 0.9, r=1)
+    def create_test_cube(self, targetJoint, childJoint):
+        # Get the height
 
-        pm.select(cube.vtx[0:1], cube.vtx[6:7])
 
-        # Botton Cluster
-        clusterBottom = pm.cluster()[1]
-        clusterBottom.setScalePivot([0, 0, 0])
-        clusterBottom.setRotatePivot([0, 0, 0])
+        height = Red9_CoreUtils.distanceBetween(targetJoint.shortName(),childJoint.shortName())
 
-        libUtilities.snap(clusterBottom, targetJoint.shortName())
+        # Create the cube of that height
+        cube = pm.polyCube(height=height, ch=False)[0]
 
-        # Top Cluster
-        pm.select(cube.vtx[2:5])
-        clusterTop = pm.cluster()[1]
+        cube.translateY.set(height*.5)
 
-        childJoint = targetJoint.pynode.getChildren(type="joint")[0]
-        libUtilities.snap(clusterTop, childJoint)
+        # Freeze Transform
+        libUtilities.freeze_transform(cube)
 
-        pm.delete(cube, ch=True)
+        # reset the pivot to origin
+        cube.scalePivot.set([0,0,0])
+        cube.rotatePivot.set([0,0,0])
+        # Snap the pivot of the cube to this cluster
 
-        libUtilities.skinGeo(cube, [targetJoint.mNode])
+
+        # Snap the cube to joint
+        libUtilities.snap(cube, targetJoint)
+        libUtilities.skinGeo(cube, [targetJoint])
 
     @property
     def JointSystem(self):
@@ -618,9 +615,9 @@ if __name__ == '__main__':
     # subSystem.connectChild(fkSystem, 'FK_System')
     # l = rig(side="L", part="Test")
 
-    # myCtrl = Ctrl(side="L", part="Hand")
-    # myCtrl.build()
-    # myCtrl.addGimbalMode()
+    myCtrl = Ctrl(side="L", part="Hand")
+    myCtrl.build()
+    myCtrl.addGimbalMode()
 
     # myCtrl.add_constrain_node()
     # myCtrl.add_parent_master()
@@ -637,11 +634,11 @@ if __name__ == '__main__':
     # fkSystem.convertToComponent("FK")
     # subSystem.connectChildren(fkCtrls, "FK")
 
-    jntSystem = JointSystem(side="U", part="Cora")
-    joints = utils.create_test_joint("ik2jnt")
-    jntSystem.Joints = joints
-    jntSystem.convertJointsToMetaJoints()
-    rep = jntSystem.replicate(side="L", part="CoraHelp" ,supportType = "Help")
+    # jntSystem = JointSystem(side="U", part="Cora")
+    # joints = utils.create_test_joint("ik2jnt")
+    # jntSystem.Joints = joints
+    # jntSystem.convertJointsToMetaJoints()
+    # rep = jntSystem.replicate(side="L", part="CoraHelp", supportType="Help")
     #
     #
     # # Need to run this in case of opening and closing file

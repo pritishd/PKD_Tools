@@ -15,9 +15,6 @@ class UnitTestCase(libUnitTests.UnitTestCase):
 
     def __init__(self, testName, **kwargs):
         super(UnitTestCase, self).__init__(testName, **kwargs)
-        self.targetClass = Red9_Meta.MetaClass
-        if kwargs.has_key("targetClass"):
-            self.targetClass = kwargs["targetClass"]
 
     def test_meta_inheritance(self):
         """Test Inheritence of meta classes"""
@@ -157,7 +154,7 @@ class BatchTest(libUnitTests.BatchTest):
         self.droid.create_simple_ik()
         self.suite = libUnitTests.unittest.TestSuite()
         self.addTest("test_meta_inheritance", targetNode=self.droid.ikSystem)
-        self.addTest("variable_is_not_none", targetNode=self.droid.ikSystem, variable_name="Joint_System")
+        self.addTest("variable_is_not_none", targetNode=self.droid.ikSystem, variable_name="JointSystem")
         self.addTest("variable_is_not_none", targetNode=self.droid.ikSystem, variable_name="ikHandle")
         self.addTest("variable_is_not_none", targetNode=self.droid.ikSystem, variable_name="mainIK")
         self.run_test("Testing IK")
@@ -167,7 +164,7 @@ class BatchTest(libUnitTests.BatchTest):
         self.droid.reinitialise_meta_network()
         self.suite = libUnitTests.unittest.TestSuite()
         self.addTest("test_meta_inheritance", targetNode=self.droid.ikSystem)
-        self.addTest("variable_is_not_none", targetNode=self.droid.ikSystem, variable_name="Joint_System")
+        self.addTest("variable_is_not_none", targetNode=self.droid.ikSystem, variable_name="JointSystem")
         self.addTest("variable_is_not_none", targetNode=self.droid.ikSystem, variable_name="ikHandle")
         self.addTest("variable_is_not_none", targetNode=self.droid.ikSystem, variable_name="mainIK")
         self.addTest("variable_is_not_none", targetNode=self.droid.ikSystem, variable_name="pv")
@@ -201,10 +198,10 @@ unit = BatchTest()
 # unit.test_meta_simple_create()
 # unit.test_meta_reopen()
 #
-unit.test_meta_advanced_create()
-unit.test_meta_advanced_reopen()
-# unit.test_ik_creation()
-# unit.test_ik_reopen()
+# unit.test_meta_advanced_create()
+# unit.test_meta_advanced_reopen()
+unit.test_ik_creation()
+unit.test_ik_reopen()
 
 
 # if __name__ == '__main__':

@@ -25,11 +25,7 @@ def _build_ik_(metaClass, solver, handleSuffix, startJointNumber, endJointNumber
     name = utils.nameMe(metaClass.side, metaClass.part, handleSuffix)
     startJoint = metaClass.JointSystem.Joints[startJointNumber].shortName()
     endJoint = metaClass.JointSystem.Joints[endJointNumber].shortName()
-    ikHandle = pm.ikHandle(name=name,
-                           sj=startJoint,
-                           ee=endJoint,
-                           sol=solver,
-                           sticky="sticky")[0]
+    ikHandle = pm.ikHandle(name=name, sj=startJoint,  ee=endJoint, sol=solver,sticky="sticky")[0]
 
     ikHandleMeta = core.MetaRig(ikHandle.name(), nodeType="ikHandle")
     ikHandleMeta.part = metaClass.part
@@ -112,7 +108,10 @@ class ik(core.rig):
                                                     self.ikHandle.mNode)
 
         # Pole vector points at second joint
-        pm.aimConstraint(self.JointSystem.Joints[self.startJointNumber + 1].pynode,self.pv.pynode,mo=1)
+        pm.aimConstraint(self.JointSystem.Joints[self.startJointNumber + 1].pynode,
+                         self.pv.pynode,
+                         aimVector=(0, 0, 1),
+                         upVector=(0, 0, 1))
 
         pm.poleVectorConstraint(self.pv.mNode, self.ikHandle.mNode, w=1)
         self.ikHandle.twist = pvTwist
@@ -127,8 +126,10 @@ class ik(core.rig):
         mainIK = core.Ctrl(part=self.part, side=self.side)
         mainIK.ctrlShape = self.ctrlShape
         mainIK.build()
-        mainIK.setRotateOrder(self.rotateOrder)
         mainIK.addGimbalMode()
+        mainIK.rotateOrder = self.rotateOrder
+        mainIK.setRotateOrder(self.rotateOrder)
+
         if self.hasParentMaster:
             mainIK.addParentMaster()
         if self.hasPivot:
@@ -176,20 +177,27 @@ class ik(core.rig):
         # self.pv.prnt.visibility = False
 
     def test_build(self):
+
         # Build the joint system
         self.JointSystem = core.JointSystem(side="U", part="%sJoints" % self.part)
         # Build the joints
         joints = utils.create_test_joint(self.__class__.__name__)
+
         self.JointSystem.Joints = joints
         self.JointSystem.convertJointsToMetaJoints()
         self.JointSystem.setRotateOrder(self.rotateOrder)
         # Build IK
+
+
+
         self.build()
+
         # Setup the parent
         if not self.JointSystem.Joints[0].pynode.getParent():
             self.JointSystem.setParent(self)
-        for i in range(len(self.JointSystem.Joints) - 1, 0):
-            self.create_test_cube(self.JointSystem.Joints[i])
+
+        for i in range(len(self.JointSystem.Joints) - 1):
+            self.create_test_cube(self.JointSystem.Joints[i].pynode, self.JointSystem.Joints[i + 1].pynode)
 
     @property
     def ikHandle(self):
@@ -263,10 +271,6 @@ class hip(arm):
         # self.ikSolver = "ikRPsolver"
         self.startJointNumber = 1
         self.endJointNumber = 3
-
-    def test_build(self):
-        super(hip, self).test_build()
-        self.create_test_cube(self.JointSystem.Joints[2])
 
     def build_ik(self):
         super(hip, self).build_ik()
@@ -833,6 +837,7 @@ class quadPaw(quad, paw):
         quad.align_control(self)
         paw.align_control(self)
 
+
 core.Red9_Meta.registerMClassInheritanceMapping()
 core.Red9_Meta.registerMClassNodeMapping(nodeTypes=['ikHandle', 'multiplyDivide', "clamp"])
 
@@ -844,9 +849,10 @@ if __name__ == '__main__':
 
     # print ikSystem
     # ik(side="U", part="Core")
-    mainSystem = core.SubSystem(side="U", part="Core")
+    #mainSystem = core.SubSystem(side="U", part="Core")
     #
-    ikSystem = mainSystem.addMetaSubSystem(hipPaw, "IK")
+    # ikSystem = mainSystem.addMetaSubSystem(quadPaw, "IK")
     # # ikSystem.ikControlToWorld = True
+    ikSystem  = ik(side="U", part="Core")
     ikSystem.test_build()
     ikSystem.convertToComponent("IK")
