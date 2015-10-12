@@ -104,7 +104,8 @@ $(document).ready(function(){initNavTree('namespace_p_k_d___tools_1_1lib_unit_te
 
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Classes</a>  </div>
+<a href="#nested-classes">Classes</a> &#124;
+<a href="#var-members">Variables</a>  </div>
   <div class="headertitle">
 <div class="title">PKD_Tools.libUnitTests Namespace Reference</div>  </div>
 </div><!--header-->
@@ -116,7 +117,7 @@ $(document).ready(function(){initNavTree('namespace_p_k_d___tools_1_1lib_unit_te
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_p_k_d___tools_1_1lib_unit_tests_1_1_batch_test.html">BatchTest</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Base batch example.  <a href="class_p_k_d___tools_1_1lib_unit_tests_1_1_batch_test.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A batch test allows to run multiple suites/collection of tests at the same time.  <a href="class_p_k_d___tools_1_1lib_unit_tests_1_1_batch_test.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_p_k_d___tools_1_1lib_unit_tests_1_1_droid.html">Droid</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">This simulates an artist interacting with maya or a script doing job.  <a href="class_p_k_d___tools_1_1lib_unit_tests_1_1_droid.html#details">More...</a><br /></td></tr>
@@ -124,17 +125,42 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_p_k_d___tools_1_1lib_unit_tests_1_1_unit_test_case.html">UnitTestCase</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Base Class For All Unit Test.  <a href="class_p_k_d___tools_1_1lib_unit_tests_1_1_unit_test_case.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
+Variables</h2></td></tr>
+<tr class="memitem:ae51641337048599054f9fc5e3b915d86"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespace_p_k_d___tools_1_1lib_unit_tests.html#ae51641337048599054f9fc5e3b915d86">unit</a> = <a class="el" href="class_p_k_d___tools_1_1lib_unit_tests_1_1_batch_test.html">BatchTest</a>()</td></tr>
+<tr class="separator:ae51641337048599054f9fc5e3b915d86"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Templates for the unit tests. </p>
-<p>Basic unit tests structure to be used to test for various modules such as as rigging or other tools. It follows the principle of a scientific hypothesis 1) First we recreate the test conditions through the help of the <a class="el" href="class_p_k_d___tools_1_1lib_unit_tests_1_1_droid.html" title="This simulates an artist interacting with maya or a script doing job. ">Droid</a> 2) Then we test those values of various nodes to the ones we expect and also to check for potential failures. This is done with the help of <a class="el" href="class_p_k_d___tools_1_1lib_unit_tests_1_1_unit_test_case.html" title="Base Class For All Unit Test. ">UnitTestCase</a> 3) Display the result through the <a class="el" href="class_p_k_d___tools_1_1lib_unit_tests_1_1_batch_test.html" title="Base batch example. ">BatchTest</a> </p>
-</div></div><!-- contents -->
+<p>Basic unit tests structure to be used to test for various modules such as as rigging or other tools. It follows the principle of a scientific hypothesis</p><ol type="1">
+<li>First we recreate the test conditions through the help of the <a class="el" href="class_p_k_d___tools_1_1lib_unit_tests_1_1_droid.html" title="This simulates an artist interacting with maya or a script doing job. ">Droid</a></li>
+<li>Then we test those values of various nodes to the ones we expect and also to check for potential failures. This is done with the help of <a class="el" href="class_p_k_d___tools_1_1lib_unit_tests_1_1_unit_test_case.html" title="Base Class For All Unit Test. ">UnitTestCase</a></li>
+<li>Display the result through the <a class="el" href="class_p_k_d___tools_1_1lib_unit_tests_1_1_batch_test.html" title="A batch test allows to run multiple suites/collection of tests at the same time. ">BatchTest</a></li>
+</ol>
+<p>All of these unit test need to run in mayapy so in order for the maya commands to work. Ideally this should be setup in your IDE's Python console </p>
+</div><h2 class="groupheader">Variable Documentation</h2>
+<a class="anchor" id="ae51641337048599054f9fc5e3b915d86"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">tuple PKD_Tools.libUnitTests.unit = <a class="el" href="class_p_k_d___tools_1_1lib_unit_tests_1_1_batch_test.html">BatchTest</a>()</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00167">167</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
+
+</div>
+</div>
+</div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><a class="el" href="namespace_p_k_d___tools.html">PKD_Tools</a></li><li class="navelem"><a class="el" href="namespace_p_k_d___tools_1_1lib_unit_tests.html">libUnitTests</a></li>
-    <li class="footer">Generated on Fri Sep 4 2015 00:46:04 for PKD_Tools by
+    <li class="footer">Generated on Tue Oct 13 2015 00:58:12 for PKD_Tools by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.9.1 </li>
   </ul>

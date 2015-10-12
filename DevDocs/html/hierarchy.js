@@ -46,6 +46,9 @@ var hierarchy =
         [ "PKD_Tools.libPySide.QWarningBox", "class_p_k_d___tools_1_1lib_py_side_1_1_q_warning_box.html", null ]
       ] ]
     ] ],
+    [ "QProgressDialog", null, [
+      [ "PKD_Tools.libPySide.QProgressDialog", "class_p_k_d___tools_1_1lib_py_side_1_1_q_progress_dialog.html", null ]
+    ] ],
     [ "QTabBar", null, [
       [ "PKD_Tools.libPySide.VerticalTabBar", "class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html", null ]
     ] ],

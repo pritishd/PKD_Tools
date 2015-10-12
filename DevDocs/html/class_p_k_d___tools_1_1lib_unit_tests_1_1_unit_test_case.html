@@ -152,16 +152,12 @@ Public Member Functions</h2></td></tr>
 Public Attributes</h2></td></tr>
 <tr class="memitem:ae92b698a6a371f4298cb5db665939df7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_p_k_d___tools_1_1lib_unit_tests_1_1_unit_test_case.html#ae92b698a6a371f4298cb5db665939df7">unitTestId</a></td></tr>
 <tr class="separator:ae92b698a6a371f4298cb5db665939df7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa86449de9db48d3a4b8c475e04dfb45b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_p_k_d___tools_1_1lib_unit_tests_1_1_unit_test_case.html#aa86449de9db48d3a4b8c475e04dfb45b">targetNode</a></td></tr>
-<tr class="separator:aa86449de9db48d3a4b8c475e04dfb45b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeb82e40f543fc641ed1cf624d67703fc"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_p_k_d___tools_1_1lib_unit_tests_1_1_unit_test_case.html#aeb82e40f543fc641ed1cf624d67703fc">variable_name</a></td></tr>
-<tr class="separator:aeb82e40f543fc641ed1cf624d67703fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Base Class For All Unit Test. </p>
 <p>If you need to test a variable you need to make it attribute for this class and initialise it from the kwargs </p>
 
-<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00037">37</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
+<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00040">40</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a class="anchor" id="a777b3c53b5ca6e8fcad1f55e7d59db1e"></a>
 <div class="memitem">
@@ -195,11 +191,12 @@ Public Attributes</h2></td></tr>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">testName</td><td>The name of the scenario you are testing </td></tr>
+    <tr><td class="paramname">kwargs</td><td>All variables that need to be tested must be passed as kwargs. These can then be accessed as an internal vaiable </td></tr>
   </table>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00043">43</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
+<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00047">47</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
 
 </div>
 </div>
@@ -220,7 +217,7 @@ Public Attributes</h2></td></tr>
 
 <p>An example of a testcase to check failure. </p>
 
-<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00063">63</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
+<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00065">65</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
 
 </div>
 </div>
@@ -240,7 +237,7 @@ Public Attributes</h2></td></tr>
 
 <p>An example of a testcase to check not equal to. </p>
 
-<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00071">71</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
+<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00073">73</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
 
 </div>
 </div>
@@ -260,7 +257,7 @@ Public Attributes</h2></td></tr>
 
 <p>An example of a testcase to check success. </p>
 
-<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00055">55</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
+<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00057">57</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
 
 </div>
 </div>
@@ -280,7 +277,7 @@ Public Attributes</h2></td></tr>
 
 <p>An example of a testcase to check if a value is true against a variable. </p>
 
-<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00078">78</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
+<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00080">80</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
 
 </div>
 </div>
@@ -300,7 +297,7 @@ Public Attributes</h2></td></tr>
 
 <p>An example of a verbose testcase to check if a value is None. </p>
 
-<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00096">96</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
+<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00098">98</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
 
 </div>
 </div>
@@ -320,45 +317,17 @@ Public Attributes</h2></td></tr>
 
 <p>An example of a verbose testcase to check if a value is true against a variable. </p>
 
-<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00087">87</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
+<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00089">89</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a class="anchor" id="aa86449de9db48d3a4b8c475e04dfb45b"></a>
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">PKD_Tools.libUnitTests.UnitTestCase.targetNode</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00047">47</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
-
-</div>
-</div>
 <a class="anchor" id="ae92b698a6a371f4298cb5db665939df7"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
           <td class="memname">PKD_Tools.libUnitTests.UnitTestCase.unitTestId</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00045">45</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
-
-</div>
-</div>
-<a class="anchor" id="aeb82e40f543fc641ed1cf624d67703fc"></a>
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">PKD_Tools.libUnitTests.UnitTestCase.variable_name</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -376,7 +345,7 @@ Public Attributes</h2></td></tr>
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><a class="el" href="namespace_p_k_d___tools.html">PKD_Tools</a></li><li class="navelem"><a class="el" href="namespace_p_k_d___tools_1_1lib_unit_tests.html">libUnitTests</a></li><li class="navelem"><a class="el" href="class_p_k_d___tools_1_1lib_unit_tests_1_1_unit_test_case.html">UnitTestCase</a></li>
-    <li class="footer">Generated on Fri Sep 4 2015 00:46:04 for PKD_Tools by
+    <li class="footer">Generated on Tue Oct 13 2015 00:58:12 for PKD_Tools by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.9.1 </li>
   </ul>

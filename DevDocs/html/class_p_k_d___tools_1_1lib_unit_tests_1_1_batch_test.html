@@ -114,7 +114,7 @@ $(document).ready(function(){initNavTree('class_p_k_d___tools_1_1lib_unit_tests_
 </div><!--header-->
 <div class="contents">
 
-<p>Base batch example.  
+<p>A batch test allows to run multiple suites/collection of tests at the same time.  
  <a href="class_p_k_d___tools_1_1lib_unit_tests_1_1_batch_test.html#details">More...</a></p>
 <div class="dynheader">
 Inheritance diagram for PKD_Tools.libUnitTests.BatchTest:</div>
@@ -150,9 +150,10 @@ Public Attributes</h2></td></tr>
 <tr class="separator:abbd0c69842f9b97b1b45983e5a2e47e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Base batch example. </p>
+<div class="textblock"><p>A batch test allows to run multiple suites/collection of tests at the same time. </p>
+<p>This is great if you want to see if a script has done the multiple outcomes that you have expected. </p>
 
-<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00105">105</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
+<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00106">106</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a class="anchor" id="ae65ad25ca1958ecf3883c0821384a5f2"></a>
 <div class="memitem">
@@ -170,7 +171,7 @@ Public Attributes</h2></td></tr>
 
 <p>Initialise variables. </p>
 
-<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00108">108</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
+<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00110">110</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
 
 </div>
 </div>
@@ -208,12 +209,13 @@ Public Attributes</h2></td></tr>
 <p>Here the test are added to the suite. </p>
 <p>This functions needs to copy pasted in inherited packages so that it picks up the testCase classes defined in those files </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">testName</td><td>The name of the test to be addes </td></tr>
+    <tr><td class="paramname">testName</td><td>The name of the test to be added </td></tr>
+    <tr><td class="paramname">kwargs</td><td>Any keyword arguements that need to be passed to the <a class="el" href="class_p_k_d___tools_1_1lib_unit_tests_1_1_unit_test_case.html" title="Base Class For All Unit Test. ">UnitTestCase</a> class such as a variable that is to be tested </td></tr>
   </table>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00125">125</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
+<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00128">128</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
 
 </div>
 </div>
@@ -233,7 +235,7 @@ Public Attributes</h2></td></tr>
 
 <p>An example of how to run a batch test. </p>
 
-<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00133">133</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
+<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00136">136</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
 
 </div>
 </div>
@@ -269,7 +271,7 @@ Public Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00150">150</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
+<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00153">153</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
 
 </div>
 </div>
@@ -284,7 +286,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00109">109</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
+<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00111">111</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
 
 </div>
 </div>
@@ -298,7 +300,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00111">111</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
+<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00113">113</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
 
 </div>
 </div>
@@ -312,7 +314,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00110">110</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
+<p>Definition at line <a class="el" href="lib_unit_tests_8py_source.html#l00112">112</a> of file <a class="el" href="lib_unit_tests_8py_source.html">libUnitTests.py</a>.</p>
 
 </div>
 </div>
@@ -325,7 +327,7 @@ Public Attributes</h2></td></tr>
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><a class="el" href="namespace_p_k_d___tools.html">PKD_Tools</a></li><li class="navelem"><a class="el" href="namespace_p_k_d___tools_1_1lib_unit_tests.html">libUnitTests</a></li><li class="navelem"><a class="el" href="class_p_k_d___tools_1_1lib_unit_tests_1_1_batch_test.html">BatchTest</a></li>
-    <li class="footer">Generated on Fri Sep 4 2015 00:46:04 for PKD_Tools by
+    <li class="footer">Generated on Tue Oct 13 2015 00:58:12 for PKD_Tools by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.9.1 </li>
   </ul>
