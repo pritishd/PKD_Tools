@@ -94,7 +94,7 @@ class ikDroid(Droid):
 
     def create_simple_ik(self):
         self.new_file()
-        self.ikSystem = limb.ik(side="U", part="Core")
+        self.ikSystem = limb.limbIk(side="U", part="Core")
         self.ikSystem.test_build()
 
     def reinitialise_meta_network(self):
@@ -195,13 +195,13 @@ class BatchTest(libUnitTests.BatchTest):
 
 
 unit = BatchTest()
-# unit.test_meta_simple_create()
-# unit.test_meta_reopen()
+unit.test_meta_simple_create()
+unit.test_meta_reopen()
 #
 # unit.test_meta_advanced_create()
 # unit.test_meta_advanced_reopen()
-unit.test_ik_creation()
-unit.test_ik_reopen()
+# unit.test_ik_creation()
+# unit.test_ik_reopen()
 
 
 # if __name__ == '__main__':

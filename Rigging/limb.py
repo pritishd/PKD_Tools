@@ -41,21 +41,17 @@ def _build_ik_(metaClass, solver, handleSuffix, startJointNumber, endJointNumber
 
     return ikHandleMeta
 
-
-class ik(core.rig):
+class limbIk(core.ik):
     # TODO Rename ik to limbIk and push the common properties between splineIk to a new class called iK in the core package
     def __init__(self, *args, **kwargs):
-        super(ik, self).__init__(*args, **kwargs)
+        super(limbIk, self).__init__(*args, **kwargs)
         self.ikSolver = SOLVERS["Single"]
         self.hasParentMaster = False
-        self.rotateOrder = "yzx"
-        self.mirrorData = {'side': self.mirrorSide, 'slot': 1}
         self.custom_pv_position = None
         self.startJointNumber = 0
         self.endJointNumber = 1
         self.ikControlToWorld = False
         self.hasPivot = False
-        self.ctrlShape = "Box"
 
     def loadIKPlugin(self):
         if self.ikSolver not in ["ikRPsolver", "ikSCsolver"]:
@@ -239,7 +235,7 @@ class fk(core.rig):
     pass
 
 
-class arm(ik):
+class arm(limbIk):
     """This is base IK System. with a three joint"""
 
     def __init__(self, *args, **kwargs):
@@ -375,7 +371,7 @@ class hip(arm):
         self.addSupportNode(data, "aimHelper")
 
 
-class quad(ik):
+class quad(limbIk):
     def __init__(self, *args, **kwargs):
         super(quad, self).__init__(self, *args, **kwargs)
         self.endJointNumber = 3
@@ -853,6 +849,6 @@ if __name__ == '__main__':
     #
     # ikSystem = mainSystem.addMetaSubSystem(quadPaw, "IK")
     # # ikSystem.ikControlToWorld = True
-    ikSystem  = ik(side="U", part="Core")
+    ikSystem  = limbIk(side="U", part="Core")
     ikSystem.test_build()
     ikSystem.convertToComponent("IK")

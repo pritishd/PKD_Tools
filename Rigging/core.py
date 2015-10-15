@@ -217,7 +217,7 @@ class JointSystem(Network):
     def build(self):
         if self.joint_data:
             metaJoints = []
-            for joint, i in zip(self.joint_data, range(len(self.joint_data))):
+            for i, joint in enumerate(self.joint_data):
                 metaJoint = Joint(side=self.side, part=joint["Name"])
                 metaJoint.pynode.setTranslation(joint["Position"], space="world")
                 metaJoint.pynode.jointOrient.set(joint["JointOrient"])
@@ -550,19 +550,19 @@ class rig(SubSystem):
         # Get the height
 
 
-        height = Red9_CoreUtils.distanceBetween(targetJoint.shortName(),childJoint.shortName())
+        height = Red9_CoreUtils.distanceBetween(targetJoint.shortName(), childJoint.shortName())
 
         # Create the cube of that height
         cube = pm.polyCube(height=height, ch=False)[0]
 
-        cube.translateY.set(height*.5)
+        cube.translateY.set(height * .5)
 
         # Freeze Transform
         libUtilities.freeze_transform(cube)
 
         # reset the pivot to origin
-        cube.scalePivot.set([0,0,0])
-        cube.rotatePivot.set([0,0,0])
+        cube.scalePivot.set([0, 0, 0])
+        cube.rotatePivot.set([0, 0, 0])
         # Snap the pivot of the cube to this cluster
 
 
@@ -581,6 +581,15 @@ class rig(SubSystem):
     @property
     def primaryAxis(self):
         return self.pynode.rotateOrder.get(asString=True)
+
+
+class ik(rig):
+    # TODO Rename ik to limbIk and push the common properties between splineIk to a new class called iK in the core package
+    def __init__(self, *args, **kwargs):
+        super(ik, self).__init__(*args, **kwargs)
+        self.rotateOrder = "yzx"
+        self.mirrorData = {'side': self.mirrorSide, 'slot': 1}
+        self.ctrlShape = "Box"
 
 
 Red9_Meta.registerMClassInheritanceMapping()

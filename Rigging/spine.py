@@ -12,7 +12,7 @@ reload(libUtilities)
 import pymel.core as pm
 
 
-class ikSpline(core.rig):
+class ikSpline(core.ik):
     """This is a Spline IK System"""
 
     def build_helper_joints(self):
@@ -106,7 +106,8 @@ class ikSpline(core.rig):
 
 class simpleSpine(ikSpline):
     def build_control(self):
-        pass
+        for joint in self.JointSystem.joint_data:
+            print joint
 
 
 class multiSpine(ikSpline):
@@ -124,8 +125,8 @@ if __name__ == '__main__':
 
     # print ikSystem
 
-    mainSystem = core.SubSystem(side="U", part="Core")
+    mainSystem = core.SubSystem(side="L", part="Core")
 
-    ikSystem = mainSystem.addMetaSubSystem(ikSpline, "IK")
+    ikSystem = mainSystem.addMetaSubSystem(simpleSpine, "IK")
     # ikSystem.ikControlToWorld = True
     ikSystem.test_build()
