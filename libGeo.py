@@ -100,7 +100,7 @@ class ObjManager(object):
         self._export_dir_ = None
         self._geo_list_ = []
         # Load the objExport
-        cmds.loadPlugin("objExport.mll",quiet = True)
+        cmds.loadPlugin("objExport.mll", quiet=True)
         self.new_scene = False
         self.cleansing_mode = False
         self.progress_tracker = None
@@ -240,7 +240,6 @@ class ObjManager(object):
         topNode.scale.unlock()
         topNode.translate.unlock()
 
-
     def export_all(self):
         """Export All Geo and heirachy info"""
         libUtilities.freeze_transform(self.top_node)
@@ -260,12 +259,13 @@ class ObjManager(object):
     def update_progress(self):
         # Update the progress tracker
         if self.progress_tracker is not None:
-            #self.progress_tracker.set_current_status()
+            # self.progress_tracker.set_current_status()
             self.progress_tracker.currentTarget = self.current_target
             self.progress_tracker.update()
 
 
-# @cond DOXYGEN_SHOULD_SKIP_THIS
+            # @cond DOXYGEN_SHOULD_SKIP_THIS
+
     @property
     def top_node(self):
         """Get the top node name. If it is defined then find it by searching the top group"""
@@ -323,7 +323,7 @@ class ObjManager(object):
     def geo_file_info(self, path_info):
         """Write the geo path info to json file"""
         # Write JSON data
-        libFile.write_json(self.geoListPath,path_info)
+        libFile.write_json(self.geoListPath, path_info)
 
     @property
     def heirachy_file_info(self):
@@ -335,10 +335,8 @@ class ObjManager(object):
     @heirachy_file_info.setter
     def heirachy_file_info(self, heirachy_info):
         """Write the heirachy info into a json file"""
-        libFile.write_json(self.datapath,heirachy_info)
+        libFile.write_json(self.datapath, heirachy_info)
         # @endcond
-
-
 
 
 def convert_joint_to_cluster(targetGeo, skipList=[]):
@@ -475,6 +473,97 @@ def create_wrap(*args, **kwargs):
     cmds.connectAttr(source + '.dropoff', wrapNode + '.dropoff[0]')
 
     return pm.PyNode(wrapNode)
+
+
+def createFollicle(pos, geo=None):
+    """
+    Create a follice for a position on a target geometery. Converted to Pymel version of the following script
+    http://www.tommasosanguigni.it/blog/function-createfollicle/
+    @param pos: The target position
+    @param geo: The target geo
+    @return: follicle transform
+    """
+    if geo.getShape().type() not in ["nurbsSurface", "mesh"]:
+        raise ValueError("Geometry must be mesh of nurbSurface")
+    else:
+        transform_node = pm.createNode("transform")
+        transform_node.translate.set(pos)
+
+        # make vector product nodes to get correct rotation of the transform node
+        vector_product = pm.createNode("vectorProduct")
+        vector_product.operation.set(4)
+        transform_node.worldMatrix >> vector_product.matrix
+        transform_node.rotatePivot >> vector_product.input1
+
+
+        # connect the correct position to a closest point on surface node created
+        if geo.getShape().type() == "nurbsSurface":
+            closest_position = pm.createNode("closestPointOnSurface", n=(transform_node + "_CPOS"))
+            geo.ws >> closest_position.inputSurface
+        else:
+            closest_position = pm.createNode("closestPointOnMesh", n=(transform_node + "_CPOS"))
+            geo.outMesh >> closest_position.inMesh
+
+        vector_product.output >> closest_position.inPosition
+
+        # create a follicle node and connect it
+
+        follicle = pm.createNode("follicle")
+        follicle_transform = follicle.getParent()
+
+        follicle.outTranslate >> follicle_transform.translate
+        follicle.outRotate >> follicle_transform.rotate
+
+        if geo.getShape().type() == "nurbsSurface":
+            geo.local >> follicle.inputSurface
+        else:
+            geo.outMesh >> follicle.inputMesh
+
+        geo.worldMatrix >> follicle.inputWorldMatrix
+
+        follicle.parameterU.set(closest_position.parameterU.get())
+        follicle.parameterV.set(closest_position.parameterV.get())
+
+
+        # Delete nodes
+        pm.delete(transform_node)
+        pm.delete(closest_position)
+        return follicle_transform
+
+
+def createStickyControl(position, geo, name):
+    """
+    Create sticky control for a transform
+    @param geo:
+    @return:
+    """
+    # Create space locator
+
+    class ctrl():
+        def __init__(self, name):
+            self.ctrl = pm.spaceLocator(name=name)
+            self.xtra = libUtilities.parZero(self.ctrl, "Xtra")
+            self.prnt = libUtilities.parZero(self.xtra, "Prnt")
+            self.prnt.rename(name + "_Prnt")
+            self.ctrl.rename(name + "_Ctrl")
+
+    # Create the ctrl obj
+    newLoc = ctrl(name)
+    newLoc.prnt.translate.set(position)
+    # Create the follice and point contraint
+    follicle = createFollicle(position, geo)
+    follicle.rename(name + "_fol")
+    pm.pointConstraint(follicle, newLoc.prnt)
+
+    # Create a translate cycle
+    md = pm.createNode("multiplyDivide",name= name + "_MD")
+    md.input2.set([-1, -1, -1])
+
+    newLoc.ctrl.translate >> md.input1
+    md.output >> newLoc.xtra.translate
+
+
+    return newLoc
 
 
 if __name__ == '__main__':
