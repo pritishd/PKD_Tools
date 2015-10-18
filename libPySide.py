@@ -2,9 +2,8 @@
 @package PKD_Tools.libPySide
  @brief Here we do a basic PySide setup so that all GUIs are inside of maya and that they follow some common formatting
   to bring about consistency
- @details We also build our custom extended widgets or convience classes here.
-
- This is following documentation on best practice for Pyside in maya
+ @details This is following documentation on best practice for Pyside in maya
+ 
  http://knowledge.autodesk.com/search-result/caas/CloudHelp/cloudhelp/2015/ENU/Maya-SDK/files/GUID-66ADA1FF-3E0F-469C-84C7-74CEB36D42EC-htm.html"""
 
 from shiboken import wrapInstance
@@ -20,7 +19,6 @@ import libFile
 AppIcon = libFile.join(libFile.current_working_directory(), r"Icons/WinIcon.png")
 AppLabel = libFile.join(libFile.current_working_directory(), r"Icons/WinLabel.png")
 
-
 # This is a function that is run from your class object to get a handle
 # to the main Maya window, it uses a combination of the Maya API as well as the SIP module
 
@@ -28,7 +26,6 @@ def getMayaMainWindow():
     """Setup so that any Pyside window are a child within the maya application"""
     accessMainWindow = OpenMayaUI.MQtUtil.mainWindow()
     return wrapInstance(long(accessMainWindow), QtGui.QMainWindow)
-
 
 class QMessageBox(QtGui.QMessageBox):
     """ Setup up of convience message boxes"""
@@ -38,6 +35,7 @@ class QMessageBox(QtGui.QMessageBox):
         icon = QtGui.QIcon(AppIcon)
         self.setWindowIcon(icon)
         self.setSizeGripEnabled(True)
+
 
     def event(self, e):
         """Make it a resizable window. Used most in the context of detailed box"""
@@ -62,7 +60,6 @@ class QMessageBox(QtGui.QMessageBox):
 
 class QCriticalBox(QMessageBox):
     """ A message box with a critical icon"""
-
     def __init__(self):
         super(QCriticalBox, self).__init__()
         self.setIcon(QtGui.QMessageBox.Icon.Critical)
@@ -70,7 +67,6 @@ class QCriticalBox(QMessageBox):
 
 class QWarningBox(QMessageBox):
     """ A message box with a warning icon"""
-
     def __init__(self):
         super(QWarningBox, self).__init__()
         self.setIcon(QtGui.QMessageBox.Icon.Warning)
@@ -78,7 +74,6 @@ class QWarningBox(QMessageBox):
 
 class QQuestionBox(QMessageBox):
     """ A message box with a question icon"""
-
     def __init__(self):
         super(QQuestionBox, self).__init__()
         self.setIcon(QtGui.QMessageBox.Icon.Question)
@@ -385,7 +380,55 @@ class VerticalTabBar(QtGui.QTabBar):
         # @endcond
 
 
+class CheckableTabWidget(QtGui.QTabWidget):
+    """A tab widget with a checkbox
+    source:http://stackoverflow.com/questions/5818387/qtabwidget-with-checkbox-in-title
+    """
+    checkBoxList = []
+    titleDict = {}
+    stateChanged = QtCore.Signal(int, int, str)
+
+    def addTab(self, widget, title):
+        QtGui.QTabWidget.addTab(self, widget, title)
+        checkBox = QtGui.QCheckBox()
+        self.checkBoxList.append(checkBox)
+        self.tabBar().setTabButton(self.tabBar().count() - 1, QtGui.QTabBar.LeftSide, checkBox)
+        self.titleDict[checkBox] = title
+        checkBox.stateChanged.connect(lambda checkState: self._emitStateChanged_(checkBox, checkState))
+
+    def isChecked(self, index):
+        return self.tabBar().tabButton(index, QtGui.QTabBar.LeftSide).checkState() != QtCore.Qt.Unchecked
+
+    def setCheckState(self, index, checkState):
+        self.tabBar().tabButton(index, QtGui.QTabBar.LeftSide).setCheckState(checkState)
+
+    def _emitStateChanged_(self, checkBox, checkState):
+        index = self.checkBoxList.index(checkBox)
+        self.setCurrentIndex(index)
+        self.stateChanged.emit(index, checkState, self.titleDict[checkBox])
+
+
 # @cond DOXYGEN_SHOULD_SKIP_THIS
+class CheckableTabTest(QMainWindow):
+    def _setup_(self):
+        super(CheckableTabTest, self)._setup_()
+        tabs = CheckableTabWidget()
+        tabs.setTabBar(QtGui.QTabBar())
+        digits = ['Thumb', 'Pointer', 'Rude', 'Ring', 'Pinky']
+        for i, d in enumerate(digits):
+            widget = QtGui.QLabel("Area #%s <br> %s Finger" % (i, d))
+            tabs.addTab(widget, d)
+        # tabs.setTabPosition(QtGui.QTabWidget.West)
+        tabs.show()
+        self.main_layout.addWidget(tabs)
+        tabs.stateChanged.connect(self.myFunction)
+
+    def myFunction(self, index, checkState, title):
+        print "I am current positioned on: %i" % index
+        print "The State is: %i" % bool(checkState)
+        print "My title is: %s" % title
+
+
 class VerticalTabTest(QMainWindow):
     """A vertical tab test"""
 
@@ -416,7 +459,6 @@ class QProgressDialog(QtGui.QProgressDialog):
         self.currentProcess = ""
         self.setFixedWidth(300)
 
-
     def update(self, *args, **kwargs):
         """Update function that moves the progress bar forward. Also sets the label"""
         if self.currentProgress <= self.maximum():
@@ -445,7 +487,7 @@ def vLine_divider():
 
 
 if __name__ == '__main__':
-    win = VerticalTabTest()
+    win = CheckableTabTest()
     win.show()
 
     # input = QInputDialog()
