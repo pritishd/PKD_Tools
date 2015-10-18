@@ -350,8 +350,8 @@ Otherwise this tool would work on the first top group which is determined by May
                     detailed += "select -add %s;\n" % duplicate.name()
                 detailed += '\n\nThis tool can attempt to fix the problem. Run the scene checker again to see if problem is resolved'
                 fixButton = libPySide.QtGui.QPushButton("Attempt Fix")
-                okButton = libPySide.QtGui.QPushButton("Abort")
-                warnWindow.addButton(okButton, libPySide.QtGui.QMessageBox.NoRole)
+                abortButton = libPySide.QtGui.QPushButton("Abort")
+                warnWindow.addButton(abortButton, libPySide.QtGui.QMessageBox.NoRole)
                 warnWindow.addButton(fixButton, libPySide.QtGui.QMessageBox.YesRole)
                 warnWindow.setDetailedText(detailed)
                 ret = warnWindow.exec_()
@@ -359,19 +359,37 @@ Otherwise this tool would work on the first top group which is determined by May
                     libGeo.fix_duplicates_shapes(errorInfo["Duplicate Shapes"])
                 return
 
+            if errorInfo["Incorrect Shape Names"]:
+                warnWindow.setText("Incorrect Shape Names")
+                warnWindow.setWindowTitle("Incorrect Shape Names Error")
+                detailed = '''The following names of the shapes do not follow maya's "[parentName]Shape naming convention"\n\n'''
+                for duplicate in errorInfo["Duplicate Shapes"]:
+                    detailed += "select -add %s;\n" % duplicate.name()
+                detailed += '\n\nThis tool can attempt to fix the problem. Run the scene checker again to see if problem is resolved'
+                warnWindow.addButton("Abort", libPySide.QtGui.QMessageBox.NoRole)
+                warnWindow.addButton("Attempt Fix", libPySide.QtGui.QMessageBox.YesRole)
+                warnWindow.setDetailedText(detailed)
+                ret = warnWindow.exec_()
+                if ret:
+                    libGeo.fix_duplicates_shapes(errorInfo["Incorrect Shape Names"])
+                return
+
             if errorInfo["History Geos"]:
                 warnWindow.setText("Geo with history")
                 warnWindow.setWindowTitle("Geo History Error")
-                detailed = "The following mesh has history on them\n\n"
+                detailed = '''The following object may have construction history on them. This may not be issue as sometime maya thinks that shader assignement is construction history. However be careful if you have any deformers such blendshapes, as these will be baked during export process\n\n'''
                 for historyGeo in errorInfo["History Geos"]:
                     detailed += "select -add %s;\n" % historyGeo.name()
                 warnWindow.setDetailedText(detailed)
-                warnWindow.exec_()
-                return
+                warnWindow.addButton("Ignore", libPySide.QtGui.QMessageBox.NoRole)
+                warnWindow.addButton("Ok", libPySide.QtGui.QMessageBox.YesRole)
+                ret = warnWindow.exec_()
+                if ret:
+                    return
 
         # Give the all clear
         congratsWin = libPySide.QMessageBox()
-        congratsWin.setText("Everything seems ok")
+        congratsWin.setText("Everything is good to go.")
         congratsWin.setWindowTitle("All Clear")
         congratsWin.exec_()
 

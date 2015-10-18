@@ -26,8 +26,9 @@ def multiple_top_nodes_exists():
     """Check if the the scene has multiple top level groups"""
     topNodes = []
     for top in pm.ls(assemblies=True, ud=True):
-        if not top.getShape():
-            topNodes.append(top)
+        if top.type() == "transform":
+            if not top.getShape():
+                topNodes.append(top)
     return len(topNodes) > 1
 
 
@@ -40,6 +41,7 @@ def find_heirachy_errors(topNode):
     duplicateShapes = []
     namespaceTransform = []
     geoWithHistory = []
+    incorrectShapes = []
 
     for mesh in pm.listRelatives(topNode, type="mesh", ad=1, ni=True):
         meshParent = mesh.getParent()
@@ -49,6 +51,10 @@ def find_heirachy_errors(topNode):
         # Check duplicate shapes
         if "|" in mesh.name():
             duplicateShapes.append(mesh)
+
+        # Check the shape name is name correctly
+        if ("%sShape" % meshParent.name()) != mesh.name():
+            incorrectShapes.append(mesh)
 
         # Check geo with history
         if pm.listHistory(meshParent, ha=1, pdo=1):
@@ -62,6 +68,7 @@ def find_heirachy_errors(topNode):
     return {"Namespace Transform": namespaceTransform,
             "Duplicate Shapes": duplicateShapes,
             "Duplicate Transform": duplicateTransform,
+            "Incorrect Shape Names": incorrectShapes,
             "History Geos": geoWithHistory
             }
 
@@ -556,12 +563,11 @@ def createStickyControl(position, geo, name):
     pm.pointConstraint(follicle, newLoc.prnt)
 
     # Create a translate cycle
-    md = pm.createNode("multiplyDivide",name= name + "_MD")
+    md = pm.createNode("multiplyDivide", name=name + "_MD")
     md.input2.set([-1, -1, -1])
 
     newLoc.ctrl.translate >> md.input1
     md.output >> newLoc.xtra.translate
-
 
     return newLoc
 
