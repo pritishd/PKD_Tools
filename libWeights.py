@@ -793,10 +793,10 @@ class WeightManager(object):
         else:
             return libXml.ConvertXmlToDict(self.info_file)["%sInfo" % self.deformer.capitalize()].keys()
 
-        #Return the parent folder of the info file
+        # Return the parent folder of the info file
         return
 
-    # @endcond
+        # @endcond
 
 
 class SkinWeightManager(WeightManager):

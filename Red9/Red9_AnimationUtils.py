@@ -532,7 +532,7 @@ class AnimationUI(object):
         self.poseButtonBGC = [0.27, 0.3, 0.3]
         self.poseButtonHighLight = r9Setup.red9ButtonBGC('green')
         self.poseProjectMute = False  # whether to disable the save and update funcs in Project mode
-        
+
         # Default Red9 poseHandlers now bound here if found, used to extend Clients handling of data
         self.poseHandlerPaths=[os.path.join(self.presetDir,'poseHandlers')]
         
@@ -1178,8 +1178,8 @@ class AnimationUI(object):
 
     #------------------------------------------------------------------------------
     # UI Callbacks ---
-    #------------------------------------------------------------------------------
-        
+    # ------------------------------------------------------------------------------
+
     def __uiCB_manageSnapHierachy(self, *args):
         '''
         Disable all hierarchy filtering ui's when not running hierarchys
@@ -1284,7 +1284,7 @@ class AnimationUI(object):
             cmds.checkBox('uicbSnapPriorityOnly', e=True, v=False)
             return
         
-    #------------------------------------------------------------------------------    
+    #------------------------------------------------------------------------------
     # Preset FilterSettings Management ---
     #------------------------------------------------------------------------------
     
@@ -1440,12 +1440,11 @@ class AnimationUI(object):
             cmds.textScrollList('uitslFilterPriority', e=True, append=data)
         self.__uiPresetFillFilter()
         self.__uiCache_storeUIElements()
-    
-    
+
     # -----------------------------------------------------------------------------
     # PoseSaver Path Management ---
     #------------------------------------------------------------------------------
-    
+
     def setPoseSelected(self, val=None, *args):
         '''
         set the PoseSelected cache for the UI calls
@@ -1512,7 +1511,8 @@ class AnimationUI(object):
                 result = cmds.confirmDialog(
                     title='Project Pose Modifications',
                     button=['Continue', 'Cancel'],
-                    message='You are trying to modify a Project Pose\n\nPlease Confirm Action!',  #  "%s"' % self.poseSelected,
+                    message='You are trying to modify a Project Pose\n\nPlease Confirm Action!',
+                    # "%s"' % self.poseSelected,
                     defaultButton='Cancel',
                     icon='warning',
                     cancelButton='Cancel',
@@ -1539,7 +1539,7 @@ class AnimationUI(object):
         '''
         Switch the Pose mode from Project to Local. In project mode save is disabled.
         Both have different caches to store the 2 mapped root paths
-        
+
         :param mode: 'local' or 'project', in project the poses are load only, save=disabled
         '''
         if mode == 'local' or mode =='localPoseMode':
@@ -1553,7 +1553,7 @@ class AnimationUI(object):
             if self.poseProjectMute:
                 cmds.button('savePoseButton', edit=True, en=True, bgc=r9Setup.red9ButtonBGC(1))
             cmds.textFieldButtonGrp('uitfgPosePath', edit=True, text=self.posePathLocal)
-            
+
         elif mode == 'project' or mode =='projectPoseMode':
             self.posePath = os.path.join(self.posePathProject, self.getPoseSubFolder())
             if not os.path.exists(self.posePath):
@@ -1772,8 +1772,8 @@ class AnimationUI(object):
         '''
         RMB popup menu for the Pose functions
         '''
-        enableState=True
-        if self.posePathMode=='projectPoseMode' and self.poseProjectMute:
+        enableState = True
+        if self.posePathMode == 'projectPoseMode' and self.poseProjectMute:
             enableState=False
             
         if self.poseGridMode=='thumb':
@@ -2009,7 +2009,7 @@ class AnimationUI(object):
         #if cmds.checkBox('uicbMetaRig',q=True,v=True):
         cmds.checkBox('uicbPoseSpace', e=True, en=state)
         cmds.frameLayout(self.uiflPoseRelativeFrame, e=True, en=state)
-     
+
     def __uiPoseDelete(self, *args):
         if not self.__validatePoseFunc('DeletePose'):
             return
@@ -2183,7 +2183,7 @@ class AnimationUI(object):
         r9Setup.PRO_PACK_STUBS().AnimationUI_stubs.uiCB_poseAddPoseHandler(self.posePath)
 
         
-        
+
     # ------------------------------------------------------------------------------
     # UI Elements ConfigStore Callbacks ---
     # ------------------------------------------------------------------------------
@@ -2291,8 +2291,7 @@ class AnimationUI(object):
         if os.path.exists(defaultConfig):
             self.ANIM_UI_OPTVARS['AnimationUI']=configobj.ConfigObj(defaultConfig)['AnimationUI']
             self.__uiCache_loadUIElements()
-        
-        
+
     # -----------------------------------------------------------------------------
     # MAIN UI FUNCTION CALLS ---
     #------------------------------------------------------------------------------
@@ -2432,7 +2431,7 @@ class AnimationUI(object):
         Internal UI call for PoseLibrary Save func, note that filterSettings is bound
         but only filled by the main __uiCall call
         '''
-        #test the code behaviour under Project mode
+        # test the code behaviour under Project mode
         if not self.__validatePoseFunc('PoseSave'):
             return
         if not path:

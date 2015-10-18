@@ -30,6 +30,7 @@ class ikSpline(core.ik):
         # Build the main single degree curve
         baseCurve = utils.create_curve(jntSystem.positions, degree=1)
         baseCurve.rename(utils.nameMe(self.side, self.part + "Base", "Curve"))
+        self.controlCurve = baseCurve
         # Build the bspline ik curve
         ikCurve, fitNode = pm.fitBspline(baseCurve,
                                          ch=1,
@@ -79,6 +80,12 @@ class ikSpline(core.ik):
         self.JointSystem.convertJointsToMetaJoints()
         self.JointSystem.setRotateOrder(self.rotateOrder)
         self.build()
+        for i in range(len(self.JointSystem.Joints) - 1):
+            print self.JointSystem.Joints[i]
+            self.create_test_cube(self.JointSystem.Joints[i])
+
+    def add_stretch(self):
+        pass
 
     @property
     def HelpJointSystem(self):
@@ -102,6 +109,14 @@ class ikSpline(core.ik):
     @ikHandle.setter
     def ikHandle(self, data):
         self.addSupportNode(data, "IKHandle")
+
+    @property
+    def controlCurve(self):
+        return self.getSupportNode("ControlCurve")
+
+    @controlCurve.setter
+    def controlCurve(self, data):
+        self.addSupportNode(data, "ControlCurve")
 
 
 class simpleSpine(ikSpline):

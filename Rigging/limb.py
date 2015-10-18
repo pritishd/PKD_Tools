@@ -25,7 +25,7 @@ def _build_ik_(metaClass, solver, handleSuffix, startJointNumber, endJointNumber
     name = utils.nameMe(metaClass.side, metaClass.part, handleSuffix)
     startJoint = metaClass.JointSystem.Joints[startJointNumber].shortName()
     endJoint = metaClass.JointSystem.Joints[endJointNumber].shortName()
-    ikHandle = pm.ikHandle(name=name, sj=startJoint,  ee=endJoint, sol=solver,sticky="sticky")[0]
+    ikHandle = pm.ikHandle(name=name, sj=startJoint, ee=endJoint, sol=solver, sticky="sticky")[0]
 
     ikHandleMeta = core.MetaRig(ikHandle.name(), nodeType="ikHandle")
     ikHandleMeta.part = metaClass.part
@@ -40,6 +40,7 @@ def _build_ik_(metaClass, solver, handleSuffix, startJointNumber, endJointNumber
     libUtilities.snap_pivot(ikHandleMeta.prnt.mNode, endJoint)
 
     return ikHandleMeta
+
 
 class limbIk(core.ik):
     # TODO Rename ik to limbIk and push the common properties between splineIk to a new class called iK in the core package
@@ -845,10 +846,10 @@ if __name__ == '__main__':
 
     # print ikSystem
     # ik(side="U", part="Core")
-    #mainSystem = core.SubSystem(side="U", part="Core")
+    # mainSystem = core.SubSystem(side="U", part="Core")
     #
     # ikSystem = mainSystem.addMetaSubSystem(quadPaw, "IK")
     # # ikSystem.ikControlToWorld = True
-    ikSystem  = limbIk(side="U", part="Core")
+    ikSystem = limbIk(side="U", part="Core")
     ikSystem.test_build()
     ikSystem.convertToComponent("IK")

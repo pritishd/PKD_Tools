@@ -147,6 +147,7 @@ def lockAttr(target, attributes, lock=True):
         for i in range(3):
             pm.setAttr(target + "." + attributes[i], l=0)
 
+
 def colorCurve(target, col):
     """
     Override Color for shape object
@@ -432,7 +433,7 @@ def get_centre_piv_pos(geo):
     @param geo: The target geo
     """
     cluster = pm.cluster(geo)[1]
-    pos = xform(cluster)
+    pos = pm.xform(cluster)
     pm.delete(cluster)
     return pos
 
@@ -654,6 +655,7 @@ def set_lock_status(node, lockStatusDict):
         else:
             node.attr(attr).unlock()
 
+
 def unlock_default_attribute(node):
     """
     Unlock the the default status of a node
@@ -764,3 +766,18 @@ def fix_shape_name(transform):
     @param transform:  The transform name with the wrong shape name
     """
     transform.getShape().rename("%sShape" % transform.shortName())
+
+
+def add_nodes_to_namespace(namespace, nodes):
+    """
+    Put target nodes under a namespace. If the namespace is not found then it will created
+    @param namespace: The target namespace
+    @param nodes: List of target PyNodes
+
+    """
+    # Check if the namespace exists
+    if not pm.namespace(exists=namespace):
+        pm.namespace(add=namespace)
+    # Put items under namespace
+    for item in nodes:
+        item.rename("%s:%s" % (namespace, item.nodeName()))

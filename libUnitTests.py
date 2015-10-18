@@ -44,7 +44,7 @@ class UnitTestCase(unittest.TestCase):
         super(UnitTestCase, self).__init__(testName)
         self.unitTestId = "Base Unit Test Case"
         for keyword in kwargs:
-            exec('self.%s = kwargs["%s"]' % (keyword, keyword))
+            exec ('self.%s = kwargs["%s"]' % (keyword, keyword))
 
     def example_test_success_case(self):
         """
