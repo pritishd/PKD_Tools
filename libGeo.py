@@ -569,7 +569,7 @@ def createStickyControl(position, geo, name):
     newLoc.ctrl.translate >> md.input1
     md.output >> newLoc.xtra.translate
 
-    return newLoc
+    return newLoc, follicle
 
 
 if __name__ == '__main__':
