@@ -29,7 +29,6 @@ import maya.cmds as cmds
 import maya.mel as mel
 
 
-
 #Only valid Red9 import
 import Red9.startup.setup as r9Setup
 
@@ -356,7 +355,7 @@ class ProgressBarContext(object):
             cmds.progressBar(self._gMainProgressBar,
                               edit=True,
                               beginProgress=True,
-                             step=1,
+                              step=1,
                               isInterruptable=self._interruptable,
                               maxValue=self._maxValue)
     
@@ -833,10 +832,10 @@ def os_fileCompare(file1, file2, openDiff=False):
         Once downloaded drop it here Red9/pakcages/diffMerge.exe
     '''
     outputDir=tempfile.gettempdir()
-
-    diffmerge = os.path.join(r9Setup.red9ModulePath(), 'packages', 'diffMerge.exe')
+    
+    diffmerge=os.path.join(r9Setup.red9ModulePath(),'packages','diffMerge.exe')
     if not os.path.exists(diffmerge):
-        diffmerge = os.path.join(r9Setup.red9ModulePath(), 'packages', 'DiffMerge', 'sgdm.exe')
+        diffmerge=os.path.join(r9Setup.red9ModulePath(),'packages','DiffMerge','sgdm.exe')
     if os.path.exists(diffmerge):
         process=subprocess.Popen([diffmerge, '-d', os.path.join(outputDir, 'diffmergeOutput.diff'), file1, file2],
                                  stdout=subprocess.PIPE,

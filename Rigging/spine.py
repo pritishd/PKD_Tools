@@ -17,8 +17,7 @@ class ikSpline(core.ik):
 
     def build_helper_joints(self):
         # Build the help joint system
-        self.HelpJointSystem = self.JointSystem.replicate(side="U", part="%sHelpJoints" % self.part,supportType="Help")
-
+        self.HelpJointSystem = self.JointSystem.replicate(side="U", part="%sHelpJoints" % self.part, supportType="Help")
 
     def build_solver(self):
         # Decide which joints has the solver
@@ -51,7 +50,7 @@ class ikSpline(core.ik):
                                curve=ikCurve,
                                createCurve=False,
                                freezeJoints=False,
-                               rootOnCurve = False
+                               rootOnCurve=False
                                )[0]
 
         ikHandleMeta = core.MetaRig(ikHandle.name(), nodeType="ikHandle")
@@ -62,7 +61,6 @@ class ikSpline(core.ik):
 
         ikHandleMeta.addParent("IkHandlePrnt", snap=False)
         self.ikHandle = ikHandleMeta
-
 
     def build_ik(self):
         self.build_helper_joints()
@@ -81,8 +79,7 @@ class ikSpline(core.ik):
         self.JointSystem.setRotateOrder(self.rotateOrder)
         self.build()
         for i in range(len(self.JointSystem.Joints) - 1):
-            print self.JointSystem.Joints[i]
-            self.create_test_cube(self.JointSystem.Joints[i])
+            self.create_test_cube(self.JointSystem.Joints[i].pynode,self.JointSystem.Joints[i+1].pynode)
 
     def add_stretch(self):
         pass
@@ -121,8 +118,28 @@ class ikSpline(core.ik):
 
 class simpleSpine(ikSpline):
     def build_control(self):
+        self.ctrls = []
         for joint in self.JointSystem.joint_data:
-            print joint
+            # Create the control
+            spineCtrl = core.Ctrl(part=joint["Name"], side=self.side)
+            spineCtrl.ctrlShape = "Box"
+            spineCtrl.build()
+            spineCtrl.setRotateOrder(self.rotateOrder)
+            spineCtrl.addGimbalMode()
+            if self.hasParentMaster:
+                spineCtrl.addParentMaster()
+
+
+            # Align based on the control
+            spineCtrl.setParent(self)
+            self.ctrls.append(spineCtrl)
+
+            #Snap to position
+            libUtilities.snap(self.mainIK.prnt.mNode,
+                          self.JointSystem.Joints[i].mNode,
+                          r=not self.ikControlToWorld
+            )
+
 
 
 class multiSpine(ikSpline):

@@ -590,6 +590,8 @@ class ik(rig):
         self.rotateOrder = "yzx"
         self.mirrorData = {'side': self.mirrorSide, 'slot': 1}
         self.ctrlShape = "Box"
+        self.ikControlToWorld = False
+        self.hasParentMaster = False
 
 
 Red9_Meta.registerMClassInheritanceMapping()

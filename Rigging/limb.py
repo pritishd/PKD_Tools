@@ -47,11 +47,9 @@ class limbIk(core.ik):
     def __init__(self, *args, **kwargs):
         super(limbIk, self).__init__(*args, **kwargs)
         self.ikSolver = SOLVERS["Single"]
-        self.hasParentMaster = False
         self.custom_pv_position = None
         self.startJointNumber = 0
         self.endJointNumber = 1
-        self.ikControlToWorld = False
         self.hasPivot = False
 
     def loadIKPlugin(self):

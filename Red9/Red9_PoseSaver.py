@@ -86,10 +86,10 @@ class DataMap(object):
         self.useFilter=True
         self.prioritySnapOnly=False  # mainly used by any load relative calls, determines whether to use the internal filters priority list
         self.skipAttrs=[]  # attrs to completely ignore in any pose handling
-
-        self.nodesToStore = []  # built by the buildDataMap func
-        self.nodesToLoad = []  # build in the processPoseFile func
-
+        
+        self.nodesToStore=[]  # built by the buildDataMap func
+        self.nodesToLoad=[]   # build in the processPoseFile func
+        
         # make sure we have a settings object
         if filterSettings:
             if issubclass(type(filterSettings), r9Core.FilterNode_Settings):
@@ -216,11 +216,11 @@ class DataMap(object):
                     parentSwitches.append((child, attr, cmds.getAttr('%s.%s' % (child,attr))))
                     log.debug('parentAttrCache : %s > %s' % (child,attr))
         return parentSwitches
-
+    
     # --------------------------------------------------------------------------------
     # Data Collection - Build ---
     # --------------------------------------------------------------------------------
-
+               
     def _collectNodeData_attrs(self, node, key):
         '''
         Capture and build attribute data from this node and fill the
@@ -257,6 +257,9 @@ class DataMap(object):
         '''
         self.infoDict['author']=getpass.getuser()
         self.infoDict['date']=time.ctime()
+        self.infoDict['timeUnit']=cmds.currentUnit(q=True, fullName=True, time=True)
+        self.infoDict['sceneUnits']=cmds.currentUnit(q=True, fullName=True, linear=True)
+        self.infoDict['upAxis'] = cmds.upAxis(q=True, axis=True)
         self.infoDict['metaPose']=self.metaPose
         if self.metaRig:
             self.infoDict['metaRigNode']=self.metaRig.mNode
@@ -312,8 +315,8 @@ class DataMap(object):
         ..note:
             this replaces the original pose call self.buildInternalPoseData()
         '''
-        self.nodesToStore = []
-
+        self.nodesToStore=[]
+        
         self.metaRig=None
         self.rootJnt=None
         if not type(nodes)==list:
@@ -347,17 +350,17 @@ class DataMap(object):
         self.skipAttrs=self.getSkippedAttrs(rootNode)
         
         if self.hasFolderOverload():  # and self.useFilter:
-            self.nodesToStore = self.getNodesFromFolderConfig(nodes, mode='save')
+            self.nodesToStore=self.getNodesFromFolderConfig(nodes,mode='save')
         else:
-            self.nodesToStore = self.getNodes(nodes)
-
+            self.nodesToStore=self.getNodes(nodes)
+            
         if not self.nodesToStore:
             raise IOError('No Matching Nodes found to store the pose data from')
-
+        
         return self.nodesToStore
         # removed from this func so we can just process the node data
-        # self.buildBlocks_fill(nodesToStore)
-
+        #self.buildBlocks_fill(nodesToStore)
+        
     # --------------------------------------------------------------------------------
     # Data Mapping - Apply ---
     # --------------------------------------------------------------------------------
@@ -393,11 +396,11 @@ class DataMap(object):
         Main apply block run after we've read the data and matched all nodes
         '''
         self._applyData_attrs()
-
+        
     # --------------------------------------------------------------------------------
     # Process the data ---
     # --------------------------------------------------------------------------------
-
+                                                
     def _writePose(self, filepath, force=False):
         '''
         Write the Pose ConfigObj to file
@@ -445,8 +448,8 @@ class DataMap(object):
         ..note:
             this replaced the original call self._poseLoad_buildcache()
         '''
-        self.nodesToLoad = []
-
+        self.nodesToLoad=[]
+        
         if not type(nodes)==list:
             nodes=[nodes]  # cast to list for consistency
             
@@ -459,7 +462,7 @@ class DataMap(object):
         if self.filepath and self.hasFolderOverload():  # and useFilter:
             self.nodesToLoad = self.getNodesFromFolderConfig(nodes, mode='load')
         else:
-            self.nodesToLoad = self.getNodes(nodes)
+            self.nodesToLoad=self.getNodes(nodes)
         if not self.nodesToLoad:
             raise StandardError('Nothing selected or returned by the filter to load the pose onto')
         
@@ -485,7 +488,7 @@ class DataMap(object):
         #Build the master list of matched nodes that we're going to apply data to
         #Note: this is built up from matching keys in the poseDict to the given nodes
         self.matchedPairs = self._matchNodesToPoseData(self.nodesToLoad)
-
+        
         return self.nodesToLoad
                     
     @r9General.Timer
@@ -562,11 +565,11 @@ class DataMap(object):
         if not InternalNodes:
             raise StandardError('No Matching Nodes found!!')
         return InternalNodes
-
+    
     # --------------------------------------------------------------------------------
-    # Main Calls ----
+    #Main Calls ----
     # --------------------------------------------------------------------------------
-
+    
     @r9General.Timer
     def saveData(self, nodes, filepath=None, useFilter=True, storeThumbnail=True, force=False):
         '''
@@ -585,9 +588,9 @@ class DataMap(object):
         self.useFilter=useFilter
         if self.filepath:
             log.debug('PosePath given : %s' % self.filepath)
-
+            
         self.buildDataMap(nodes)  # generate the main node mapping
-        self.buildBlocks_fill(self.nodesToStore)  # fill in all the data to collect
+        self.buildBlocks_fill(self.nodesToStore)   # fill in all the data to collect
         
         if self.filepath:
             self._writePose(self.filepath, force=force)
@@ -623,7 +626,7 @@ class DataMap(object):
                      
         try:
             self._pre_load()
-
+            
             self.processPoseFile(nodes)
             
             if not self.matchedPairs:
@@ -631,8 +634,7 @@ class DataMap(object):
             else:
                 if self.prioritySnapOnly:
                     #we've already filtered the hierarchy, may as well just filter the results for speed
-                    self.nodesToLoad = r9Core.prioritizeNodeList(self.nodesToLoad, self.settings.filterPriority,
-                                                                 regex=True, prioritysOnly=True)
+                    self.nodesToLoad=r9Core.prioritizeNodeList(self.nodesToLoad, self.settings.filterPriority, regex=True, prioritysOnly=True)
                     self.nodesToLoad.reverse()
                 
                 # nodes now matched, apply the data in the dataMap
@@ -820,9 +822,9 @@ class PoseData(DataMap):
         self.useFilter=useFilter
         if self.filepath:
             log.debug('PosePath given : %s' % self.filepath)
-
+            
         self.buildDataMap(nodes)  # generate the main node mapping
-        self.buildBlocks_fill(self.nodesToStore)  # fill in all the data to collect
+        self.buildBlocks_fill(self.nodesToStore)   # fill in all the data to collect
         
         if self.filepath:
             self._writePose(self.filepath)
@@ -874,7 +876,7 @@ class PoseData(DataMap):
         self.useFilter = useFilter  # used in the getNodes call
         self.maintainSpaces = maintainSpaces
         self.mayaUpAxis = r9Setup.mayaUpAxis()
-
+        
         self.processPoseFile(nodes)
         
         if not self.matchedPairs:
@@ -883,23 +885,21 @@ class PoseData(DataMap):
             if self.relativePose:
                 if self.prioritySnapOnly:
                     #we've already filtered the hierarchy, may as well just filter the results for speed
-                    self.nodesToLoad = r9Core.prioritizeNodeList(self.nodesToLoad, self.settings.filterPriority,
-                                                                 regex=True, prioritysOnly=True)
+                    self.nodesToLoad=r9Core.prioritizeNodeList(self.nodesToLoad, self.settings.filterPriority, regex=True, prioritysOnly=True)
                     self.nodesToLoad.reverse()
                     
                 #setup the PosePointCloud -------------------------------------------------
                 reference=cmds.ls(sl=True,l=True)[0]
-                self.PosePointCloud = PosePointCloud(self.nodesToLoad)
+                self.PosePointCloud=PosePointCloud(self.nodesToLoad)
                 self.PosePointCloud.buildOffsetCloud(reference, raw=True)
                 resetCache=[cmds.getAttr('%s.translate' % self.PosePointCloud.posePointRoot),
                             cmds.getAttr('%s.rotate' % self.PosePointCloud.posePointRoot)]
                 
                 if self.maintainSpaces:
                     if self.metaRig:
-                        parentSpaceCache = self.getMaintainedAttrs(self.nodesToLoad, self.metaRig.parentSwitchAttr)
+                        parentSpaceCache=self.getMaintainedAttrs(self.nodesToLoad, self.metaRig.parentSwitchAttr)
                     elif 'parentSpaces' in self.settings.rigData:
-                        parentSpaceCache = self.getMaintainedAttrs(self.nodesToLoad,
-                                                                   self.settings.rigData['parentSpaces'])
+                        parentSpaceCache=self.getMaintainedAttrs(self.nodesToLoad, self.settings.rigData['parentSpaces'])
     
             self._applyData(percent)
 
@@ -1037,7 +1037,7 @@ class PosePointCloud(object):
         if self.inputNodes:
             self.inputNodes.reverse()  # for the snapping operations
         return self.inputNodes
-
+                      
     def getPPCNodes(self):
         '''
         return a list of the PPC nodes
