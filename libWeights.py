@@ -612,7 +612,7 @@ class BlendShapeWeights(MultiWeights):
                 pm.select(self.target, add=1)
                 pm.blendShape(name=blendshape)
 
-        if len(missing_shapes):
+        if missing_shapes:
             print "#######The following blends had missing shapes#######"
             for key in missing_shapes.keys():
                 print key.upper()

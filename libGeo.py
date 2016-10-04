@@ -482,11 +482,11 @@ def create_wrap(*args, **kwargs):
     return pm.PyNode(wrapNode)
 
 
-def createFollicle(pos, geo=None):
+def createFollicle(position, geo=None):
     """
     Create a follice for a position on a target geometery. Converted to Pymel version of the following script
     http://www.tommasosanguigni.it/blog/function-createfollicle/
-    @param pos: The target position
+    @param position: The target position
     @param geo: The target geo
     @return: follicle transform
     """
@@ -494,7 +494,7 @@ def createFollicle(pos, geo=None):
         raise ValueError("Geometry must be mesh of nurbSurface")
     else:
         transform_node = pm.createNode("transform")
-        transform_node.translate.set(pos)
+        transform_node.translate.set(position)
 
         # make vector product nodes to get correct rotation of the transform node
         vector_product = pm.createNode("vectorProduct")
@@ -540,9 +540,11 @@ def createFollicle(pos, geo=None):
 
 def createStickyControl(position, geo, name):
     """
-    Create sticky control for a transform
-    @param geo:
-    @return:
+    Temp setup to create sticky control at position for given geometery
+    @param position: The position in worldspace where this will created
+    @param geo: The target geomentery
+    @param name: The name given to this geometery
+    @return: A ctrl object setup
     """
     # Create space locator
 

@@ -98,7 +98,7 @@ class BatchTest(object):
         """Initialise variables"""
         self.droid = Droid()
         self.suite = None
-        self.logFile = r'E:\TEMP\UnitTest.log'
+        self.logFile = r'C:\temp\UnitTest.log'
         # Delete the Log File
         if libFile.exists(self.logFile):
             try:

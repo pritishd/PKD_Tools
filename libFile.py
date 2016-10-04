@@ -280,7 +280,7 @@ def write_json(path, data):
     @param data The information that is written
     """
     with open(path, 'w') as f:
-        json.dump(data, f)
+        json.dump(data, f, indent=4)
 
 
 def remove(path):
