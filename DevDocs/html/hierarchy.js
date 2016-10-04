@@ -52,6 +52,9 @@ var hierarchy =
     [ "QTabBar", null, [
       [ "PKD_Tools.libPySide.VerticalTabBar", "class_p_k_d___tools_1_1lib_py_side_1_1_vertical_tab_bar.html", null ]
     ] ],
+    [ "QTabWidget", null, [
+      [ "PKD_Tools.libPySide.CheckableTabWidget", "class_p_k_d___tools_1_1lib_py_side_1_1_checkable_tab_widget.html", null ]
+    ] ],
     [ "TestCase", null, [
       [ "PKD_Tools.libUnitTests.UnitTestCase", "class_p_k_d___tools_1_1lib_unit_tests_1_1_unit_test_case.html", null ]
     ] ],

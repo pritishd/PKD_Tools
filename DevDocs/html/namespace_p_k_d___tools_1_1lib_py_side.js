@@ -1,5 +1,6 @@
 var namespace_p_k_d___tools_1_1lib_py_side =
 [
+    [ "CheckableTabWidget", "class_p_k_d___tools_1_1lib_py_side_1_1_checkable_tab_widget.html", "class_p_k_d___tools_1_1lib_py_side_1_1_checkable_tab_widget" ],
     [ "QCriticalBox", "class_p_k_d___tools_1_1lib_py_side_1_1_q_critical_box.html", "class_p_k_d___tools_1_1lib_py_side_1_1_q_critical_box" ],
     [ "QDockableWindow", "class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window.html", "class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window" ],
     [ "QGroupBox", "class_p_k_d___tools_1_1lib_py_side_1_1_q_group_box.html", "class_p_k_d___tools_1_1lib_py_side_1_1_q_group_box" ],

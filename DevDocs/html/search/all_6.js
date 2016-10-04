@@ -2,7 +2,7 @@ var searchData=
 [
   ['file',['file',['../class_p_k_d___tools_1_1lib_weights_1_1_weights.html#a857e0bedf85e65068a87b3b74c80968c',1,'PKD_Tools::libWeights::Weights']]],
   ['find_5fheirachy_5ferrors',['find_heirachy_errors',['../namespace_p_k_d___tools_1_1lib_geo.html#ae671beda1774234deb3577b021739797',1,'PKD_Tools::libGeo']]],
-  ['fix_5fduplicates_5fshapes',['fix_duplicates_shapes',['../namespace_p_k_d___tools_1_1lib_geo.html#a34bf7628589393921dd444215fe6a6f8',1,'PKD_Tools::libGeo']]],
+  ['fix_5fduplicates_5fshapes',['fix_duplicates_shapes',['../namespace_p_k_d___tools_1_1lib_geo.html#a28127e61f59cef41db8ad255a84aa277',1,'PKD_Tools::libGeo']]],
   ['fix_5fshaders',['fix_shaders',['../namespace_p_k_d___tools_1_1lib_utilities.html#a06dba4f132f47eeeb7726c9ab03d1f91',1,'PKD_Tools::libUtilities']]],
   ['fix_5fshape_5fname',['fix_shape_name',['../namespace_p_k_d___tools_1_1lib_utilities.html#a977e99aa02249a96d287c115e0e4918d',1,'PKD_Tools::libUtilities']]],
   ['folder',['folder',['../class_p_k_d___tools_1_1lib_weights_1_1_weights.html#a90bf3e28131eaa140b567bad39478079',1,'PKD_Tools::libWeights::Weights']]],
