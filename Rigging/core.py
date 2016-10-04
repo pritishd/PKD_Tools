@@ -1,5 +1,7 @@
 __author__ = 'pritish.dogra'
 
+# TODO: Start documentation before the next rig system
+
 from PKD_Tools.Red9 import Red9_Meta, Red9_CoreUtils
 
 reload(Red9_Meta)
@@ -16,8 +18,7 @@ reload(libUtilities)
 def _fullSide_(side):
     sideDict = {"L": "Left",
                 "R": "Right",
-                "C": "Centre",
-                "U": "Unique"
+                "C": "Centre"
                 }
     return sideDict[side]
 
@@ -36,20 +37,20 @@ class MetaEnhanced(object):
             self._pynode_ = pm.PyNode(self.mNode)
         return self._pynode_
 
-
-class MetaClass(Red9_Meta.MetaClass, MetaEnhanced):
-    pass
+    @property
+    def primaryAxis(self):
+        if hasattr(self, "rotateOrder"):
+            return self.pynode.rotateOrder.get(asString=True)
 
 
 class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
+    # TODO: Move some the non Red9 func to MetaEnhanced
     # Set default values
     def __init__(self, *args, **kwargs):
         if kwargs.has_key("side") and kwargs.has_key("part"):
             # Setup defaults
-            if not kwargs.has_key("endSuffix"):
-                kwargs["endSuffix"] = "Grp"
-            if not kwargs.has_key("nodeType"):
-                kwargs["nodeType"] = "transform"
+            kwargs["endSuffix"] = kwargs.get("endSuffix", "Grp")
+            kwargs["nodeType"] = kwargs.get("nodeType", "transform")
             full_name = utils.nameMe(kwargs["side"], kwargs["part"], kwargs["endSuffix"])
             # Remove the keyword arguement
             super(MetaRig, self).__init__(name=full_name, **kwargs)
@@ -57,8 +58,6 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
             if kwargs.has_key("side"):
                 self.mirrorSide = _fullSide_(kwargs["side"])
             self.rigType = kwargs["endSuffix"]
-            self.lockState = False
-            self.lockState = False
             self.mSystemRoot = False
 
         else:
@@ -78,9 +77,12 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
 
     def __bindData__(self, *args, **kwgs):
         # ensure these are added by default
+        if not hasattr(self, "mClass"):
+            # Need to add this otherwise the maya wrapped node do not get returned
+            self.addAttr("mClass", self.__class__.__name__)
+            self.pynode.mClass.lock(True)
         self.addAttr("part", "")
-        # TODO Remove Unique from all packages
-        self.addAttr('mirrorSide', enumName='Centre:Left:Right:Unique',
+        self.addAttr('mirrorSide', enumName='Centre:Left:Right',
                      attrType='enum', hidden=True)
         self.addAttr('rigType', '')
 
@@ -97,8 +99,12 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
     def convertToComponent(self, component="FK"):
         componentName = "%s_%s" % (self.part, component)
         try:
-            self.pynode.rename(self.shortName().replace(self.part, componentName))
-        except Exception, e:
+            if not self.isSubComponent:
+                self.pynode.rename(self.shortName().replace(self.part, componentName))
+            else:
+                # Node is converted to a subcomponent
+                return
+        except Exception as e:
             libUtilities.pyLog.info(str(e))
             libUtilities.pyLog.info("Rename failed on:%s" % self.mNode)
             self.select()
@@ -109,9 +115,6 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
         if not hasattr(self, "systemType"):
             self.addAttr("systemType", component)
         self.isSubComponent = True
-        # Rename the component the child component
-        for child in self.getChildMetaNodes():
-            child.convertToComponent(component)
 
     def getRigCtrl(self, target):
         children = self.getChildren(walk=True, asMeta=self.returnNodesAsMeta,
@@ -123,15 +126,16 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
 
     def addRigCtrl(self, data, *args, **kwargs):
         try:
+            # TODO: add ctrls to rig controls
             assert isinstance(data, Red9_Meta.MetaClass)
             super(MetaRig, self).addRigCtrl(data.mNode, *args, **kwargs)
         except:
-            raise Exception("Input must be MetaClass")
+            raise AssertionError("Input must be MetaClass")
 
-    def getSupportNode(self, target, query=False):
+    def getSupportNode(self, target):
         children = self.getChildren(walk=True, asMeta=self.returnNodesAsMeta, cAttrs=["SUP_%s" % target])
         if not children:
-            if not query:
+            if self.debugMode:
                 libUtilities.pyLog.warn("%s not support node found on %s" % (target, self.shortName()))
         else:
             if type(children[0]) == Red9_Meta.MetaClass:
@@ -139,17 +143,47 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
 
             return children[0]
 
-    def addParent(self, endSuffix="", snap=True):
-        if not endSuffix:
-            endSuffix = "Prnt"
+    def addParent(self, **kwargs):
+        snap = kwargs.get("snap", True)
+        endSuffix = kwargs.get("endSuffix", "Prnt")
+        if not (self.part and self.side):
+            raise ValueError("Part or Side is not defined: %s" % self.shortName())
         self.prnt = MetaRig(part=self.part, side=self.side, endSuffix=endSuffix)
         if snap:
             libUtilities.snap(self.prnt.pynode, self.pynode)
         self.pynode.setParent(self.prnt.pynode)
 
+    def addSupportNode(self, node, attr, boundData=None):
+        if hasattr(node, "mNode"):
+            supportNode = node.mNode
+        elif isinstance(node, pm.PyNode):
+            supportNode = node.name()
+        else:
+            supportNode = node
+        super(MetaRig, self).addSupportNode(supportNode, attr, boundData=None)
+        # Test that the connection has been made
+
+    def snap(self, target, rotate=True):
+        if self.prnt:
+            libUtilities.snap(self.prnt.pynode, target, rotate=rotate)
+        else:
+            libUtilities.snap(self.pynode, target, rotate=rotate)
+
+    def transferPropertiesToChild(self, childMeta, childType):
+        try:
+            # TODO: add ctrls to rig controls
+            assert isinstance(childMeta, Red9_Meta.MetaClass)
+        except:
+            raise AssertionError("ChildMeta must be MetaClass: %s. Type is %s" % (childMeta, type(childMeta)))
+        childMeta.mirrorSide = self.mirrorSide
+        childMeta.rigType = childType
+
+    def resetName(self):
+        self.pynode.rename(self.trueName)
+
     @property
     def prnt(self):
-        return self.getSupportNode("Prnt", True)
+        return self.getSupportNode("Prnt")
 
     @prnt.setter
     def prnt(self, data):
@@ -157,7 +191,13 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
 
     @property
     def side(self):
-        return self.pynode.attr("mirrorSide").get(asString=True)[0]
+        return self.pynode.mirrorSide.get(asString=True)[0]
+
+    @property
+    def trueName(self):
+        if not (self.side and self.part and self.rigType):
+            raise ValueError("One of the attribute are not defined. Cannot get true name")
+        return utils.nameMe(self.side, self.part, self.rigType)
 
 
 class SubSystem(MetaRig):
@@ -170,13 +210,17 @@ class SubSystem(MetaRig):
         super(SubSystem, self).__bindData__(*args, **kwgs)
         self.addAttr('systemType', "")
 
-    def addMetaSubSystem(self, MClass, system="FK", **kwargs):
-        # Add subgroup
-        subSystem = MClass(side=self.side, part=self.part, **kwargs)
+    def addMetaSubSystem(self, subSystem, system="FK", **kwargs):
+        # Parent the group
         subSystem.setParent(self)
+        # Connect it as a child
         self.connectChild(subSystem, "%s_System" % system)
         subSystem.systemType = system
-        return subSystem
+
+    def convertSystemToComponent(self, component="FK"):
+        # Rename the component the child component
+        for obj in [self] + self.getChildMetaNodes(walk=True):
+            obj.convertToComponent(component)
 
 
 class Network(MetaRig):
@@ -186,7 +230,7 @@ class Network(MetaRig):
         super(Network, self).__init__(*args, **kwargs)
 
 
-class Joint(MetaRig, MetaEnhanced):
+class Joint(MetaRig):
     """
     Example showing that metaData isn't limited to 'network' nodes,
     by using the 'nodeType' arg in the class __init__ you can modify
@@ -199,9 +243,16 @@ class Joint(MetaRig, MetaEnhanced):
 
     def __init__(self, *args, **kwargs):
         kwargs["nodeType"] = "joint"
-        if not kwargs.has_key("endSuffix"):
-            kwargs["endSuffix"] = "Joint"
+        kwargs["endSuffix"] = kwargs.get("endSuffix", "Joint")
         super(Joint, self).__init__(*args, **kwargs)
+
+    @property
+    def prnt(self):
+        return None
+
+    @property
+    def side(self):
+        return self.pynode.mirrorSide.get(asString=True)[0]
 
 
 class JointSystem(Network):
@@ -213,6 +264,9 @@ class JointSystem(Network):
         super(JointSystem, self).__bindData__()
         # ensure these are added by default
         self.addAttr("joint_data", "")
+
+    def __len__(self):
+        return len(self.Joints)
 
     def build(self):
         if self.joint_data:
@@ -248,11 +302,25 @@ class JointSystem(Network):
             pyJoints.append(joint)
 
         # Delete all the joints
-
         self.joint_data = jointData
 
+        # Build the data
         self.build()
         pm.delete(pyJoints)
+
+    def rebuildJointData(self):
+        jointData = []
+        for joint in self.Joints:
+            joint.pynode.select()
+            newJoint = pm.joint()
+            newJoint.setParent(w=1)
+            jointData.append({
+                "Name": joint.part,
+                "JointOrient": list(newJoint.jointOrient.get()),
+                "Position": list(newJoint.getTranslation(space="world"))
+            })
+            pm.delete(newJoint)
+        self.joint_data = jointData
 
     def setParent(self, targetSystem):
         self.Joints[0].pynode.setParent(targetSystem.mNode)
@@ -293,6 +361,10 @@ class JointSystem(Network):
         self.connectChildren(jointList, "SUP_Joints", allowIncest=True, cleanCurrent=True)
 
     @property
+    def jointList(self):
+        return [joint.shortName() for joint in self.Joints]
+
+    @property
     def positions(self):
         positionList = []
         if self.joint_data:
@@ -303,39 +375,65 @@ class JointSystem(Network):
         return positionList
 
 
+class SpaceLocator(MetaRig):
+    """
+    Space locator meta. Allow to create fake meta
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(SpaceLocator, self).__init__(*args, **kwargs)
+        if not self.pynode.getShape():
+            # Create a new temp locator
+            tempLoc = pm.spaceLocator()
+            # Tranfer the locator shape to the main node
+            libUtilities.transfer_shape(tempLoc, self.mNode)
+            # Rename the shape node
+            libUtilities.fix_shape_name(self.pynode)
+            # Delete the temp loc
+            pm.delete(tempLoc)
+
+    def clusterCV(self, cv):
+        self.snap(cv.name(), rotate=False)
+        libUtilities.cheap_point_constraint(self.pynode, cv)
+
+
 class Ctrl(MetaRig):
     """This is a base control System"""
 
     def __init__(self, *args, **kwargs):
+        # TODO: Allow option to disable extra
         kwargs["endSuffix"] = "Ctrl"
         super(Ctrl, self).__init__(*args, **kwargs)
         self.mSystemRoot = False
         self.ctrl = self
+        self.createXtra = True
         # Internal Var
-        self.ctrlShape = "Ball"
-        self.hasParentMaster = False
+        self.ctrlShape = kwargs.get("shape", "Ball")
+        self.hasParentMaster = kwargs.get("parentMaster", False)
         self.mirrorData = {'side': self.mirrorSide, 'slot': 1}
 
     def build(self):
         # Create the xtra grp
-        self.xtra = MetaRig(part=self.part, side=self.side, endSuffix="Xtra")
-        # self.addSupportNode(self.xtra, "Xtra")
-
-        # Create the control
+        if self.createXtra:
+            self.xtra = MetaRig(part=self.part, side=self.side, endSuffix="Xtra")
+        # Create the Parent
         self.prnt = MetaRig(part=self.part, side=self.side, endSuffix="Prnt")
-        # self.addSupportNode(self.prnt, "Prnt")
-
         tempCtrlShape = utils.build_ctrl_shape(self.ctrlShape)
-        # tempCtrlShape = pm.circle(ch=0)[0]
         libUtilities.transfer_shape(tempCtrlShape, self.mNode)
         libUtilities.fix_shape_name(self.pynode)
         pm.delete(tempCtrlShape)
-        # Parent the ctrl to the xtra
-        # self.pynode.unlock()
-        self.pynode.setParent(self.xtra.mNode)
-
-        # Parent the xtra to ctrl
-        self.xtra.pynode.setParent(self.prnt.mNode)
+        if self.createXtra:
+            # Parent the ctrl to the xtra
+            self.pynode.setParent(self.xtra.mNode)
+            # Parent the xtra to prnt
+            self.xtra.pynode.setParent(self.prnt.mNode)
+        else:
+            # Parent the ctrl to prnt
+            self.pynode.setParent(self.prnt.mNode)
+        # Transform Nodes
+        node = [self.pynode, self.prnt.pynode]
+        if self.createXtra:
+            node.append(self.xtra.pynode)
         # lock and hide the visibility attributes
         for node in [self.pynode, self.xtra.pynode, self.prnt.pynode]:
             libUtilities.set_lock_status(node, {"v": True})
@@ -371,10 +469,14 @@ class Ctrl(MetaRig):
         self.addBoolAttr("Gimbal")
         self.pynode.Gimbal >> self.gimbal.pynode.v
 
-    def addSpaceLocator(self):
+    def addSpaceLocator(self, parent=False):
         # spaceLocator -p 0 0 0;
-
-        self.locator = MetaRig(name=utils.nameMe(self.side, self.part, "Pivot"), nodeType="transform")
+        self.locator = SpaceLocator(side=self.side, part=self.part, endSuffix="Loc")
+        if parent:
+            if self.hasGimbal:
+                self.locator.pynode.setParent(self.gimbal.pynode)
+            else:
+                self.locator.pynode.setParent(self.pynode)
 
     def setParent(self, targetSystem):
         # Instead of the node itself, the parent is reparented
@@ -429,24 +531,102 @@ class Ctrl(MetaRig):
     def addFloatAttr(self, attrName="", attrMax=1, attrMin=0, SV=0, sn="", df=0):
         libUtilities.addAttr(self.mNode, attrName=attrName, attrMax=attrMax, attrMin=attrMin, SV=0, sn=sn, df=df)
 
-    def snap(self, target):
-        libUtilities.snap(self.prnt.pynode, target)
+    def addConstraint(self, target, conType="parent", **kwargs):
+        if kwargs.has_key("maintainOffset"):
+            kwargs["mo"] = kwargs["maintainOffset"]
+        else:
+            kwargs["mo"] = kwargs.get("mo", True)
+        libUtilities.pyLog.warning("%sConstrainting %s to %s. Maintain offset is %s "
+                                   % (conType, self.prnt.pynode, target, kwargs["mo"]))
+        # Get the constraint function from the library
+        consFunc = getattr(pm, "%sConstraint" % conType)
+        # Set the constraint
+        constraintNode = consFunc(target, self.prnt.pynode, maintainOffset=kwargs["mo"]).name()
+        if not eval("self.%sConstraint" % conType):
+            constraintMeta = MetaRig(str(constraintNode))
+            constraintMeta.rigType = "%sCon" % libUtilities.capitalize(conType)
+            constraintMeta.mirrorSide = self.mirrorSide
+            constraintMeta.part = self.part
+            self.addSupportNode(constraintMeta, "%sConstraint" % conType)
 
-    def orientConstraint(self, target, mo=True):
-        pm.orientConstraint(target, self.prnt.pynode, mo=mo)
+    def lockTranslate(self):
+        for item in [self, self.prnt, self.xtra]:
+            if item:
+                libUtilities.lock_translate(item.pynode)
 
-    def pointConstraint(self, target, mo=True):
-        pm.pointConstraint(target, self.prnt.pynode, mo=mo)
+    def lockRotate(self):
+        for item in [self, self.prnt, self.xtra]:
+            if item:
+                libUtilities.lock_rotate(item.pynode)
 
-    def parentConstraint(self, target, mo=True):
-        pm.parentConstraint(target, self.prnt.pynode, mo=mo)
+    def lockScale(self):
+        for item in [self, self.prnt, self.xtra]:
+            if item:
+                libUtilities.lock_scale(item.pynode)
 
-    def aimConstraint(self, target, mo=True):
-        pm.aimConstraint(target, self.prnt.pynode, mo=mo)
+    def _create_rotate_driver_(self):
+        pmaMeta = MetaRig(side=self.side,
+                          part=self.part,
+                          endSuffix="RotateDriver",
+                          nodeType="plusMinusAverage")
+
+        pmaMeta.addAttr("connectedAxis", {"X": False, "Y": False, "Z": False})
+        self.addSupportNode(pmaMeta, "RotateDriver")
+        return pmaMeta
+
+    def _connect_axis_rotate_driver_(self, axis):
+        pmaMeta = self.getSupportNode("RotateDriver")
+        if not pmaMeta:
+            pmaMeta = self._create_rotate_driver_()
+
+        # Is the rotate axis connected
+        rotateStatus = pmaMeta.connectedAxis
+        if not rotateStatus[axis.upper()]:
+            # Connect the rotate axis to PMA
+            nodes = [self.pynode]
+            if self.hasGimbal:
+                nodes.append(self.gimbal.pynode)
+
+            for i, node in zip(range(len(nodes)), nodes):
+                node.attr("rotate%s" % axis.upper()) >> pmaMeta.pynode.input3D[i].attr("input3D%s" % axis.lower())
+
+            # Set the rotate axis
+            rotateStatus[axis.upper()] = True
+            pmaMeta.connectedAxis = rotateStatus
+        return pmaMeta
+
+    def get_rotate_driver(self, axis):
+        pmaMeta = self._connect_axis_rotate_driver_(axis)
+        if axis == "X":
+            return pmaMeta.pynode.output3Dx
+        elif axis == "Y":
+            return pmaMeta.pynode.output3Dy
+        else:
+            return pmaMeta.pynode.output3Dz
 
     @property
-    def side(self):
-        return self.pynode.mirrorSide.get(asString=True)[0]
+    def parentDriver(self):
+        # Is the driver going to be the gimbal or the control itself. Useful for skinning, correct constraint target
+        if self.hasGimbal:
+            return self.gimbal
+        else:
+            return self
+
+    @property
+    def parentConstraint(self):
+        return self.getSupportNode("ParentConstraint")
+
+    @property
+    def orientConstraint(self):
+        return self.getSupportNode("OrientConstraint")
+
+    @property
+    def pointConstraint(self):
+        return self.getSupportNode("PointConstraint")
+
+    @property
+    def aimConstraint(self):
+        return self.getSupportNode("AimConstraint")
 
     @property
     def xtra(self):
@@ -467,7 +647,7 @@ class Ctrl(MetaRig):
 
     @property
     def hasGimbal(self):
-        return self.getSupportNode("Gimbal", True) is not None
+        return self.getSupportNode("Gimbal") is not None
 
     @property
     def pivot(self):
@@ -480,7 +660,7 @@ class Ctrl(MetaRig):
 
     @property
     def hasPivot(self):
-        return self.getSupportNode("Pivot", True) is not None
+        return self.getSupportNode("Pivot") is not None
 
     @property
     def locator(self):
@@ -493,7 +673,7 @@ class Ctrl(MetaRig):
 
     @property
     def hasLocator(self):
-        return self.getSupportNode("Locator", True) is not None
+        return self.getSupportNode("Locator") is not None
 
     @property
     def parentMasterPH(self):
@@ -519,7 +699,7 @@ class Ctrl(MetaRig):
         self.addSupportNode(data, "ParentMasterSN")
 
 
-class Anno_Loc(Red9_Meta.MetaClass, MetaEnhanced):
+class Anno_Loc(SpaceLocator):
     """This is a a annoated locator"""
     pass
 
@@ -539,17 +719,15 @@ class MyCameraMeta(Red9_Meta.MetaClass, MetaEnhanced):
         super(MyCameraMeta, self).__init__(nodeType='camera', *args, **kwargs)
 
 
-class rig(SubSystem):
+class Rig(SubSystem):
     """This is base System. Transform is the main"""
 
     def __init__(self, *args, **kwargs):
-        super(rig, self).__init__(*args, **kwargs)
-        self.HelpJointSystem = None
+        super(Rig, self).__init__(*args, **kwargs)
+        self.mainCtrlShape = "Box"
 
     def create_test_cube(self, targetJoint, childJoint):
         # Get the height
-
-
         height = Red9_CoreUtils.distanceBetween(targetJoint.shortName(), childJoint.shortName())
 
         # Create the cube of that height
@@ -570,6 +748,14 @@ class rig(SubSystem):
         libUtilities.snap(cube, targetJoint)
         libUtilities.skinGeo(cube, [targetJoint])
 
+    def addScale(self):
+        pass
+
+    def addCartoony(self):
+        self.addScale()
+        self._create_cartoon_network_()
+        self._connect_cartoony_scale_()
+
     @property
     def JointSystem(self):
         return self.getSupportNode("JointSystem")
@@ -578,27 +764,52 @@ class rig(SubSystem):
     def JointSystem(self, data):
         self.addSupportNode(data, "JointSystem")
 
-    @property
-    def primaryAxis(self):
-        return self.pynode.rotateOrder.get(asString=True)
 
-
-class ik(rig):
-    # TODO Rename ik to limbIk and push the common properties between splineIk to a new class called iK in the core package
+class Ik(Rig):
     def __init__(self, *args, **kwargs):
-        super(ik, self).__init__(*args, **kwargs)
+        super(Ik, self).__init__(*args, **kwargs)
         self.rotateOrder = "yzx"
         self.mirrorData = {'side': self.mirrorSide, 'slot': 1}
-        self.ctrlShape = "Box"
         self.ikControlToWorld = False
         self.hasParentMaster = False
+        self.mainCtrlShape = "Box"
+        self.hasPivot = False
+
+    def _create_ctrl_obj_(self, part, shape="", createXtra=True, addGimbal=True):
+        ctrl = Ctrl(part=part, side=self.side)
+        if not shape:
+            shape = self.mainCtrlShape
+        ctrl.ctrlShape = shape
+        ctrl.build()
+        if addGimbal:
+            ctrl.addGimbalMode()
+        ctrl.createXtra = createXtra
+        if self.hasParentMaster:
+            ctrl.addParentMaster()
+        if self.hasPivot:
+            ctrl.addPivot()
+        ctrl.setRotateOrder(self.rotateOrder)
+        ctrl.setParent(self)
+        return ctrl
+
+    @property
+    def ikHandle(self):
+        return self.getSupportNode("IKHandle")
+
+    @ikHandle.setter
+    def ikHandle(self, data):
+        self.addSupportNode(data, "IKHandle")
 
 
 Red9_Meta.registerMClassInheritanceMapping()
-Red9_Meta.registerMClassNodeMapping(nodeTypes=['transform', 'camera', 'joint'])
+Red9_Meta.registerMClassNodeMapping(nodeTypes=['transform',
+                                               'camera',
+                                               'joint',
+                                               'plusMinusAverage',
+                                               'multiplyDivide'])
 
 if __name__ == '__main__':
-    pm.newFile(f=1)
+    # pm.newFile(f=1)
     # cam = MyCameraMeta(name="MyCam")
     # cam.item = "test"
     # print cam.mNode
@@ -612,26 +823,27 @@ if __name__ == '__main__':
     # print cam.item
     #
 
-    # pm.newFile(f=1)
-    # cam = MyCameraMeta()
+    pm.newFile(f=1)
+    # # cam = MyCameraMeta()
     # subSystem = SubSystem(side="L", part="Core")
     #
     # mRig = Red9_Meta.MetaRig(name='CharacterRig', nodeType="transform")
     # mRig.connectChild(subSystem, 'Arm')
     # subSystem.setParent(mRig)
-
-    # fkSystem = subSystem.addMetaSubSystem()
+    #
+    # fkSystem = subSystem.addMetaSubSystem(MetaRig)
     # fkSystem = SubSystem(side="U", part="Arm")
     # fkSystem.setParent(subSystem)
     # subSystem.connectChild(fkSystem, 'FK_System')
-    # l = rig(side="L", part="Test")
+    # # l = rig(side="L", part="Test")
+    #
+    # myCtrl = Ctrl(side="L", part="Hand")
+    # myCtrl.build()
+    # myCtrl.addGimbalMode()
 
-    myCtrl = Ctrl(side="L", part="Hand")
-    myCtrl.build()
-    myCtrl.addGimbalMode()
-
-    # myCtrl.add_constrain_node()
-    # myCtrl.add_parent_master()
+    myCtrl = Ik(side="L", part="Hand")
+    #
+    # myCtrl.addSpaceLocator()
     # myCtrl.setParent(fkSystem)
     #
     # myCtrl1 = Ctrl(side="U", part="FK1")
@@ -645,7 +857,7 @@ if __name__ == '__main__':
     # fkSystem.convertToComponent("FK")
     # subSystem.connectChildren(fkCtrls, "FK")
 
-    # jntSystem = JointSystem(side="U", part="Cora")
+    # jntSystem = JointSystem(side="C", part="Cora")
     # joints = utils.create_test_joint("ik2jnt")
     # jntSystem.Joints = joints
     # jntSystem.convertJointsToMetaJoints()
@@ -660,5 +872,6 @@ if __name__ == '__main__':
     # from PKD_Tools.Rigging import core
     # reload(core)
     #
-    # k = Red9_Meta.MetaClass("CharacterRig")
+    # # k = Red9_Meta.MetaClass("CharacterRig")
     # pm.newFile(f=1)
+    # SpaceLocator(part="main", side="C")
