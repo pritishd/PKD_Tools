@@ -4,13 +4,20 @@
 @details As the package gets more complex, we will refactor common methods into specialised packages
 '''
 
-from maya import cmds, mel
 import pymel.core as pm
+from maya import cmds, mel
 from pymel.internal.plogging import pymelLogger as pyLog
 
-import libXml
 
-reload(libXml)
+def _force_pynode_(node):
+    """
+    Force the node to be pynode
+    @param node: This could be a string or pynode
+    @return: The converted pynode
+    """
+    if not isinstance(node, pm.PyNode):
+        node = pm.PyNode(node)
+    return node
 
 
 def get_selected(stringMode=False, scriptEditorWarning=True):
@@ -35,26 +42,27 @@ def fix_shaders():
     """
     Fixing a bug in maya where a referenced maya file loses it's shaders. Mesh needs to be selected
     """
-    selection = get_selected(scriptEditorWarning=True)
+    get_selected(scriptEditorWarning=True)
     mel.eval("sets -e -forceElement initialShadingGroup;")
     cmds.undo()
     pm.select(cl=1)
 
 
-def reverse_attibute(attribute, name=""):
+def reverse_attribute(attribute, name=""):
     """
     Create a reverse node and connect it to the attribute
     @param attribute: Can be string name or attribute PyNode
     @param name: The name of the reverese node
-    @return: The reverse pynnode
+    @return: The reverse pyname)
+    attributenode
     """
 
     # PyNode the attribute
-    attribute = pm.PyNode(attribute)
+    attribute = _force_pynode_(attribute)
     reverse = pm.createNode("reverse")
+    attribute >> reverse.inputX
     if name:
         reverse.rename(name)
-    attribute >> reverse.inputX
     return reverse
 
 
@@ -179,24 +187,38 @@ def parZero(target, sfx="Prnt"):
     return group
 
 
-def snap(target, source, t=True, r=True):
+def snap(target, source, translate=True, rotate=True):
     """
     Snap the first object to the second object.
     @param target: The target transform
     @param source: The source transform
-    @param t: Should we snap the translation?
-    @param r: Should we do the rotation?
+    @param translate: Should we snap the translation?
+    @param rotate: Should we do the rotation?
     @return:
     """
-    target = pm.PyNode(target)
-    source = pm.PyNode(source)
-    if t:
+    target = _force_pynode_(target)
+    source = _force_pynode_(source)
+    if translate:
         # Set the world space translation
-        target.setTranslation(source.getTranslation(space="world"), space="world")
+        target.setTranslation(get_world_space_pos(source), space="world")
 
-    if r:
+    if rotate:
         # Set the world space rotation
         target.setRotation(source.getRotation(space="world"), space="world")
+
+
+def get_world_space_pos(source):
+    """
+    Return the world space position of pynode node. Some nodes such as CV do have getTranslation pynode function
+    @param source: Pynode which could be transform , CV
+    @return: Position
+    """
+    if hasattr(source, "getTranslation"):
+        return source.getTranslation(space="world")
+    elif hasattr(source, "getPosition"):
+        return source.getPosition(space="world")
+    else:
+        raise ValueError("%s world space position cannot be queried" % source.name())
 
 
 def indexize_vertice_group(vertice_group):
@@ -216,8 +238,8 @@ def snap_pivot(target, source):
     Snap the pivot of source tranform to target transform
     """
 
-    target = pm.PyNode(target)
-    source = pm.PyNode(source)
+    target = _force_pynode_(target)
+    source = _force_pynode_(source)
 
     target.scalePivot.set(source.scalePivot.get())
     target.rotatePivot.set(source.rotatePivot.get())
@@ -285,15 +307,16 @@ def skinObjects(targets, jointInfluences):
         skinGeo(geo, jointInfluences)
 
 
-def skinGeo(target, jointInfluences):
+def skinGeo(target, jointInfluences, **kwargs):
     """
     Skin a list of geo to the specified joints
     @param target (string/pynode) the geometery which is going to be skinned
-    @param jointInfluences (string list) the joints which will used for skining
+    @param jointInfluences (string list) the joints which will used for skinning
+    @param kwargs (dict) Any other keyword arguement that needs to be pass on to the maya command
     @return pynode of the skincluster that is made
     """
-    target = pm.PyNode(target)
-    jointInfluences = [pm.PyNode(inf) for inf in jointInfluences]
+    target = _force_pynode_(target)
+    jointInfluences = [_force_pynode_(inf) for inf in jointInfluences]
 
     # Apply Defomers
     jnts = []
@@ -315,7 +338,7 @@ def skinGeo(target, jointInfluences):
     pm.select(jnts, target)
     # Skin to the front of chain so that maya does not create a
     # "ShapeDeformed" mesh node for a referenced geo
-    res = pm.skinCluster(tsb=1, mi=1, foc=True)
+    res = pm.skinCluster(tsb=1, mi=1, foc=True, **kwargs)
 
     # Skin to non Joints
     if nonJnts:
@@ -381,13 +404,13 @@ def transfer_shape(source, target, snapToTarget=True):
     @param snapToTarget: Should be we reparent with world space or object space
     @return:
     """
-    source = pm.PyNode(source)
-    target = pm.PyNode(target)
+    source = _force_pynode_(source)
+    target = _force_pynode_(target)
     if snapToTarget:
         snap(source, target)
         pm.makeIdentity(source, apply=1)
     oldShape = source.getShape()
-    pm.parent(oldShape, target, shape=1, r=1)
+    pm.parent(oldShape, target, shape=1, relative=1)
     return oldShape
 
 
@@ -421,7 +444,7 @@ def remove_cv_from_deformer(deformerSet, vertices):
     """
     pyVert = []
     for item in vertices:
-        pyVert.append(pm.PyNode(item))
+        pyVert.append(_force_pynode_(item))
 
     for item in pyVert:
         mel.eval("sets -rm %s %s" % (deformerSet, item))
@@ -500,21 +523,6 @@ def melEval(evalStatment, echo=False):
             pyLog.warning("## ## ##  FAILED MEL STATEMENT: %s## ## ## " % ("%s;" % statement))
 
 
-def normalise_list(original_vals, new_normal):
-    """
-    normalize a list to fit a specific range, eg [-5,5],[0,1],[1,1].
-    @param original_vals: The orginal list of number
-    @param new_normal: The new desired range
-    """
-    #
-
-    # get max absolute value
-    original_max = max([abs(val) for val in original_vals])
-
-    # normalize to desired range size
-    return [float(val) / original_max * new_normal for val in original_vals]
-
-
 def print_list(listItems):
     """Print each item in a list in a new line
     @param listItems (list) the items that needs to be printed
@@ -541,7 +549,7 @@ def pyList(listItems):
     @return list of pynodes
 
     """
-    return [pm.PyNode(node) for node in listItems]
+    return [_force_pynode_(node) for node in listItems]
 
 
 def numberList(listItems):
@@ -582,7 +590,7 @@ def remove_namespace_from_reference():
 
 
 def capitalize(item):
-    """Capitlise first case without losing camelcasing"""
+    """Capitlise first letter without losing camelcasing"""
     return (item[0].upper() + item[1:])
 
 
@@ -635,7 +643,7 @@ def get_default_lock_status(node):
     @param node: The pynode that is being evaluated
     @return: Dictonary of the various attributes lock status
     """
-    node = pm.PyNode(node)
+    node = _force_pynode_(node)
     lockStatus = {}
     for attr in _default_attibute_list_():
         lockStatus[attr] = node.attr(attr).isLocked()
@@ -648,7 +656,7 @@ def set_lock_status(node, lockStatusDict):
     @param node: The pynode that is being evaluated
     @param lockStatusDict: Dictonary of the various attributes lock status
     """
-    node = pm.PyNode(node)
+    node = _force_pynode_(node)
     for attr in lockStatusDict:
         if lockStatusDict[attr]:
             node.attr(attr).lock()
@@ -660,7 +668,7 @@ def unlock_default_attribute(node):
     """
     Unlock the the default status of a node
     """
-    node = pm.PyNode(node)
+    node = _force_pynode_(node)
     for attr in _default_attibute_list_():
         node.attr(attr).unlock()
 
@@ -672,7 +680,7 @@ def freeze_transform(transform):
     """
     # Get the current lock status of the default attributes
     defaultLockStatus = get_default_lock_status(transform)
-    transform = pm.PyNode(transform)
+    transform = _force_pynode_(transform)
     childrenLockStatus = {}
     # Check to see if there are any children
     if transform.getChildren(ad=1, type="transform"):
@@ -700,6 +708,42 @@ def freeze_rotation(transform):
     @param transform: The tranform node that is being evaluated
     """
     pm.makeIdentity(transform, n=0, s=0, r=1, t=0, apply=True)
+
+
+def lock_default_attribute(transform):
+    """Lock all the translation attr
+    @param transform: The transform node that is being evaluated
+    """
+    node = _force_pynode_(transform)
+    for attr in _default_attibute_list_():
+        node.attr(attr).set(lock=True, keyable=False, channelBox=False)
+
+
+def lock_translate(transform):
+    """Lock all the position attr
+    @param transform: The transform node that is being evaluated
+    """
+    node = _force_pynode_(transform)
+    for attr in _translate_attribute_list_():
+        node.attr(attr).set(lock=True, keyable=False, channelBox=False)
+
+
+def lock_rotate(transform):
+    """Lock all the rotation attr
+    @param transform: The transform node that is being evaluated
+    """
+    node = _force_pynode_(transform)
+    for attr in _rotate_attribute_list_():
+        node.attr(attr).set(lock=True, keyable=False, channelBox=False)
+
+
+def lock_scale(transform):
+    """Lock all the scale attr
+    @param transform: The transform node that is being evaluated
+    """
+    node = _force_pynode_(transform)
+    for attr in _scale_attribute_list_():
+        node.attr(attr).set(lock=True, keyable=False, channelBox=False)
 
 
 def _default_attibute_list_():
@@ -763,7 +807,7 @@ def inverseMultiplyDivide(name=""):
 def fix_shape_name(transform):
     """
     Rename the shape name so that it matches the parent
-    @param transform:  The transform name with the wrong shape name
+    @param transform:  The pynode transform name with the wrong shape name
     """
     transform.getShape().rename("%sShape" % transform.shortName())
 
@@ -781,3 +825,34 @@ def add_nodes_to_namespace(namespace, nodes):
     # Put items under namespace
     for item in nodes:
         item.rename("%s:%s" % (namespace, item.nodeName()))
+
+
+def cheap_point_constraint(source, target, maintainOffset=False):
+    """
+    An much lighter alternative to a point constraint which uses locatorShape.worldPosition[0] attribute.
+    @param source (locator): The a pynode locator
+    @param target (transform): The target pynode transform node
+    @param maintainOffset (bool): Should an offset be maintained
+    @return: return the plus minus node if there is maintain offset
+    """
+    if not source.listRelatives(type="locator"):
+        source.select()
+        raise ValueError("Source must be a locator")
+
+    # Calculate diff
+    diff = None
+    if maintainOffset:
+        diff = get_world_space_pos(source) - get_world_space_pos(target)
+
+    if hasattr(target, "translate"):
+        target = target.translate
+
+    if maintainOffset:
+        # Create a MD node
+        pma = pm.createNode("plusMinusAverage")
+        pma.input3D[0].input3D.set(diff)
+        source.worldPosition[0] >> pma.input3D[1]
+        pma.output3D >> target
+        return pma
+    else:
+        source.worldPosition[0] >> target
