@@ -1,10 +1,15 @@
-__author__ = 'admin'
+"""
+@package UnitTests.metaNetworkUnitTest
+@brief Testing for meta node functionalitis
+@details Here we are testing that all the a meta network is created and saved. Once you have reopened the file you should be recall most of the data.
+"""
 import pymel.core as pm
 
 from PKD_Tools import libUnitTests
 from PKD_Tools.Red9 import Red9_Meta
 from PKD_Tools.Rigging import core
 from PKD_Tools.Rigging import limb
+
 
 for module in [libUnitTests, core, limb]:
     reload(module)
@@ -22,7 +27,7 @@ class UnitTestCase(libUnitTests.UnitTestCase):
 
     def is_sub_component(self):
         """Test Inheritence of meta classes"""
-        self.assertTrue(self.targetNode.isSubComponent, "Checking if control is subcompoent")
+        self.assertTrue(self.targetNode.isSubComponent, "Checking if control is subcomponent")
 
     def is_not_sub_component(self):
         """Test Inheritence of meta classes"""
@@ -40,32 +45,27 @@ class Droid(object):
         self.myCtrl = None
         self.mRig = None
 
-    def new_file(self):
-        pm.newFile(f=1)
-
     def create_simple_ctrl_meta_network(self):
-        self.new_file()
-        subSystem = core.SubSystem(side="U", part="Core")
+        pm.newFile(f=1)
+        subSystem = core.SubSystem(side="C", part="Core")
         self.mRig = Red9_Meta.MetaRig(name='CharacterRig', nodeType="transform")
         self.mRig.connectChild(subSystem, 'Arm')
         subSystem.setParent(self.mRig)
 
-
-        fkSystem = subSystem.addMetaSubSystem(core.SubSystem,"FK")
-        self.myCtrl = core.Ctrl(side="U", part="Core")
-
+        fkSystem = core.SubSystem(side="C", part="Core")
+        subSystem.addMetaSubSystem(fkSystem,"FK")
+        self.myCtrl = core.Ctrl(side="C", part="Core")
         self.myCtrl.build()
         self.myCtrl.setParent(fkSystem)
         self.myCtrl.debugMode = True
 
         fkCtrls = [self.myCtrl]
         fkSystem.connectChildren(fkCtrls, "Ctrl")
-        fkSystem.convertToComponent("FK")
-        subSystem.connectChildren(fkCtrls, "FK")
+        fkSystem.convertSystemToComponent("FK")
 
     def reinitialise_meta_network(self):
         self.save_file()
-        self.new_file()
+        pm.newFile(f=1)
         self.open_file()
         from PKD_Tools.Red9 import Red9_Meta
         reload(Red9_Meta)
@@ -74,13 +74,13 @@ class Droid(object):
         reload(core)
 
         self.mRig = Red9_Meta.MetaClass("CharacterRig")
-        self.myCtrl = Red9_Meta.MetaClass("U_Core_FK_Ctrl")
+        self.myCtrl = Red9_Meta.MetaClass("C_Core_FK_Ctrl")
 
     def save_file(self):
-        self.saved_file = pm.saveAs(r"E:\TEMP\testMeta.ma")
+        self.saved_file = pm.saveAs(r"c:\temp\testMeta.ma")
 
     def open_file(self):
-        pm.openFile(r"E:\TEMP\testMeta.ma")
+        pm.openFile(r"c:\temp\testMeta.ma")
 
     def create_advanced_ctrl_meta_network(self):
         self.create_simple_ctrl_meta_network()
@@ -93,24 +93,15 @@ class ikDroid(Droid):
         self.ikSystem = None
 
     def create_simple_ik(self):
-        self.new_file()
-        self.ikSystem = limb.limbIk(side="U", part="Core")
+        pm.newFile(f=1)
+        self.ikSystem = limb.Arm(side="C", part="Core")
         self.ikSystem.test_build()
 
     def reinitialise_meta_network(self):
         self.save_file()
-        self.new_file()
+        pm.newFile(f=1)
         self.open_file()
-        # from PKD_Tools.Red9 import Red9_Meta
-        # reload(Red9_Meta)
-        #
-        # from PKD_Tools.Rigging import core
-        # reload(core)
-
-        # from PKD_Tools.Rigging import body
-        # reload(body)
-
-        self.ikSystem = Red9_Meta.MetaClass("U_Core_Grp")
+        self.ikSystem = Red9_Meta.MetaClass("C_Core_Grp")
 
 
 class BatchTest(libUnitTests.BatchTest):
@@ -195,13 +186,13 @@ class BatchTest(libUnitTests.BatchTest):
 
 
 unit = BatchTest()
-# unit.test_meta_simple_create()
-# unit.test_meta_reopen()
+#unit.test_meta_simple_create()
+#unit.test_meta_reopen()
 # #
-unit.test_meta_advanced_create()
-unit.test_meta_advanced_reopen()
-# unit.test_ik_creation()
-# unit.test_ik_reopen()
+# unit.test_meta_advanced_create()
+# unit.test_meta_advanced_reopen()
+unit.test_ik_creation()
+unit.test_ik_reopen()
 
 
 # if __name__ == '__main__':
