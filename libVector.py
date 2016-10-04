@@ -6,6 +6,7 @@ Package dealing with vector maths
 import operator
 
 import maya.mel as mm
+import math
 
 
 class vector:
@@ -69,7 +70,7 @@ class vector:
         return vector(list(mm.eval("unit <<%f,%f,%f>>" % (self.data[0], self.data[1], self.data[2]))))
 
 
-def average(self, vecList, factor=0):
+def average(vecList, factor=0):
     """
     Average out list of vertices
     @param vecList: List of vectors
@@ -81,3 +82,12 @@ def average(self, vecList, factor=0):
         [sum(map(operator.itemgetter(0), vecList)) / factor,
          sum(map(operator.itemgetter(1), vecList)) / factor,
          sum(map(operator.itemgetter(2), vecList)) / factor])
+
+
+def distanceBetween(pointA, pointB):
+    """
+    Calculation to return the distance between 2 point positions
+    """
+    return math.sqrt(math.pow((pointA[0] - pointB[0]), 2) +
+                     math.pow((pointA[1] - pointB[1]), 2) +
+                     math.pow((pointA[2] - pointB[2]), 2))
