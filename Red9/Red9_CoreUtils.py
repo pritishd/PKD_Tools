@@ -13,23 +13,24 @@
 '''
 
 from __future__ import with_statement  # required only for Maya2009/8
+import maya.cmds as cmds
+import maya.OpenMaya as OpenMaya
+
 from functools import partial
 import re
 import random
 import math
 import os
-import logging
-
-import maya.cmds as cmds
-import maya.OpenMaya as OpenMaya
 
 import Red9.packages.configobj as configobj
 import Red9.startup.setup as r9Setup
+
 import Red9_General as r9General
 import Red9_Audio as r9Audio
 import Red9_AnimationUtils as r9Anim
 import Red9_Meta as r9Meta
 
+import logging
 logging.basicConfig()
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
@@ -143,43 +144,46 @@ def decodeString(val):
     From configObj the return is a string, we want to encode
     it back to it's original state so we pass it through this
     '''
-    if not issubclass(type(val), str) and not type(val)==unicode:
-        #log.debug('Val : %s : is not a string / unicode' % val)
-        #log.debug('ValType : %s > left undecoded' % type(val))
-        return val
-    if val=='False' or val=='True' or val=='None':
-        #log.debug('Decoded as type(bool)')
-        return eval(val)
-    elif val=='[]':
-        #log.debug('Decoded as type(empty list)')
-        return eval(val)
-    elif val=='()':
-        #log.debug('Decoded as type(empty tuple)')
-        return eval(val)
-    elif val=='{}':
-        #log.debug('Decoded as type(empty dict)')
-        return eval(val)
-    elif (val[0]=='[' and val[-1] ==']'):
-        #log.debug('Decoded as type(list)')
-        return eval(val)
-    elif (val[0] =='(' and val[-1]==')'):
-        #log.debug('Decoded as type(tuple)')
-        return eval(val)
-    elif (val[0] =='{' and val[-1]=='}'):
-        #log.debug('Decoded as type(dict)')
-        return eval(val)
     try:
-        encoded=int(val)
-        #log.debug('Decoded as type(int)')
-        return encoded
+        if not issubclass(type(val), str) and not type(val)==unicode:
+            #log.debug('Val : %s : is not a string / unicode' % val)
+            #log.debug('ValType : %s > left undecoded' % type(val))
+            return val
+        if val=='False' or val=='True' or val=='None':
+            #log.debug('Decoded as type(bool)')
+            return eval(val)
+        elif val=='[]':
+            #log.debug('Decoded as type(empty list)')
+            return eval(val)
+        elif val=='()':
+            #log.debug('Decoded as type(empty tuple)')
+            return eval(val)
+        elif val=='{}':
+            #log.debug('Decoded as type(empty dict)')
+            return eval(val)
+        elif (val[0]=='[' and val[-1] ==']'):
+            #log.debug('Decoded as type(list)')
+            return eval(val)
+        elif (val[0] =='(' and val[-1]==')'):
+            #log.debug('Decoded as type(tuple)')
+            return eval(val)
+        elif (val[0] =='{' and val[-1]=='}'):
+            #log.debug('Decoded as type(dict)')
+            return eval(val)
+        try:
+            encoded=int(val)
+            #log.debug('Decoded as type(int)')
+            return encoded
+        except:
+            pass
+        try:
+            encoded=float(val)
+            #log.debug('Decoded as type(float)')
+            return encoded
+        except:
+            pass
     except:
-        pass
-    try:
-        encoded=float(val)
-        #log.debug('Decoded as type(float)')
-        return encoded
-    except:
-        pass
+        return
     #log.debug('Decoded as type(string)')
     return val
 
@@ -213,12 +217,25 @@ def filterListByString(input_list, filter_string, matchcase=False):
     
     if not matchcase:
         filter_string=filter_string.upper()
-    filterBy=[f for f in filter_string.replace(' ','').rstrip(',').split(',') if f]
+#     filterBy=[f for f in filter_string.replace(' ','').rstrip(',').split(',') if f]
     filteredList=[]
+    
+    filterBy=[f for f in filter_string.rstrip(',').split(',') if f]
+    pattern=[]
+    for n in filterBy:
+        if ' ' in n:
+            pattern.append('(%s)' % n.replace(' ',')+.*('))
+        else:
+            pattern.append(n)
+    filterPattern='|'.join(n for n in pattern)
+    log.info('new : %s' % filterPattern)
+    
+    regexFilter=re.compile('('+filterPattern+')')  # convert into a regularExpression
+    
     for item in input_list:
         data=item
-        filterPattern='|'.join(n for n in filterBy)
-        regexFilter=re.compile('('+filterPattern+')')  # convert into a regularExpression
+        #filterPattern='|'.join(n for n in filterBy)
+        #regexFilter=re.compile('('+filterPattern+')')  # convert into a regularExpression
         if not matchcase:
             data=item.upper()
         if regexFilter.search(data):
@@ -274,15 +291,15 @@ class FilterNode_Settings(object):
             activeFilters.append('searchAttrs=%s' % self.searchAttrs)
         if self.searchPattern:
             activeFilters.append('searchPattern=%s' % self.searchPattern)
-        if self.hierarchy:
-            activeFilters.append('hierarchy=%s' % self.hierarchy)
+        #if self.hierarchy:
+        activeFilters.append('hierarchy=%s' % self.hierarchy)
         if self.filterPriority:
             activeFilters.append('filterPriority=%s' % self.filterPriority)
-        if self.incRoots:
-            activeFilters.append('incRoots=%s' % self.incRoots)
-        if self.transformClamp:
-            activeFilters.append('transformClamp=%s' % self.transformClamp)
-        return '%s(ActiveFilters: %s)' % (self.__class__.__name__, (',').join(activeFilters))
+        #if self.incRoots:
+        activeFilters.append('incRoots=%s' % self.incRoots)
+        #if self.transformClamp:
+        activeFilters.append('transformClamp=%s' % self.transformClamp)
+        return '%s(ActiveFilters: %s)' % (self.__class__.__name__, (', ').join(activeFilters))
     
     def filterIsActive(self):
         if self.nodeTypes or self.searchAttrs or self.searchPattern or self.hierarchy or self.metaRig:
@@ -1181,7 +1198,10 @@ class FilterNode(object):
         if cSets:
             for cset in cSets:
                 log.debug('cSet : %s', cset)
-                self.characterSetMembers.extend(cmds.character(cset, query=True, nodesOnly=True))
+                for node in cmds.character(cset, query=True, nodesOnly=True):
+                    if not node in self.characterSetMembers:
+                        self.characterSetMembers.append(node)
+                #self.characterSetMembers.extend(cmds.character(cset, query=True, nodesOnly=True))  # sure this used to work?
             # make sure the cSets are not part of the return
             [self.characterSetMembers.remove(cset) for cset in cSets if cset in self.characterSetMembers]
                     
@@ -1232,15 +1252,15 @@ class FilterNode(object):
     #---------------------------------------------------------------------------------
     
     
-    def processFilter(self):
+    def ProcessFilter(self):
         '''
         replace the 'P' in the function call but not depricating it just yet
         as too much code both internally and externally relies on this method
         '''
-        return self.ProcessFilter()
+        return self.processFilter()
         
     #@r9General.Timer
-    def ProcessFilter(self):
+    def processFilter(self):
             '''
             Uses intersection to allow you to process multiple search flags for
             more accurate filtering.
@@ -1391,11 +1411,16 @@ def matchNodeLists(nodeListA, nodeListB, matchMethod='stripPrefix'):
         *index*: No intelligent matching, just purely zip the 
         lists together in the order they were given
         
+        *indexReversed*: No intelligent matching, just purely zip the 
+        lists together in the order they were given
+        
         *base*:  Match each element by exact name (shortName) 
         such that Spine==Spine or REF1:Spine==REF2:Spine
         
         *stripPrefix*: Match each element by a relaxed naming convention 
         allowing for prefixes one side such that RigX_Spine == Spine
+        
+        *mirrorIndex*: Match via the nodes MirrorMarker
         
     :return: matched pairs of tuples for processing [(a1,b2),[(a2,b2)]
     
@@ -1409,6 +1434,10 @@ def matchNodeLists(nodeListA, nodeListB, matchMethod='stripPrefix'):
     if matchMethod == 'mirrorIndex':
         getMirrorID=r9Anim.MirrorHierarchy().getMirrorCompiledID
     if matchMethod == 'index':
+        matchedData = zip(nodeListA,nodeListB)
+    elif matchMethod == 'indexReversed':
+        nodeListA.reverse()
+        nodeListB.reverse()
         matchedData = zip(nodeListA,nodeListB)
     else:
         for nodeA in nodeListA:
@@ -1513,7 +1542,7 @@ class MatchedNodeInputs(object):
         | settings.hierarchy: bool - process all children from the roots
         | settings.incRoots: bool - include the original root nodes in the filter
         
-    :return: list of matched pairs [(a1,b2),[(a2,b2)]   
+    :return: list of matched pairs [(a1,b2),[(a2,b2)]  
             
     .. note:: 
         with all the search and hierarchy keywords OFF the code performs

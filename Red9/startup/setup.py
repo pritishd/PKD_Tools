@@ -21,15 +21,15 @@ __author__ = 'Mark Jackson'
 __buildVersionID__ = 2.0
 installedVersion= False
 
+
 import sys
 import os
 import imp
-from functools import partial
-import logging
-
 import maya.cmds as cmds
 import maya.mel as mel
+from functools import partial
 
+import logging
 logging.basicConfig()
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
@@ -60,7 +60,8 @@ log.setLevel(logging.INFO)
 
   2014          .  2014  .  201400  .  2.6.4    4.8.2  .  2014    . 2013-04-10
   2015          .  2015  .  201500  .  2.7      4.8.5  .  2015    . 2014-04-15
-  2016          .  2016  .  201600  .  2.7      4.8.5  .  2016    . 2015-04-15
+  2016          .  2016  .  201600  .  2.7      4.8.6  .  2016    . 2015-04-15
+  2017          .  2017  .  
   
 ------------------------------------------------------------------------------------------
 '''
@@ -216,7 +217,7 @@ def menuSetup(parent='MayaWindow'):
             cmds.menuItem(divider=True,p='redNineMenuItemRoot')
             for client in get_client_modules():
                 cmds.menuItem('redNineClient%sItem' % client,
-                              l='CLIENT : %s' % client, sm=True, p='redNineMenuItemRoot', tearOff=True, i='red9.jpg')
+                               l='CLIENT : %s' % client, sm=True, p='redNineMenuItemRoot', tearOff=True, i='red9.jpg')
         
         cmds.menuItem(divider=True,p='redNineMenuItemRoot')
         
@@ -398,7 +399,7 @@ def menuSetup(parent='MayaWindow'):
         cmds.menuItem(divider=True,p='redNineDebuggerItem')
         cmds.menuItem('redNineReloadItem',l=LANGUAGE_MAP._MainMenus_.systems_reload, p='redNineDebuggerItem',
                       ann=LANGUAGE_MAP._MainMenus_.systems_reload_ann,
-                      echoCommand=True, c=reload_Red9)  # "Red9.core._reload()")
+                      echoCommand=True, c=reload_Red9)
         cmds.menuItem(divider=True,p='redNineDebuggerItem')
         for language in get_language_maps():
             cmds.menuItem(l=LANGUAGE_MAP._MainMenus_.language+" : %s" % language, c=partial(set_language,language),p='redNineDebuggerItem')
@@ -544,17 +545,25 @@ def addAudioMenu(parent=None, rootMenu='redNineTraxRoot'):
 # -----------------------------------------------------------------------------------------
 
 
-def red9ButtonBGC(colour):
+def red9ButtonBGC(colour, qt=False):
     '''
     Generic setting for the main button colours in the UI's
     '''
+    
     if colour==1 or colour=='green':
-        #return [0.6, 0.9, 0.65]
-        return [0.6, 1, 0.6]
+        rgb=[0.6, 1, 0.6]
     elif colour==2 or colour=='grey':
-        return [0.5, 0.5, 0.5]
+        rgb=[0.5, 0.5, 0.5]
     elif colour==3 or colour=='red':
-        return [1,0.3,0.3]
+        rgb=[1,0.3,0.3]
+    elif colour==4 or colour=='white':
+        rgb=[0.75,0.8,0.8]
+    elif colour==5 or colour=='dark':
+        rgb=[0.15,0.25,0.25]
+    if qt:
+        return [rgb[0]*255,rgb[1]*255,rgb[2]*255]
+    else:
+        return rgb
    
 def red9ContactInfo(*args):
     import Red9.core.Red9_General as r9General  # lazy load
@@ -695,15 +704,15 @@ def addScriptsPath(path):
     else:
         log.debug('Given Script Path is invalid : %s' % path)
           
-def addPluginPath():
+def addPluginPath(path=None):
     '''
     Make sure the plugin path has been added. If run as a module
     this will have already been added
     '''
-    path=os.path.join(red9ModulePath(),'plug-ins')
+    if not path:
+        path=os.path.join(red9ModulePath(),'plug-ins')
     plugPaths=os.environ.get('MAYA_PLUG_IN_PATH')
-    
-    if not path in plugPaths:
+    if os.path.exists(path) and not path in plugPaths:
         log.info('Adding Red9 Plug-ins to Plugin Paths : %s' % path)
         os.environ['MAYA_PLUG_IN_PATH']+='%s%s' % (os.pathsep,path)
     else:
@@ -718,7 +727,7 @@ def addIconsPath(path=None):
         path=os.path.join(red9ModulePath(),'icons')
     iconsPath=os.environ.get('XBMLANGPATH')
     
-    if not path in iconsPath:
+    if os.path.exists(path) and not path in iconsPath:
         log.info('Adding Red9 Icons To XBM Paths : %s' % path)
         os.environ['XBMLANGPATH']+='%s%s' % (os.pathsep,path)
     else:
@@ -762,7 +771,72 @@ def sourceMelFolderContents(path):
         log.info('Sourcing mel script : %s' % script)
         mel.eval('source %s' % script)
 
+def delete_shelf(shelf_name):
+    '''
+    Delete maya shelf and update maya shelf optionVars
+    :param shelf_name: string: name of the shelf to be deleted
+    :return:
+    '''
+    if mayaIsBatch():
+        return
+    if not cmds.shelfLayout(shelf_name, q=True, ex=True):
+        return
 
+    shelfs = cmds.optionVar(q='numShelves')
+    current_shelf = None
+
+    # Shelf preferences.
+    for i in range(shelfs + 1):
+        if shelf_name == cmds.optionVar(q="shelfName%i" % i):
+            current_shelf = i
+            break
+
+    # manage shelve ids
+    for i in range(current_shelf, shelfs + 1):
+        cmds.optionVar(iv=("shelfLoad%s" % str(i), cmds.optionVar(q="shelfLoad%s" % str(i + 1))))
+        cmds.optionVar(sv=("shelfName%s" % str(i), cmds.optionVar(q="shelfName%s" % str(i + 1))))
+        cmds.optionVar(sv=("shelfFile%s" % str(i), cmds.optionVar(q="shelfFile%s" % str(i + 1))))
+        
+    cmds.optionVar(remove="shelfLoad%s" % shelfs)
+    cmds.optionVar(remove="shelfName%s" % shelfs)
+    cmds.optionVar(remove="shelfFile%s" % shelfs)
+    cmds.optionVar(iv=("numShelves", shelfs - 1))
+
+    cmds.deleteUI(shelf_name, layout=True)
+    pref_file = os.path.join(mayaPrefs(), 'prefs', 'shelves', 'shelf_%s.mel.deleted' % shelf_name)
+    if os.path.exists(pref_file):
+        os.remove(pref_file)
+    mel.eval("shelfTabChange")
+    log.info('Shelf deleted: % s' % shelf_name)
+    
+
+def load_shelf(shelf_path):
+    '''
+    load Maya shelf
+    :param shelf_path: string: file path to maya shelf
+    '''
+    if mayaIsBatch():
+        return
+    
+    # get current top shelf
+    gShelfTopLevel = mel.eval("string $shelf_ly=$gShelfTopLevel")
+    top=cmds.shelfTabLayout(gShelfTopLevel, q=True, st=True)
+    
+    if os.path.exists(shelf_path):
+        #print shelf_path
+        delete_shelf(shelf_path)
+        mel.eval('source "%s"' % shelf_path)
+        mel.eval('loadNewShelf("%s")' % shelf_path)
+        log.info('Shelf loaded: % s' % shelf_path)
+        return True
+    else:
+        log.error('Cant load shelf, file doesnt exist: %s' % shelf_path)
+        
+    # restore users top shelf
+    cmds.shelfTabLayout(gShelfTopLevel, e=True, st=top)
+        
+        
+        
 # -----------------------------------------------------------------------------------------
 # PRO PACK ---
 # -----------------------------------------------------------------------------------------
@@ -859,19 +933,54 @@ def get_client_modules():
     if has_client_modules():
         for f in os.listdir(client_core_path()):
             if os.path.isdir(os.path.join(client_core_path(), f)):
-                if not f.startswith('.'):
+                if not f.startswith('.') and not f.startswith('_'):
                     clients.append(f)
     return clients
                 
 def boot_client_projects():
     '''
-    Boot all Client modules found in the Red9_ClientCore dir
+    Boot Client modules found in the Red9_ClientCore dir. This now propts
+    if multiple client projects were found.
     '''
-    for client in get_client_modules():
+    clients=get_client_modules()
+    clientsToBoot=[]
+    if clients and len(clients)>1 and not mayaIsBatch():
+        options=['All']
+        options.extend(clients)
+        result=cmds.confirmDialog(title='ProjectPicker',
+                            message=("Multiple Projects Found!\r\r"+
+                                     "Which Project would you like to boot?"),
+                            button=options, messageAlign='center')
+        if result == 'All':
+            clientsToBoot=clients
+        else:
+            clientsToBoot.append(result)
+    else:
+        clientsToBoot=clients
+    # boot the project / projects
+    for client in clientsToBoot:
         log.info('Booting Client Module : %s' % client)
         cmds.evalDeferred("import Red9_ClientCore.%s" % client, lp=True)  # Unresolved Import
+    # remove unused menuItems - added previously so that the menu grouping is clean
+    for client in clients:
+        if not client in clientsToBoot:
+            cmds.deleteUI('redNineClient%sItem' % client)
+            log.debug('Unused Client Menu Removed: %s' % client)
+    
+                
+def __reload_clients__():
+    '''
+    used in the main reload_Red9 call below to ensure that
+    the reload sequence is correct for the MetaData registry
+    '''
+    for client in get_client_modules():
+        try:
+            path='Red9_ClientCore.%s' % client
+            cmds.evalDeferred("import %s;%s._reload()" % (path,path), lp=True)  # Unresolved Import
+            log.info('Reloaded Client : "%s"' % path)
+        except:
+            log.info('Client : "%s" : does not have a _reload func internally' % path)
         
-
 
 # -----------------------------------------------------------------------------------------
 # BOOT CALL ---
@@ -954,6 +1063,10 @@ def start(Menu=True, MayaUIHooks=True, MayaOverloads=True, parentMenu='MayaWindo
            
            
 def reload_Red9(*args):
+    '''
+    careful reload of the systems to maintain the integrity of the 
+    MetaData registry setups for pro_pack, client_core and internals
+    '''
     #global LANGUAGE_MAP
     #reload(LANGUAGE_MAP)
     import Red9.core
@@ -962,6 +1075,13 @@ def reload_Red9(*args):
     if has_pro_pack():
         import Red9.pro_pack.core
         Red9.pro_pack.core._reload()
+        
+    if has_internal_systems():
+        import Red9_Internals
+        Red9_Internals._reload()
+
+    if has_client_modules():
+        __reload_clients__()
 
 
 PRO_PACK_STUBS=pro_pack_missing_stub

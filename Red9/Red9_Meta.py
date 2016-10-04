@@ -32,21 +32,21 @@ what each function is expected to return
     
 '''
 
+
+import maya.cmds as cmds
+import maya.mel as mel
+import maya.OpenMaya as OpenMaya
 from functools import partial
 from functools import wraps
 import sys
 import os
 import uuid
 
-import maya.cmds as cmds
-import maya.mel as mel
-import maya.OpenMaya as OpenMaya
 
 import Red9.startup.setup as r9Setup
 import Red9_General as r9General
 import Red9_CoreUtils as r9Core
 import Red9_AnimationUtils as r9Anim
-
 
 # Language map is used for all UI's as a text mapping for languages
 LANGUAGE_MAP = r9Setup.LANGUAGE_MAP
@@ -96,6 +96,7 @@ global RED9_META_REGISTERY
 ====================================================================================
 '''
 
+        
 # ----------------------------------------------------------------------------
 # --- FactoryClass registry --- --------------------------
 # ----------------------------------------------------------------------------
@@ -149,7 +150,8 @@ def mTypesToRegistryKey(mTypes):
             keys.append(cls.__name__)
         except:
             keys.append(cls)
-    return keys
+    # remove the key if it's not registered!
+    return [key for key in keys if key in RED9_META_REGISTERY.keys()] or []
 
 def getMClassDataFromNode(node, checkInstance=True):
     '''
@@ -263,7 +265,7 @@ def resetMClassNodeTypes():
     registerMClassNodeMapping(nodeTypes=None)
   
 
-# ----------------------------------------------------------------------------    
+# ----------------------------------------------------------------------------
 # --- NodeCache management --- ---------------------------
 # ----------------------------------------------------------------------------
 
@@ -286,6 +288,7 @@ def registerMClassNodeCache(mNode):
     if version>=2016:
         UUID=cmds.ls(mNode.mNode, uuid=True)[0]
     elif mNode.hasAttr('UUID'):
+        # 2015 and below only -------------------
         try:
             UUID=mNode.UUID
             if not UUID:
@@ -293,7 +296,7 @@ def registerMClassNodeCache(mNode):
                 UUID=mNode.setUUID()
             elif UUID in RED9_META_NODECACHE.keys():
                 log.debug('CACHE : UUID is already registered in cache')
-                if not mNode.mNode == RED9_META_NODECACHE[UUID]:
+                if not mNode == RED9_META_NODECACHE[UUID]:
                     log.debug('CACHE : %s : UUID is registered to a different node : modifying UUID: %s' % (UUID, mNode.mNode))
                     UUID=mNode.setUUID()
         except StandardError, err:
@@ -664,7 +667,7 @@ def isMetaNodeInherited(node, mInstances=[]):
     mClass=getMClassDataFromNode(node)
     if mClass and mClass in RED9_META_REGISTERY:
         for inst in mTypesToRegistryKey(mInstances):
-            log.debug('testing class inheritance: %s > %s' % (inst, mClass))
+            #log.debug('testing class inheritance: %s > %s' % (inst, mClass))
             if issubclass(RED9_META_REGISTERY[mClass], RED9_META_REGISTERY[inst]):
                 log.debug('MetaNode %s is of subclass >> %s' % (mClass,inst))
                 return True
@@ -746,11 +749,23 @@ def getMetaRigs(mInstances='MetaRig', mClassGrps=['MetaRig']):
     cope with people subclassing, then we clamp the search to the Root MetaRig
     using the mClassGrps variable. This probably will expand as it's tested
     '''
+    # try the Red9 Production Rig nodes first
+    mRigs=getMetaNodes(mInstances=['Red9_MetaRig', 'Pro_MetaRig','Pro_MetaRig_FacialUI'], mClassGrps=['Pro_BodyRig','Pro_FacialUI'])
+    if mRigs:
+        return mRigs
+    
+    # not found, lets widen to all instances of MetaRig with mClassGrp also set
     mRigs=getMetaNodes(mInstances=mInstances, mClassGrps=mClassGrps)
     if mRigs:
         return mRigs
-    else:
+    
+    # ok widen again to all instances of MetaRig, ignoring the mClassGroup
+    mRigs=getMetaNodes(mTypes=mInstances)
+    if mRigs:
         return getMetaNodes(mTypes=mInstances)
+    else:
+        # final try, mInstances of MetaRig
+        return getMetaNodes(mInstances=mInstances)
     
 def getUnregisteredMetaNodes():
     '''
@@ -769,7 +784,7 @@ def getConnectedMetaNodes(nodes, source=True, destination=True, mTypes=[], mInst
     '''
     From a given set of Maya Nodes return all connected mNodes
     Default return is mClass objects
-    
+
     :param nodes: nodes to inspect for connected meta data, note these are cmds MAYA nodes
     :param source: `bool` clamp the search to the source side of the graph
     :param destination: `bool` clamp the search to the destination side of the graph
@@ -957,6 +972,7 @@ class MClassNodeUI(object):
         self.stripNamespaces=False
         self.shortname=False
         self.sortBy = 'class'
+        self.selected = []
         
     @classmethod
     def show(cls):
@@ -1067,6 +1083,7 @@ class MClassNodeUI(object):
         cmds.popupMenu('r9MetaNodeUI_Popup')
         cmds.menuItem(label=LANGUAGE_MAP._MetaNodeUI_.graph_selected, command=partial(self.graphNetwork))
         cmds.menuItem(divider=True)
+        cmds.menuItem(label=LANGUAGE_MAP._MetaNodeUI_.rename_mNode, command=partial(self.__uiCB_renameNode))
         cmds.menuItem(label=LANGUAGE_MAP._MetaNodeUI_.select_children,
                       ann=LANGUAGE_MAP._MetaNodeUI_.select_children_ann,
                       command=partial(self.doubleClick))
@@ -1078,6 +1095,7 @@ class MClassNodeUI(object):
         cmds.menuItem(label=LANGUAGE_MAP._MetaNodeUI_.sort_by_nodename, command=partial(self.fillScroll,'byName'))
         cmds.menuItem(divider=True)
         cmds.menuItem(label=LANGUAGE_MAP._MetaNodeUI_.class_all_registered, command=partial(self.fillScroll,'byName'))
+        cmds.menuItem(label=LANGUAGE_MAP._MetaNodeUI_.class_print_inheritance, command=self.__uiCB_printInheritance)
         cmds.menuItem(divider=True)
         cmds.menuItem(label=LANGUAGE_MAP._MetaNodeUI_.pro_connect_node, command=self.__uiCB_connectNode)
         cmds.menuItem(label=LANGUAGE_MAP._MetaNodeUI_.pro_disconnect_node, command=self.__uiCB_disconnectNode)
@@ -1120,11 +1138,13 @@ class MClassNodeUI(object):
         callback run on select in the UI, allows you to run the func passed
         in by the funcOnSelection arg
         '''
+        self.selected=[]
         indexes=cmds.textScrollList('slMetaNodeList',q=True,sii=True)
         if indexes:
             cmds.select(cl=True)
         for i in indexes:
             node=MetaClass(self.mNodes[i - 1])
+            self.selected.append(node)
             log.debug('selected : %s' % node)
             
             #func is a function passed into the UI via the funcOnSelection arg
@@ -1132,7 +1152,7 @@ class MClassNodeUI(object):
             if self.func:
                 self.func(node.mNode)
             else:
-                cmds.select(node.mNode,add=True)
+                cmds.select(node.mNode,add=True,noExpand=True)
                 
         if self.closeOnSelect:
             cmds.deleteUI('MetaClassFinder',window=True)
@@ -1273,6 +1293,16 @@ class MClassNodeUI(object):
             self.cachedforFilter=list(self.mNodes)  # cache the results so that the filter by name is fast!
             self.__fillScrollEntries()
  
+    def __uiCB_printInheritance(self,*args):
+        '''
+        show the inheritance of the given MClass
+        '''
+        indexes=cmds.textScrollList('slMetaNodeList',q=True,sii=True)
+        if len(indexes)==1:
+            mNode=MetaClass(self.mNodes[indexes[0]-1])
+            for c in mNode.getInheritanceMap():
+                print 'Class Inheritance : ', c
+        
     def __uiCB_connectNode(self, *args):
         '''
         PRO PACK : Given a single selected mNode from the UI and a single selected MAYA node, run
@@ -1299,6 +1329,21 @@ class MClassNodeUI(object):
         
         r9Setup.PRO_PACK_STUBS().MetaDataUI.uiCB_disconnectNode(mNode)
         
+    def __uiCB_renameNode(self, *args):
+        '''
+        rename the selected mNode
+        '''
+        result = cmds.promptDialog(title=LANGUAGE_MAP._MetaNodeUI_.rename_mNode,
+                                   message=LANGUAGE_MAP._Generic_.name,
+                                   button=[LANGUAGE_MAP._Generic_.apply, LANGUAGE_MAP._Generic_.cancel],
+                                   defaultButton=LANGUAGE_MAP._Generic_.apply,
+                                   text=self.selected[0].shortName(),
+                                   cancelButton='Cancel',
+                                   dismissString='Cancel')
+        if result == LANGUAGE_MAP._Generic_.apply:
+            self.selected[0].rename(cmds.promptDialog(query=True, text=True))
+            self.fillScroll()
+            
     def __uiCB_connectChildMetaNode(self, mClass, *args):
         '''
         PRO PACK : Given a single selected mNode from the UI and selected MAYA nodes, run
@@ -1338,7 +1383,7 @@ class MClassNodeUI(object):
 class MetaClass(object):
     
     cached = None
-    UNMANAGED=['mNode', 'mNodeID', '_MObject', '_MObjectHandle', '_lockState', 'lockState', '_forceAsMeta']
+    UNMANAGED=['mNode', 'mNodeID', '_MObject', '_MObjectHandle', '_MFnDependencyNode', '_lockState', 'lockState', '_forceAsMeta']
         
     def __new__(cls, *args, **kws):
         '''
@@ -1366,7 +1411,6 @@ class MetaClass(object):
                 return mNode
             
             mClass=isMetaNode(mNode, checkInstance=False, returnMClass=True)
-                #mClass=getMClassDataFromNode(mNode, checkInstance=False)
 
         if mClass:
             log.debug("mClass derived from MayaNode Attr : %s" % mClass)
@@ -1424,7 +1468,7 @@ class MetaClass(object):
 #                                               '_forceAsMeta'])  # note - UNMANAGED bypasses the Maya node in setattr calls
 
         object.__setattr__(self, '_lockState', False)    # by default all mNode's are unlocked, manage this in any subclass if needed
-        object.__setattr__(self, '_forceAsMeta', False)  # force all getAttr calls to return mClass objects even for starndard Maya nodes       
+        object.__setattr__(self, '_forceAsMeta', False)  # force all getAttr calls to return mClass objects even for starndard Maya nodes
         wrapped_node=False
         
         if not node:
@@ -1432,7 +1476,7 @@ class MetaClass(object):
                 name=self.__class__.__name__
             #no MayaNode passed in so make a fresh network node (default)
             if not nodeType=='network' and not nodeType in RED9_META_NODETYPE_REGISTERY:
-                raise IOError('nodeType : "%s" : is NOT yet registered in the "RED9_META_NODETYPE_REGISTERY", please use r9Meta.registerMClassNodeCache(nodeTypes=[%s]) to do so before making this node' % (nodeType,nodeType))
+                raise IOError('nodeType : "%s" : is NOT yet registered in the "RED9_META_NODETYPE_REGISTERY", please use r9Meta.registerMClassNodeMapping(nodeTypes=["%s"]) to do so before making this node' % (nodeType,nodeType))
 
             node=cmds.createNode(nodeType,name=name)
 
@@ -1576,6 +1620,7 @@ class MetaClass(object):
                 selList.getDependNode(0,mobj)
                 object.__setattr__(self, '_MObject', mobj)
                 object.__setattr__(self, '_MObjectHandle',OpenMaya.MObjectHandle(mobj))
+                object.__setattr__(self, '_MFnDependencyNode', OpenMaya.MFnDependencyNode(mobj))
                 # if we're a DAG object store off the MDagPath
 #                if OpenMaya.MObject.hasFn(mobj, OpenMaya.MFn.kDagNode):
 #                    dag = OpenMaya.MDagPath()
@@ -1625,7 +1670,14 @@ class MetaClass(object):
                 return object.__getattribute__(self, "_MObject")
             except StandardError,error:
                 raise StandardError(error)
-        
+    
+    def getInheritanceMap(self):
+        '''
+        return the inheritance mapping of this class instance
+        '''
+        import inspect
+        return inspect.getmro(self.__class__)
+    
     @property
     def lockState(self):
         '''
@@ -1693,9 +1745,11 @@ class MetaClass(object):
         return newUUID
     
     def getUUID(self):
+        if r9Setup.mayaVersion()>=2016:
+            return cmds.ls(self.mNode, uuid=True)[0]
         return self.UUID
     
-    # Attribuite Management block
+    # Attribute Management block
     #-----------------------------------------------------------------------------------
            
     def __setEnumAttr__(self, attr, value):
@@ -1711,7 +1765,7 @@ class MetaClass(object):
                 raise ValueError('Invalid enum string passed in: string is not in enum keys')
         log.debug('set enum attribute by index :  %s' % value)
         cmds.setAttr('%s.%s' % (self.mNode, attr), value)
-    
+
     def __setMessageAttr__(self, attr, value, force=True):
         '''
         Message : by default in the __setattr_ I'm assuming that the nodes you pass in are to be
@@ -1726,36 +1780,37 @@ class MetaClass(object):
         else:
             log.debug('set multi-message attribute connection:  %s' % value)
             self.connectChildren(value, attr, cleanCurrent=True, force=force)
-    
+                      
     @nodeLockManager
     def __setattr__(self, attr, value, force=True, **kws):
         '''
         Overload the base setattr to manage the MayaNode itself
         '''
-#        if attr in MetaClass.UNMANAGED or attr=='UNMANAGED':
         object.__setattr__(self, attr, value)
         
         if attr not in MetaClass.UNMANAGED and not attr=='UNMANAGED':
-        #if attr not in self.UNMANAGED and not attr=='UNMANAGED':
-        #else:
-            if self.hasAttr(attr):  # cmds.attributeQuery(attr, exists=True, node=self.mNode):
+            if self.hasAttr(attr):
                 locked=False
                 if self.attrIsLocked(attr) and force:
                     self.attrSetLocked(attr,False)
                     locked=True
-
+                mnode=self.mNode
+                attrType=self.attrType(attr)
+                
                 #Enums Handling
-                if cmds.attributeQuery(attr, node=self.mNode, enum=True):
+                if attrType=='enum':
+                #if cmds.attributeQuery(attr, node=mnode, enum=True):
                     self.__setEnumAttr__(attr, value)
                           
                 #Message Link handling
-                elif cmds.attributeQuery(attr, node=self.mNode, message=True):
+                elif attrType=='message':
+                #elif cmds.attributeQuery(attr, node=mnode, message=True):
                     self.__setMessageAttr__(attr, value, force)
                           
                 #Standard Attribute
                 else:
-                    attrString='%s.%s' % (self.mNode, attr)       # mayaNode.attribute for cmds.get/set calls
-                    attrType=cmds.getAttr(attrString, type=True)  # the MayaNode attribute valueType
+                    attrString='%s.%s' % (mnode, attr)       # mayaNode.attribute for cmds.get/set calls
+                    #attrType=cmds.getAttr(attrString, type=True)  # the MayaNode attribute valueType
                     valueType=attributeDataType(value)            # DataType passed in to be set as Value
                     #log.debug('setting attribute type : %s to value : %s' % (attrType,value))
                     
@@ -1828,18 +1883,15 @@ class MetaClass(object):
             return attr
         try:
             #private class attr only
-#            if attr in MetaClass.UNMANAGED:
-#                return object.__getattribute__(self, attr)
+            if attr in MetaClass.UNMANAGED:
+                return object.__getattribute__(self, attr)
             
             #stops recursion, do not getAttr on mNode here
             mNode=object.__getattribute__(self, "mNode")
-
             if not mNode or not cmds.objExists(mNode):
-                attrVal=object.__getattribute__(self, attr)
-                return attrVal
+                return object.__getattribute__(self, attr)
             else:
                 #MayaNode processing - retrieve attrVals on the MayaNode
-                #if cmds.attributeQuery(attr, exists=True, node=mNode):
                 try:
                     attrType=cmds.getAttr('%s.%s' % (mNode,attr),type=True)
                     
@@ -1899,24 +1951,30 @@ class MetaClass(object):
         try:
             log.debug('attribute delete  : %s , %s' % (self,attr))
             object.__delattr__(self, attr)
-            if self.hasAttr(attr):  # cmds.attributeQuery(attr, exists=True, node=self.mNode):
+            if self.hasAttr(attr):
                 cmds.setAttr('%s.%s' % (self.mNode,attr), l=False)
                 cmds.deleteAttr('%s.%s' % (self.mNode, attr))
                 
         except StandardError,error:
             raise StandardError(error)
-          
+       
+    def attrType(self, attr):
+        '''
+        return the api attr type
+        '''
+        return cmds.getAttr('%s.%s' % (self.mNode,attr),type=True)
+         
     def hasAttr(self, attr):
         '''
         simple wrapper check for attrs on the mNode itself.
         Note this is not run in some of the core internal calls in this baseClass
         '''
-        if r9Setup.mayaVersion()<2012:
-            #The api call fails in 2011, I need to dig into this
-            return cmds.attributeQuery(attr, exists=True, node=self.mNode)
         if self.isValidMObject():
-            return OpenMaya.MFnDependencyNode(self.mNodeMObject).hasAttribute(attr)
-        return cmds.attributeQuery(attr, exists=True, node=self.mNode)
+            try:
+                return self._MFnDependencyNode.hasAttribute(attr)
+                #return OpenMaya.MFnDependencyNode(self.mNodeMObject).hasAttribute(attr)
+            except:
+                return cmds.attributeQuery(attr, exists=True, node=self.mNode)
     
     def attrIsLocked(self,attr):
         '''
@@ -1941,6 +1999,17 @@ class MetaClass(object):
         wrap over cmds.renameAttr
         '''
         cmds.renameAttr('%s.%s' % (self.mNode, currentAttr), newName)
+        
+    @nodeLockManager
+    def delAttr(self, attr):
+        '''
+        delete a given attr
+        '''
+        if self.hasAttr(attr):
+            try:
+                cmds.deleteAttr(self.mNode, at=attr)
+            except StandardError, err:
+                raise StandardError('Failed to delete given attrs : %s : %s' % (attr, err))
         
     @nodeLockManager
     def addAttr(self, attr, value=None, attrType=None, hidden=False, **kws):
@@ -2003,7 +2072,7 @@ class MetaClass(object):
                      
         #ATTR EXSISTS - EDIT CURRENT
         #---------------------------
-        if self.hasAttr(attr):  # cmds.attributeQuery(attr, exists=True, node=self.mNode):
+        if self.hasAttr(attr):
             # if attr exists do we force the value here?? NOOOO as I'm using this only
             # to ensure that when we initialize certain classes base attrs exist with certain properties.
             log.debug('"%s" :  Attr already exists on the Node' % attr)
@@ -2089,7 +2158,8 @@ class MetaClass(object):
             ret.append(mPlug.name().split('.')[1])
         return ret
     
-    
+
+
     # Utity Functions
     #-------------------------------------------------------------------------------------
          
@@ -2142,14 +2212,10 @@ class MetaClass(object):
         
         if cmds.lockNode(self.mNode, q=True):
             cmds.lockNode(self.mNode, lock=False)
-        #clear the node from the cache
-        if RED9_META_NODECACHE:
-            if self.hasAttr('UUID'):
-                if self.UUID in RED9_META_NODECACHE.keys():
-                    RED9_META_NODECACHE.pop(self.getUUID())
-            elif self.mNode in RED9_META_NODECACHE.keys():
-                RED9_META_NODECACHE.pop(self.mNode)
-        #delete the Maya node and this python object
+        
+        # clear the node from the cache
+        removeFromCache(self)
+
         cmds.delete(self.mNode)
         del(self)
         
@@ -2227,6 +2293,30 @@ class MetaClass(object):
                     return i
             return ind[-1]+1
     
+    def _upliftMessage(self, node, attr):
+        '''
+        if attr is a single, non-muliti message attr and it's already connected to something
+        then uplift it to a multi, non-indexed managed message attr and cast any current connections 
+        to the newly created attr
+        
+        :param node: node with the attr on it
+        :param attr: attr to uplift
+        :rtype bool: if the attr is a multi or not
+        '''
+        if cmds.attributeQuery(attr, node=node, multi=True):
+            log.debug('message attr is already multi - abort uplift')
+            return True
+
+        cons=cmds.listConnections('%s.%s' % (node, attr), s=True,d=False,p=True)  # attr is already connected?
+        if cons:
+            log.debug('attr is already connected - uplift to multi-message - im=True')
+            cmds.deleteAttr('%s.%s' % (node, attr)) # delete current attr
+            cmds.addAttr(node, longName=attr, at='message', m=True, im=True)
+            # recast previous attr connections
+            for con in cons:
+                cmds.connectAttr(con, '%s.%s[%i]' % (node, attr, self._getNextArrayIndex(node, attr)))  # na=True)
+            return True
+                
     def isChildNode(self, node, attr=None, srcAttr=None):
         '''
         test if a node is already connected to the mNode via a given attr link.
@@ -2251,9 +2341,9 @@ class MetaClass(object):
                     if '%s.' % cmds.ls(node,l=True)[0] in con:
                         return True
         return False
-        
+
     @nodeLockManager
-    def connectChildren(self, nodes, attr, srcAttr=None, cleanCurrent=False, force=True, allowIncest=False):
+    def connectChildren(self, nodes, attr, srcAttr=None, cleanCurrent=False, force=True, allowIncest=True, srcSimple=False, **kws):
         '''
         Fast method of connecting multiple nodes to the mNode via a message attr link.
         This call generates a MULTI message on both sides of the connection and is designed
@@ -2271,12 +2361,16 @@ class MetaClass(object):
         :param allowIncest: Over-ride the default behaviour when dealing with child nodes that are
                         standard Maya Nodes not metaNodes. Default in this case is to NOT index manage
                         the plugs, this flag overloads that, allow multiple parents.
-        TODO: check the attr type, if attr exists and is a non-multi messgae then don't run the indexBlock
+        :param srcSimple: By default when we wire children we expect arrays so both plugs on the src and dest 
+            side of the connection are index managed. This flag stops the index and uses a single simple wire on the
+            srcAttr side of the plug ( the child )
+            
+        TODO: check the attr type, if attr exists and is a non-multi message then don't run the indexBlock
         '''
         
         #make sure we have the attr on the mNode
         self.addAttr(attr, attrType='message')
-        
+
         if not issubclass(type(nodes),list):
             nodes=[nodes]
         if cleanCurrent:
@@ -2287,6 +2381,7 @@ class MetaClass(object):
             #this allows 'None' to be passed into the set attr calls and in turn, allow
             #self.mymessagelink=None to clear all current connections
             return
+        
         for node in nodes:
             ismeta=False
             if isMetaNode(node):
@@ -2304,23 +2399,45 @@ class MetaClass(object):
             try:
                 #also we need to add the self.allowIncest flag to trigger managed message links like this.
                 if not self.isChildNode(node, attr, srcAttr):
-                    if ismeta or allowIncest:
-                        if ismeta:
-                            log.debug('connecting MetaData nodes via indexes :  %s.%s >> %s.%s' % (self.mNode,attr,node,srcAttr))
-                        elif allowIncest:
-                            log.debug('connecting Standard Maya nodes via indexes : %s.%s >> %s.%s' % (self.mNode,attr,node,srcAttr))
-                        cmds.connectAttr('%s.%s[%i]' % (self.mNode, attr, self._getNextArrayIndex(self.mNode,attr)),
-                                     '%s.%s[%i]' % (node, srcAttr, self._getNextArrayIndex(node,srcAttr)), f=force)
-                    else:
-                        log.debug('connecting %s.%s >> %s.%s' % (self.mNode,attr,node,srcAttr))
+                    try:
+                        if ismeta or allowIncest:
+                            if ismeta:
+                                log.debug('connecting MetaData nodes via indexes :  %s.%s >> %s.%s' % (self.mNode,attr,node,srcAttr))
+                            elif allowIncest:
+                                log.debug('connecting Standard Maya nodes via indexes : %s.%s >> %s.%s' % (self.mNode,attr,node,srcAttr))
+                            if not srcSimple:
+                                cmds.connectAttr('%s.%s[%i]' % (self.mNode, attr, self._getNextArrayIndex(self.mNode,attr)),
+                                         '%s.%s[%i]' % (node, srcAttr, self._getNextArrayIndex(node,srcAttr)), f=force)
+                            else:
+                                cmds.connectAttr('%s.%s[%i]' % (self.mNode, attr, self._getNextArrayIndex(self.mNode,attr)),
+                                         '%s.%s' % (node, srcAttr), f=force)
+                        else:
+                            log.debug('connecting %s.%s >> %s.%s' % (self.mNode,attr,node,srcAttr))
+                            cmds.connectAttr('%s.%s' % (self.mNode,attr),'%s.%s' % (node,srcAttr), f=force)
+                    except:
+                        # If the add was originally a messageSimple, then this exception is a 
+                        # back-up for the previous behaviour
                         cmds.connectAttr('%s.%s' % (self.mNode,attr),'%s.%s' % (node,srcAttr), f=force)
                 else:
                     raise StandardError('"%s" is already connected to metaNode "%s"' % (node,self.mNode))
             except StandardError,error:
                 log.warning(error)
-                
+
+
+#     @nodeLockManager
+#     def connectChildren(self, nodes, attr, srcAttr=None, cleanCurrent=False, force=True, **kws):
+#         '''
+#         Thinking of depricating the original connectChildren call as the multi-message handling
+#         was just getting too clumsy to manage
+#         '''
+#         if cleanCurrent:
+#             self.__disconnectCurrentAttrPlugs(attr)  # disconnect/cleanup current plugs to this attr
+#         for node in nodes:
+#             self.connectChild(node, attr=attr, srcAttr=srcAttr, cleanCurrent=False, force=force, allow_multi=True, **kws)
+        
+                    
     @nodeLockManager
-    def connectChild(self, node, attr, srcAttr=None, cleanCurrent=True, force=True):
+    def connectChild(self, node, attr, srcAttr=None, cleanCurrent=True, force=True, allow_multi=False, **kws):
         '''
         Fast method of connecting a node to the mNode via a message attr link. This call
         generates a NONE-MULTI message on both sides of the connection and is designed
@@ -2332,50 +2449,65 @@ class MetaClass(object):
         :param attr: Name for the message attribute
         :param srcAttr: If given this becomes the attr on the child node which connects it
                         to self.mNode. If NOT given this attr is set to self.mNodeID
-        :param cleanCurrent: Disconnect and clean any currently connected nodes to this attr.
+        :param cleanCurrent: Disconnect and clean any currently connected nodes to the attr on self.
                         Note this is operating on the mNode side of the connection, removing
                         any currently connected nodes to this attr prior to making the new ones
         :param force: Maya's default connectAttr 'force' flag, if the srcAttr is already connected
                         to another node force the connection to the new attr
+        :param allow_multi: allows the same node to connect back to this mNode under multiple wires
+            default behaviour is to only let a single wire from an mNode to a child
+                        
         TODO: do we move the cleanCurrent to the end so that if the connect fails you're not left
         with a half run setup?
-        
         '''
         #make sure we have the attr on the mNode, if we already have a MULIT-message
         #should we throw a warning here???
         self.addAttr(attr, attrType='messageSimple')
-
+        src_is_multi=False
         try:
             if cleanCurrent:
                 self.__disconnectCurrentAttrPlugs(attr)  # disconnect/cleanup current plugs to this attr
             if not srcAttr:
                 srcAttr=self.mNodeID  # attr on the nodes source side for the child connection
             if not node:
-                #this allows 'None' to be passed into the set attr calls and in turn, allow
-                #self.mymessagelink=None to clear all current connections
+                # this allows 'None' to be passed into the set attr calls and in turn, allow
+                # self.mymessagelink=None to clear all current connections
                 return
+
+            # add and manage the attr on the child node
             if isMetaNode(node):
-                if not issubclass(type(node), MetaClass):  # allows you to pass in an metaClass
-                    MetaClass(node).addAttr(srcAttr,attrType='messageSimple')
+                if not issubclass(type(node), MetaClass):
+                    MetaClass(node).addAttr(srcAttr, attrType='messageSimple')
                 else:
-                    node.addAttr(srcAttr,attrType='messageSimple')
+                    node.addAttr(srcAttr, attrType='messageSimple')
                     node=node.mNode
             elif not cmds.attributeQuery(srcAttr, exists=True, node=node):
                 cmds.addAttr(node, longName=srcAttr, at='message', m=False)
-                
+
+            # uplift to multi-message index managed if needed
+            if allow_multi:
+                src_is_multi=self._upliftMessage(node, srcAttr)  # uplift the message to a multi if needed
+            #else:
+            #    src_is_multi=cmds.attributeQuery(srcAttr, node=node, multi=True)
             if not self.isChildNode(node, attr, srcAttr):
-                cmds.connectAttr('%s.%s' % (self.mNode,attr),'%s.%s' % (node,srcAttr), f=force)
+                try:
+                    log.debug('connecting child via multi-message')
+                    cmds.connectAttr('%s.%s' % (self.mNode, attr),
+                                     '%s.%s[%i]' % (node, srcAttr, self._getNextArrayIndex(node,srcAttr)), f=force)
+                except:
+                    log.debug('connecting child via single-message')
+                    cmds.connectAttr('%s.%s' % (self.mNode,attr),'%s.%s' % (node,srcAttr), f=force)
             else:
                 raise StandardError('%s is already connected to metaNode' % node)
         except StandardError, error:
             log.warning(error)
-    
+
     @nodeLockManager
-    def connectParent(self, node, attr, srcAttr=None, cleanCurrent=True):
+    def connectParent(self, node, attr, srcAttr=None, cleanCurrent=True, **kws):
         '''
         Fast method of connecting message links to the mNode as parents
         :param nodes: Maya nodes to connect to this mNode
-        :param attr: Name for the message attribute on eth PARENT!
+        :param attr: Name for the message attribute on the PARENT!
         :param srcAttr: If given this becomes the attr on the node which connects it
                         to the parent. If NOT given this attr is set to parents shortName
         :param cleanCurrent: Exposed from teh connectChild code which is basically what this is running in reverse
@@ -2406,10 +2538,10 @@ class MetaClass(object):
                 currentConnects=[currentConnects]
             for connection in currentConnects:
                 try:
-                    #log.debug('Disconnecting %s.%s >> from : %s' % (self.mNode,attr,connection))
+                    log.debug('Disconnecting %s.%s >> from : %s' % (self.mNode,attr,connection))
                     self.disconnectChild(connection, attr=attr, deleteSourcePlug=True, deleteDestPlug=False)
                 except:
-                    log.warning('Failed to unconnect current message link')
+                    log.warning('Failed to un-connect current message link')
                     
     @nodeLockManager
     def disconnectChild(self, node, attr=None, deleteSourcePlug=True, deleteDestPlug=True):
@@ -2452,12 +2584,14 @@ class MetaClass(object):
 
         if not cons:
             raise StandardError('%s is not connected to the mNode %s' % (node,self.mNode))
+
         for sPlug,dPlug in zip(cons[0::2],cons[1::2]):
             log.debug('attr Connection inspected : %s << %s' % (sPlug,dPlug))
             #print 'searchCon : ', searchConnection
             #print 'dPlug : ', dPlug
-            if searchConnection in dPlug:
-                log.debug('Disconnecting %s >> %s as %s found in dPlug' % (dPlug,sPlug,searchConnection))
+            if (attr and searchConnection == dPlug.split('[')[0]) or (not attr and searchConnection in dPlug):
+            #if searchConnection in dPlug:
+                log.debug('Disconnecting %s >> %s as %s found in dPlug' % (dPlug, sPlug, searchConnection))
                 cmds.disconnectAttr(dPlug,sPlug)
                 returnData.append((dPlug,sPlug))
 
@@ -2520,35 +2654,35 @@ class MetaClass(object):
             return mChild
         
     @r9General.Timer
-    def getChildMetaNodes(self, walk=False, mAttrs=None, **kws):
+    def getChildMetaNodes(self, walk=False, mAttrs=None, stepover=False, **kws):
         '''
         Find any connected Child MetaNodes to this mNode.
-        
-        :param walk: walk the connected network and return ALL children conntected in the tree 
-        :param mAttrs: only return connected nodes that pass the given attribute filter 
-        
-        .. note:: 
+
+        :param walk: walk the connected network and return ALL children conntected in the tree
+        :param mAttrs: only return connected nodes that pass the given attribute filter
+        :param stepover: if you're passing in 'mTypes' or 'mInstances' flags then this dictates if
+            we continue to walk down a tree if it's parent didn't match the given type, default is False
+            which will abort a tree who's parent didn't match. With stepover=True we simply stepover
+            that node and continue down all child nodes
+
+        .. note::
             mAttrs is only searching attrs on the mNodes themselves, not all children
             and although there is no mTypes flag, you can use mAttrs to get childnodes of type
             by going getChildMetaNodes(mAttrs='mClass=MetaRig')
-        
-        .. note:: 
+
+        .. note::
             Because the **kws are passed directly to the getConnectedMetaNods func, it will
             also take ALL of that functions **kws functionality in the initial search:
             source=True, destination=True, mTypes=[], mInstances=[], mAttrs=None, dataType='mClass'
-        
-        :TODO: allow this to walk over nodes, at the moment if the direct child isn't of the correct 
-            type (if using the mTypes flag) then the walk will stop. This should continue over non matching 
-            nodes down the hierarchy so all children are tested.
-            !!!!!!!!!!!!!! THIS NEEDS FIXING ASAP !!!!!!!!!!!!!! or at least a flag to 'skip_over_unmatched'
         '''
-
         if not walk:
             return getConnectedMetaNodes(self.mNode, source=False, destination=True, mAttrs=mAttrs, dataType='mClass', **kws)
         else:
             metaNodes=[]
-            children=getConnectedMetaNodes(self.mNode, source=False, destination=True, mAttrs=mAttrs, dataType='unicode', **kws)
- 
+            if stepover:
+                children=getConnectedMetaNodes(self.mNode, source=False, destination=True, mAttrs=mAttrs, dataType='unicode')  #, **kws)
+            else:
+                children=getConnectedMetaNodes(self.mNode, source=False, destination=True, mAttrs=mAttrs, dataType='unicode', **kws)
             if children:
                 runaways=0
                 depth=0
@@ -2567,7 +2701,11 @@ class MetaClass(object):
                         children.remove(child)
                         processed.append(mNode)
                         #log.info( 'connections too : %s' % mNode)
-                        extendedChildren.extend(getConnectedMetaNodes(mNode,source=False,destination=True,mAttrs=mAttrs, dataType='unicode', **kws))
+                        if stepover:
+                            # if we're stepping over unmatched children then we remove the kws and deal with the match later
+                            extendedChildren.extend(getConnectedMetaNodes(mNode,source=False,destination=True,mAttrs=mAttrs, dataType='unicode'))  # , **kws))
+                        else:
+                            extendedChildren.extend(getConnectedMetaNodes(mNode,source=False,destination=True,mAttrs=mAttrs, dataType='unicode', **kws))
                         #log.info('left to process : %s' % ','.join([c.mNode for c in children]))
                         if not children:
                             if extendedChildren:
@@ -2577,7 +2715,24 @@ class MetaClass(object):
                                 extendedChildren=[]
                                 depth+=1
                         runaways+=1
-                return [MetaClass(node) for node in metaNodes]
+                childmNodes=[MetaClass(node) for node in metaNodes]
+                typematched=[]
+                if stepover:
+                    if 'mTypes' in kws:
+                        for node in childmNodes:
+                            if isMetaNodeInherited(node, kws['mTypes']):
+                                log.debug('getChildMetaNodes : mTypes matched : %s' % node)
+                                if not node in typematched:
+                                    typematched.append(node)
+                    if 'mInstances' in kws:
+                        for node in childmNodes:
+                            if isMetaNodeInherited(node, kws['mInstances']):
+                                log.debug('getChildMetaNodes : mInstances matched : %s' % node)
+                                if not node in typematched:
+                                    typematched.append(node)
+                    return typematched
+                else:
+                    return childmNodes
         return []
     
     def getParentMetaNode(self, **kws):
@@ -2804,7 +2959,7 @@ class MetaRig(MetaClass):
         self.addAttr('renderMeshes', attrType='message')
         self.addAttr('exportSkeletonRoot', attrType='messageSimple')
         self.addAttr('scaleSystem', attrType='messageSimple')
-        #self.addAttr('timecode_node', attrType='messageSimple')
+        self.addAttr('timecode_node', attrType='messageSimple')
     
     @property
     def ctrl_main(self):
@@ -2876,7 +3031,7 @@ class MetaRig(MetaClass):
         '''
         return self.getChildren(walk, mAttrs)
         
-    def getChildren(self, walk=True, mAttrs=None, cAttrs=[], nAttrs=[], asMeta=False, asMap=False):
+    def getChildren(self, walk=True, mAttrs=None, cAttrs=[], nAttrs=[], asMeta=False, asMap=False, incFacial=False):
         '''
         Massively important bit of code, this is used by most bits of code
         to find the child controllers linked to this metaRig instance.
@@ -2888,8 +3043,10 @@ class MetaRig(MetaClass):
         '''
         if not cAttrs:
             cAttrs=['RigCtrls', '%s_*' % self.CTRL_Prefix]
-            if self.getFacialSystem():
-                cAttrs.append('%s_*' % self.FacialCore.CTRL_Prefix)
+            if incFacial:
+                facialSystem=self.getFacialSystem()
+                if facialSystem:
+                    cAttrs.append('%s_*' % facialSystem.CTRL_Prefix)
 
         return super(MetaRig, self).getChildren(walk=walk, mAttrs=mAttrs, cAttrs=cAttrs, nAttrs=nAttrs, asMeta=asMeta, asMap=asMap)
         #return self.getRigCtrls(walk=walk, mAttrs=mAttrs)
@@ -2908,10 +3065,12 @@ class MetaRig(MetaClass):
     
     def getFacialSystem(self):
         '''
-        if we have a FacialCore node return it
+        if we have a FacialCore node return it. This allows you to modify how 
+        you wire up your facial system to metaData but gives us a consistent hook
         '''
         if self.hasAttr('FacialCore'):
-            if isMetaNode(self.FacialCore):
+            fcore=self.FacialCore
+            if fcore and isMetaNode(fcore):
                 return self.FacialCore
 
 #    def getParentSwitchData(self):
@@ -3004,7 +3163,7 @@ class MetaRig(MetaClass):
                     log.debug('Adding boundData to node : %s:%s' %(key,value))
                     MetaClass(node).addAttr(key, value=value)
                         
-    def addMetaSubSystem(self, systemType, side, attr=None, nodeName=None, mClass='MetaRigSubSystem'):
+    def addMetaSubSystem(self, systemType, side, attr=None, nodeName=None, mClass='MetaRigSubSystem', buildflags={}):
         '''
         Basic design of a MetaRig is that you have sub-systems hanging off an mRig
         node, managing all controllers and data for a particular system, such as an
@@ -3027,6 +3186,8 @@ class MetaRig(MetaClass):
         #set the attrs on the newly created subSystem MetaNode
         subSystem.systemType=systemType
         subSystem.mirrorSide=side
+        if buildflags:
+            subSystem.buildFlags=buildflags
         return subSystem
     
     def set_ctrlColour(self, colourIndex=4):
@@ -3039,7 +3200,10 @@ class MetaRig(MetaClass):
                 for shape in shapes:
                     cmds.setAttr('%s.overrideEnabled' % shape, 1)
                     cmds.setAttr('%s.overrideColor' % shape, colourIndex)
-                                  
+
+    # Mirror Management
+    #---------------------------------------------------------------------------------
+
     def getMirrorData(self):
         '''
         Bind the MirrorObject to this instance of MetaRig.
@@ -3048,26 +3212,45 @@ class MetaRig(MetaClass):
             you must run this binding function before using any of
             the inbuilt mirror functions
         '''
-        self.MirrorClass = r9Anim.MirrorHierarchy(nodes=self.getRigCtrls(walk=True))
-        self.MirrorClass.getMirrorSets()
-        log.debug('Filling the MirrorClass attr on demand')
+        self.MirrorClass = r9Anim.MirrorHierarchy(nodes=self.getChildren(walk=True))
+        try:
+            self.MirrorClass.getMirrorSets()
+            log.debug('Filling the MirrorClass attr on demand')
+        except:
+            log.warning('No Mirror Markers found on the rig')
         return self.MirrorClass
     
     def loadMirrorDataMap(self, mirrorMap):
         '''
         load a mirror setup onto this rig from a stored mirrorMap file
+        
+        :param mirrorMap: mirror file to load
         '''
         if not self.MirrorClass:
             self.MirrorClass = self.getMirrorData()
         if not os.path.exists(mirrorMap):
             raise IOError('Given MirrorMap file not found : %s' % mirrorMap)
         r9Anim.MirrorHierarchy(self.getChildren()).loadMirrorSetups(mirrorMap)
-    
+        
+    def saveMirrorDataMap(self, filepath):
+        '''
+        save the current mirror setup for this rig to file
+        
+        :param filepath: filepath to store the mirrorMap too
+        '''
+        if not self.MirrorClass:
+            self.MirrorClass = self.getMirrorData()
+
+        r9Anim.MirrorHierarchy(self.getChildren()).saveMirrorSetups(filepath)
+          
     def getMirror_opposites(self, nodes, forceRefresh=False):
         '''
         from the given nodes return a map of the opposite pairs of controllers
         so if you pass in a right controller of mirrorIndex 4 you get back the
         left[4] mirror node and visa versa. Centre controllers pass straight through
+        
+        :param nodes: nodes to get the opposites from
+        :param forceRefresh: forces the mirrorDic (which is cached) to be updated
         '''
         if not self.MirrorClass or forceRefresh:
             self.MirrorClass = self.getMirrorData()
@@ -3085,10 +3268,13 @@ class MetaRig(MetaClass):
                 oppositeNodes.append(node)
         return oppositeNodes
     
-    def getMirror_ctrlSets(self, set='Centre'):
+    def getMirror_ctrlSets(self, set='Centre', forceRefresh=False):
         '''
         from  the metaNode grab all controllers and return sets of nodes
         based on their mirror side data
+        
+        :param set: which set/side to get, valid = 'Left' ,'Right', 'Center'
+        :param forceRefresh: forces the mirrorDic (which is cached) to be updated
         '''
 #         submNodes=mRig.getChildMetaNodes(mAttrs=['mirrorSide=2'], walk=True)
 #         ctrls=[]
@@ -3096,22 +3282,49 @@ class MetaRig(MetaClass):
 #             ctrls.extend(node.getChildren())
 #         return ctrls
         ctrls=[]
-        if not self.MirrorClass:
+        if not self.MirrorClass or forceRefresh:
             self.MirrorClass = self.getMirrorData()
         for _, value in self.MirrorClass.mirrorDict[set].items():
             ctrls.append(value['node'])
         return ctrls
-                
+    
+    def getMirror_lastIndexes(self, side, forceRefresh=False):
+        '''
+        get the last mirror index for a given side
+        
+        :param side: side to check, valid = 'Left' ,'Right', 'Center'
+        :param forceRefresh: forces the mirrorDic (which is cached) to be updated
+        '''
+        if not self.MirrorClass or forceRefresh:
+            self.MirrorClass = self.getMirrorData()
+        return max([int(m) for m in self.MirrorClass.mirrorDict[side].keys()])
+
+    def getMirror_nextSlot(self, side, forceRefresh=False):
+        '''
+        return the next available slot in the mirrorIndex list for a given side
+        
+        :param side: side to check, valid = 'Left' ,'Right', 'Center'
+        :param forceRefresh: forces the mirrorDic (which is cached) to be updated
+        '''
+        return self.getMirror_lastIndexes(side, forceRefresh) + 1
+
     def mirror(self, nodes=None, mode='Anim'):
         '''
         direct mapper call to the Mirror functions
+        
+        :param nodes: nodes to mirror, if None then we process the entire rig
+        :param mode: either 'Anim' or 'Pose'
         '''
         if not self.MirrorClass:
             self.MirrorClass = self.getMirrorData()
         self.MirrorClass.mirrorData(nodes, mode)
     
+    
+    # Utilities
+    #---------------------------------------------------------------------------------
+    
     @nodeLockManager
-    def poseCacheStore(self, attr=None, filepath=None, *args, **kws):
+    def poseCacheStore(self, attr=None, filepath=None, incRoots=True, *args, **kws):
         '''
         intended as a cached pose for this mRig, if an attr is given then
         the cached pose is stored internally on the node so it can be loaded
@@ -3120,10 +3333,12 @@ class MetaRig(MetaClass):
         
         :param attr: optional - attr to store the cached pose to
         :param filepath: optional - path to store the pose too
+        :param incRoots: passed directly to the filterSettings object in the pose, do we process self.ctrl_main?
         '''
         import Red9.core.Red9_PoseSaver as r9Pose  # lazy loaded
         self.poseCache=r9Pose.PoseData()
         self.poseCache.metaPose=True
+        self.poseCache.settings.incRoots=incRoots
         self.poseCache.poseSave(self.mNode, filepath=filepath, useFilter=True, *args, **kws)  # no path so cache against this pose instance
         if attr:
             if not self.hasAttr(attr):
@@ -3132,7 +3347,7 @@ class MetaRig(MetaClass):
                 setattr(self, attr, self.poseCache.poseDict)
             self.attrSetLocked(attr,True)
         
-    def poseCacheLoad(self, nodes=None, attr=None, filepath=None, *args, **kws):
+    def poseCacheLoad(self, nodes=None, attr=None, filepath=None, incRoots=True, *args, **kws):
         '''
         load a cached pose back to this mRig. If attr is given then its assumed
         that that attr is a cached poseDict on the mNode. If not given then it
@@ -3141,6 +3356,7 @@ class MetaRig(MetaClass):
         :param nodes: if given load only the cached pose to the given nodes
         :param attr: optional - attr in which a pose has been stored internally on the mRig
         :param filepath: optional - posefile to load back
+        :param incRoots: passed directly to the filterSettings object in the pose, do we process self.ctrl_main?
         
         :TODO: add relative flags so that they can pass through this call
         '''
@@ -3148,6 +3364,7 @@ class MetaRig(MetaClass):
         if attr or filepath:
             self.poseCache=r9Pose.PoseData()
             self.poseCache.metaPose=True
+            self.poseCache.settings.incRoots=incRoots
             if attr:
                 self.poseCache.poseDict=getattr(self,attr)
         if self.poseCache:
@@ -3164,12 +3381,14 @@ class MetaRig(MetaClass):
         :param poseFile: given .pose file with valid skeletonDict block
         :param supressWarning: if False raise the confirmDialogue
         :param compareDict: what block in the poseFile to compare the data against
+        :param filterMap: if given this is used as a high level filter, only matching nodes get compared
+            others get skipped. Good for passing in a master core skeleton to test whilst ignoring extra nodes
         :param ignoreBlocks: used to stop certain blocks in the compare from causing a fail eg : ['missingKeys']
         :return: returns a 'PoseCompare' class object with all the compare data in it
         '''
         import Red9.core.Red9_PoseSaver as r9Pose  # lazy loaded
         self.poseCacheStore()
-        compare=r9Pose.PoseCompare(self.poseCache,poseFile, compareDict=compareDict, filterMap=filterMap, ignoreBlocks=ignoreBlocks)
+        compare=r9Pose.PoseCompare(self.poseCache, poseFile, compareDict=compareDict, filterMap=filterMap, ignoreBlocks=ignoreBlocks)
         if not compare.compare():
             info='Selected Pose is different to the rigs current pose\nsee script editor for debug details'
         else:
@@ -3185,8 +3404,8 @@ class MetaRig(MetaClass):
     
     def nodeVisibility(self, state, skip=[]):
         '''
-        simple wrapper to hide all ctrls in the rig via their shapeNodes
-        lodVisibility so it doesn't interfer with any display layers etc
+        simple wrapper to hide all ctrls in the rig via their shapeNodes.lodVisibility 
+        so it doesn't interfer with any display layers etc
         
         :param state: bool to pass to the lodVisibility attr
         :param skip: [] child attrs on the mNode to skip during the process allowing certain controllers not to be effected
@@ -3202,13 +3421,15 @@ class MetaRig(MetaClass):
     
     def hideNodes(self):
         '''
-        wrap over the nodeVisibility to set False
+        wrap over the nodeVisibility to set False for all Controllers
+        with the exceptiojn of the Main_Ctrl
         '''
         self.nodeVisibility(state=0,skip=['%s_Main' % self.CTRL_Prefix])
         
     def unHideNodes(self):
         '''
-        wrap over the nodeVisibility to set True
+        wrap over the nodeVisibility to set True for all Controllers
+        with the exceptiojn of the Main_Ctrl
         '''
         self.nodeVisibility(state=1,skip=['%s_Main' % self.CTRL_Prefix])
         
@@ -3250,39 +3471,11 @@ class MetaRig(MetaClass):
         '''
         self.poseCacheLoad(nodes=nodes, attr='zeroPose')
     
-    def saveAnimation(self, filepath, incRoots=True):
-        '''
-        PRO_PACK : Binding of the animMap format for storing animation data out to file
-        '''
-        if r9Setup.has_pro_pack():
-            from Red9.pro_pack.core.animation import AnimMap
-            self.animMap=AnimMap()
-            self.animMap.filepath=filepath
-            self.animMap.metaPose=True
-            self.animMap.settings.incRoots=incRoots
-            self.animMap.saveData(self.mNode,storeThumbnail=False)
-            
-            print self.animMap.filepath
-            
-    def loadAnimation(self, filepath, offset=0, incRoots=True):
-        '''
-        PRO_PACK : Binding of the animMap format for loading animation data from
-        an r9Anim file
-        '''
-        if r9Setup.has_pro_pack():
-            from Red9.pro_pack.core.animation import AnimMap
-            self.animMap=AnimMap()
-            self.animMap.filepath=filepath
-            self.animMap.metaPose=True
-            self.animMap.settings.incRoots=incRoots
-            self.animMap.offset=offset
-            self.animMap.loadData(self.mNode)
-
     def getAnimationRange(self, nodes=None, setTimeline=False):
         '''
         return the extend of the animation range for this rig and / or the given controllers
         
-        :param nodes: if given only retunr the extent of the animation data from the given nodes
+        :param nodes: if given only return the extent of the animation data from the given nodes
         :param setTimeLine: if True set the playback timeranges also, default=False
         '''
         if not nodes:
@@ -3293,6 +3486,8 @@ class MetaRig(MetaClass):
         '''
         return True if any of the rig's controllers have existing
         animation curve/key data
+        
+        :param nodes: nodes to check, if None process the entire rig
         '''
         if not nodes:
             nodes=self.getChildren()
@@ -3307,13 +3502,68 @@ class MetaRig(MetaClass):
         '''
         if not nodes:
             nodes=self.getChildren()
-        cmds.cutKey(r9Anim.r9Core.FilterNode.lsAnimCurves(nodes, safe=True))
+        if self.hasKeys(nodes):
+            cmds.cutKey(r9Anim.r9Core.FilterNode.lsAnimCurves(nodes, safe=True))
         if reset:
             self.loadZeroPose(nodes)
-        
-    def getTimecode(self, atFrame=None):
+
+
+    # PRO PACK Supported Only
+    # -------------------------------------------------------------------------------
+    '''
+    All these commands are bound purely for those running the Red9 ProPack and are examples of
+    the extensions being added. We bind them here to make it more transparent for you guys
+    running Meta, save us sub-classing MetaRig for Pro and exposes some of the codebase wrapping
+    '''
+    def saveAnimation(self, filepath, incRoots=True, useFilter=True, timerange=(),
+                      storeThumbnail=False, force=False):
         '''
-        PRO PACK: get the timecode object back from the rig
+        PRO_PACK : Binding of the animMap format for storing animation data out to file
+        '''
+        if r9Setup.has_pro_pack():
+            #from Red9.pro_pack.core.animation import AnimMap
+            from Red9.pro_pack import r9pro
+            r9pro.r9import('r9panim')
+            from r9panim import AnimMap
+            
+            self.animMap=AnimMap()
+            self.animMap.filepath=filepath
+            self.animMap.metaPose=True
+            self.animMap.settings.incRoots=incRoots
+            self.animMap.saveAnim(self.mNode,
+                                  useFilter=useFilter,
+                                  timerange=timerange,
+                                  storeThumbnail=storeThumbnail,
+                                  force=force)
+            
+            log.info('AnimMap data saved to : %s' % self.animMap.filepath)
+            
+    def loadAnimation(self, filepath, incRoots=True, useFilter=True, 
+                      loadAsStored=True, loadFromFrm=0, referenceNode=None, *args, **kws):
+        '''
+        PRO_PACK : Binding of the animMap format for loading animation data from
+        an r9Anim file
+        '''
+        if r9Setup.has_pro_pack():
+            #from Red9.pro_pack.core.animation import AnimMap
+            from Red9.pro_pack import r9pro
+            r9pro.r9import('r9panim')
+            from r9panim import AnimMap
+            
+            self.animMap=AnimMap()
+            self.animMap.filepath=filepath
+            self.animMap.metaPose=True
+            self.animMap.settings.incRoots=incRoots
+            self.animMap.loadAnim(self.mNode,
+                                  useFilter=useFilter,
+                                  loadAsStored=loadAsStored,
+                                  loadFromFrm=loadFromFrm,
+                                  referenceNode=referenceNode)
+    
+    @property
+    def Timecode(self):
+        '''
+        PRO_PACK : bind the Pro Timecode class to the node
         '''
         if r9Setup.has_pro_pack():
             try:
@@ -3322,10 +3572,43 @@ class MetaRig(MetaClass):
                 from Red9.pro_pack import r9pro
                 r9pro.r9import('r9paudio')
                 import r9paudio
-            tc=r9paudio.Timecode()
-            tc.getTimecode_from_node(self.ctrl_main)
-            return tc
-    
+            if self.hasAttr('timecode_node') and self.timecode_node:
+                return r9paudio.Timecode(self.timecode_node[0])
+            else:
+                return r9paudio.Timecode(self.ctrl_main)
+
+    def timecode_get(self, atFrame=None):
+        '''
+        PRO PACK: get the timecode object back from the rig
+        '''
+        if r9Setup.has_pro_pack():
+            return self.Timecode.getTimecode_from_node(time=atFrame)
+
+    def timecode_addAttrs(self, tc='', propagate=False):
+        '''
+        PRO PACK: simple return to check if the system has the Pro Timecode
+        systems bound to it
+        '''
+        if r9Setup.has_pro_pack():
+            return self.Timecode.addTimecode_to_node(tc=tc, propagate=propagate)
+         
+    def timecode_hasTimeCode(self):
+        '''
+        PRO PACK: simple return to check if the system has the Pro Timecode
+        systems bound to it
+        '''
+        if r9Setup.has_pro_pack():
+            return self.Timecode.hasTimeCode() or False
+        
+    def timecode_remove(self):
+        '''
+        PRO PACK: simple return to check if the system has the Pro Timecode
+        systems bound to it
+        '''
+        if r9Setup.has_pro_pack():
+            return self.Timecode.removedTimecode_from_node() or False
+        
+        
 class MetaRigSubSystem(MetaRig):
     '''
     SubClass of the MRig, designed to organize Rig sub-systems (ie L_ArmSystem, L_LegSystem..)
@@ -3339,6 +3622,29 @@ class MetaRigSubSystem(MetaRig):
     def __bindData__(self):
         self.addAttr('systemType', attrType='string')
         self.addAttr('mirrorSide',enumName='Centre:Left:Right',attrType='enum')
+        self.addAttr('buildFlags', attrType='string', value={}, hidden=True)
+        
+    @property
+    def SupportNode(self):
+        '''
+        return the connected Support mNode regardless of the wire used to connect it
+        
+        .. note::
+            this is setup to use the Red9Pro Puppet wire conventions when multiple connected
+            support nodes are found. The idea being that there is always 1 main support for a system
+            and the naming convention of the mNodeID reflects that ie: L_ArmSystem and L_ArmSupport
+        '''
+        try:            
+            subsystems=getConnectedMetaNodes(self.mNode, source=False, destination=True, mInstances=MetaRigSupport, dataType='mClass')
+            #print 'subsystems :', subsystems
+            if len(subsystems)>1:
+                for s in subsystems:
+                    if s.mNodeID==self.mNodeID.replace('System', 'Support'):
+                        return s
+            else:
+                return subsystems[0]
+        except:
+            return []
  
  
 class MetaRigSupport(MetaClass):
@@ -3456,6 +3762,15 @@ class MetaHIKCharacterNode(MetaRig):
         kws.setdefault('autofill','messageOnly')
         super(MetaHIKCharacterNode, self).__init__(*args,**kws)
 
+    def __bindData__(self):
+        '''
+        overload as we don't want the default MRig attrs bound to this nodeType
+        '''
+        pass
+    
+    def __repr__(self):
+        return "%s(mClass: 'MetaHIKCharacterNode', node: '%s')" % (self.__class__, self.mNode.split('|')[-1])
+         
     def __getMessageAttr__(self, attr):
         '''
         overloaded so that the main message wires return as single nodes
@@ -3466,10 +3781,106 @@ class MetaHIKCharacterNode(MetaRig):
                 return data[0]
             return data
     
+    def getHIKPropertyStateNode(self):
+        '''
+        return the HIK Property node as a class for easy management
+        '''
+        properties=cmds.listConnections('%s.propertyState' % self.mNode)
+        if properties:
+            return MetaHIKPropertiesNode(properties[0])
+        
     def getHIKControlSetNode(self):
         controlNode=cmds.listConnections(self.mNode,type='HIKControlSetNode')
         if controlNode:
             return controlNode[0]
+
+    def delete(self):
+        '''
+        delete hik node and dependency nodes
+        :return:
+        '''
+        # nodes connected to OutputCharacterDefinition
+        OutputCharacterDefinition = cmds.listConnections('%s.OutputCharacterDefinition' % self.mNode)
+
+        if OutputCharacterDefinition:
+            cmds.delete(OutputCharacterDefinition)
+
+        propertyState = cmds.listConnections('%s.propertyState' % self.mNode)
+
+        if propertyState:
+            cmds.delete(propertyState)
+
+        if cmds.objExists(self.mNode):
+            cmds.lockNode(self.mNode, lock=False)
+            cmds.delete(self.mNode)
+
+        self.openui()
+
+    @staticmethod
+    def openui():
+        '''
+        Open hik UI
+        '''
+        if not r9Setup.mayaIsBatch():
+            mel.eval('HIKCharacterControlsTool')
+            mel.eval('hikSelectDefinitionTab')
+
+    def lock(self):
+        '''
+        lock hik characterisation
+        :return: True if lock False if not lock
+        '''
+        if self.InputCharacterizationLock:
+            self.unLock()
+
+        if self.checkcharacterization():
+            mel.eval('hikCharacterLock("%s", 1, 1 )' % self.mNode)
+            self.openui()
+            return True
+
+        self.openui()
+        return False
+
+    def unLock(self):
+        '''
+        unlock hik characterisation
+        '''
+        self.setascurrentcharacter()
+        self.InputCharacterizationLock = False
+        self.openui()
+
+    @staticmethod
+    def getCurrentCharacter():
+        '''
+        get current hik character
+        :return: current hik charactre name
+        '''
+        return mel.eval('hikGetCurrentCharacter')
+
+    def setascurrentcharacter(self):
+        '''
+        set current mNode as hikcurrentcharacter
+        '''
+        mel.eval('hikSetCurrentCharacter %s' % self.mNode)
+        self.openui()
+
+    def checkcharacterization(self):
+        '''
+        check that hikNode characterisation is valid
+        :return: True if valid False if invalid
+        '''
+        self.setascurrentcharacter()
+        self.openui()
+
+        status = cmds.characterizationToolUICmd(query=True, curcharstatus=True)
+
+        if status == 0:
+            log.info('checkCharacterization for %s  : PASSED' % self.mNode)
+            return True
+        else:
+            log.info('checkCharacterization for %s  : FAILED' % self.mNode)
+            return False
+        
     
 class MetaHIKControlSetNode(MetaRig):
     '''
@@ -3482,6 +3893,9 @@ class MetaHIKControlSetNode(MetaRig):
         super(MetaHIKControlSetNode, self).__init__(*args,**kws)
         self.CTRL_Main = self.Reference
         
+    def __repr__(self):
+        return "%s(mClass: 'MetaHIKControlSetNode', node: '%s')" % (self.__class__, self.mNode.split('|')[-1])
+     
     def __getMessageAttr__(self, attr):
         '''
         overloaded so that the main message wires return as single nodes
@@ -3511,7 +3925,16 @@ class MetaHIKControlSetNode(MetaRig):
                                 children.extend(cmds.ls(e,l=True))
         return children
     
+    
+class MetaHIKPropertiesNode(MetaClass):
+    '''
+    Casting HIK Properties to a Meta class for easy managing
+    '''
+    def __init__(self, *args, **kws):
+        super(MetaHIKPropertiesNode, self).__init__(*args,**kws)
 
+    
+    
 
 # EXPERIMENTAL CALLS ==========================================================
 

@@ -16,6 +16,8 @@
 '''
 from __future__ import with_statement  # required only for Maya2009/8
 from functools import wraps
+import maya.cmds as cmds
+import maya.mel as mel
 import os
 import time
 import inspect
@@ -24,10 +26,6 @@ import tempfile
 import subprocess
 import json
 import itertools
-
-import maya.cmds as cmds
-import maya.mel as mel
-
 
 #Only valid Red9 import
 import Red9.startup.setup as r9Setup
@@ -39,7 +37,7 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
 
-
+#---------------------------------------------------------------------------------
 # Generic Utility Functions ---
 #---------------------------------------------------------------------------------
 
@@ -165,42 +163,50 @@ def getScriptEditorSelection():
         return func
 
 
-
+#---------------------------------------------------------------------------------
 # Context Managers and Decorators ---
 #---------------------------------------------------------------------------------
 
 def Timer(func):
     '''
-    Simple timer decorator
+    DECORATOR : DECORATOR : DECORATOR :
+    ----------------------------------
+    Simple timer function
     '''
     @wraps(func)
     def wrapper(*args, **kws):
-        t1 = time.time()
-        res=func(*args, **kws)
-        t2 = time.time()
-
-        functionTrace=''
-        try:
-            #module if found
-            mod = inspect.getmodule(args[0])
-            functionTrace+='%s >>' % mod.__name__.split('.')[-1]
-        except:
-            log.debug('function module inspect failure')
-        try:
-            #class function is part of, if found
-            cls = args[0].__class__
-            functionTrace+='%s.' % args[0].__class__.__name__
-        except:
-            log.debug('function class inspect failure')
-        functionTrace += func.__name__
-        log.debug('TIMER : %s: took %0.3f ms' % (functionTrace, (t2 - t1) * 1000.0))
-        #log.info('%s: took %0.3f ms' % (func.func_name, (t2-t1)*1000.0))
+        if log.getEffectiveLevel()==20:
+            # Timer Disabled as we're in log.Info mode so the data isn't used
+            res=func(*args, **kws)
+        else:
+            t1 = time.time()
+            res=func(*args, **kws)
+            t2 = time.time()
+    
+            functionTrace=''
+            try:
+                #module if found
+                mod = inspect.getmodule(args[0])
+                functionTrace+='%s >>' % mod.__name__.split('.')[-1]
+            except:
+                log.debug('function module inspect failure')
+            try:
+                #class function is part of, if found
+                cls = args[0].__class__
+                functionTrace+='%s.' % args[0].__class__.__name__
+            except:
+                log.debug('function class inspect failure')
+            functionTrace += func.__name__
+            log.debug('TIMER : %s: took %0.3f ms' % (functionTrace, (t2 - t1) * 1000.0))
+            #log.info('%s: took %0.3f ms' % (func.func_name, (t2-t1)*1000.0))
         return res
     return wrapper
 
 
 def runProfile(func):
     '''
+    DECORATOR : DECORATOR : DECORATOR :
+    ----------------------------------
     run the profiler - only ever used when debugging /optimizing function call speeds.
     visualize the data using 'runsnakerun' to view the profiles and debug
     '''
@@ -216,36 +222,126 @@ def runProfile(func):
         profile = cProfile.runctx("command()", globals(), locals(), dumpFileName)
         return profile
     return wrapper
+
+
+def evalManager_DG(func):
+    '''
+    DECORATOR : DECORATOR : DECORATOR :
+    ----------------------------------
+    simple decorator to call the evalManager_switch plugin and run the enclosed 
+    function in DG eval mode NOT parallel. 
     
+    .. note:: 
+        Parallel EM mode is slow at evaluating time, DG is up to 3 times faster!
+        The plugin call is registered back in the undoStack, cmds.evalmanager call is not
+    '''
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            evalmode=None
+            if r9Setup.mayaVersion()>=2016:
+                evalmode=cmds.evaluationManager(mode=True,q=True)[0]
+                if evalmode=='parallel':
+                    evalManagerState(mode='off')
+            res = func(*args, **kwargs)
+        except:
+            log.info('Failed on evalManager_DG decorator')
+        finally:
+            if evalmode:
+                evalManagerState(mode=evalmode)
+        return res
+    return wrapper
+
+
+def evalManagerState(mode='off'):
+    '''
+    wrapper function for the evalManager so that it's switching is recorded in 
+    the undo stack via the Red9.evalManager_switch plugin
+    '''
+    if r9Setup.mayaVersion()>=2016:
+        if not cmds.pluginInfo('evalManager_switch', q=True, loaded=True):
+            try:
+                cmds.loadPlugin('evalManager_switch')
+            except:
+                log.warning('Plugin Failed to load : evalManager_switch')
+        try:
+            # via the plug-in to register the switch to the undoStack
+            cmds.evalManager_switch(mode=mode)
+        except:
+            log.debug('evalManager_switch plugin not found, running native Maya evalManager command')
+            cmds.evaluationManager(mode=mode)  # run the default maya call instead
+        log.debug('EvalManager - switching state : %s' % mode)
+    else:
+        log.debug("evalManager skipped as you're in an older version of Maya")
     
+
 class AnimationContext(object):
     """
+    CONTEXT MANAGER : CONTEXT MANAGER :
+    ----------------------------------
     Simple Context Manager for restoring Animation settings
+    
+    :param evalmanager: do we manage the evalManager in this context for Maya 2016 onwards
+    :param time: do we manage the time and restore the original currentTime?
+    :param undo: do we manage the undoStack, collecting everything in one chunk
     """
-    def __init__(self):
+    def __init__(self, evalmanager=True, time=True, undo=True):
         self.autoKeyState=None
-        self.timeStore=None
+        self.timeStore={}
+        self.evalmode=None
+        
+        self.manage_em=evalmanager
+        self.mangage_undo=undo
+        self.manage_time=time
         
     def __enter__(self):
         self.autoKeyState=cmds.autoKeyframe(query=True, state=True)
-        self.timeStore=cmds.currentTime(q=True)
-        cmds.undoInfo(openChunk=True)
+        self.timeStore['currentTime'] = cmds.currentTime(q=True)
+        self.timeStore['minTime'] = cmds.playbackOptions(q=True, min=True)
+        self.timeStore['maxTime'] = cmds.playbackOptions(q=True, max=True)
+        self.timeStore['startTime'] = cmds.playbackOptions(q=True, ast=True)
+        self.timeStore['endTime'] = cmds.playbackOptions(q=True, aet=True)
+        self.timeStore['playSpeed'] = cmds.playbackOptions(query=True, playbackSpeed=True)
+
+        if self.mangage_undo:
+            cmds.undoInfo(openChunk=True)
+        else:
+            cmds.undoInfo(swf=False)
+        if self.manage_em:
+            if r9Setup.mayaVersion()>=2016:
+                self.evalmode=cmds.evaluationManager(mode=True,q=True)[0]
+                if self.evalmode=='parallel':
+                    evalManagerState(mode='off')
 
     def __exit__(self, exc_type, exc_value, traceback):
         # Close the undo chunk, warn if any exceptions were caught:
         cmds.autoKeyframe(state=self.autoKeyState)
-        cmds.currentTime(self.timeStore)
         log.info('autoKeyState restored: %s' % self.autoKeyState)
-        log.info('currentTime restored: %f' % self.timeStore)
-        cmds.undoInfo(closeChunk=True)
+        
+        if self.manage_em and self.evalmode:
+            evalManagerState(mode=self.evalmode)
+            log.info('evalManager restored: %s' % self.evalmode)
+        if self.manage_time:
+            cmds.currentTime(self.timeStore['currentTime'])
+            cmds.playbackOptions(min=self.timeStore['minTime'])
+            cmds.playbackOptions(max=self.timeStore['maxTime'])
+            cmds.playbackOptions(ast=self.timeStore['startTime'])
+            cmds.playbackOptions(aet=self.timeStore['endTime'])
+            cmds.playbackOptions(ps=self.timeStore['playSpeed'])
+            log.info('currentTime restored: %f' % self.timeStore['currentTime'])
+        if self.mangage_undo:
+            cmds.undoInfo(closeChunk=True)
+        else:
+            cmds.undoInfo(swf=True)
         if exc_type:
             log.exception('%s : %s'%(exc_type, exc_value))
         # If this was false, it would re-raise the exception when complete
         return True
     
-
 class undoContext(object):
     """
+    CONTEXT MANAGER : CONTEXT MANAGER :
+    ----------------------------------
     Simple Context Manager for chunking the undoState
     """
     def __init__(self, initialUndo=False, undoFuncCache=[], undoDepth=1):
@@ -293,6 +389,8 @@ class undoContext(object):
 
 class ProgressBarContext(object):
     '''
+    CONTEXT MANAGER : CONTEXT MANAGER :
+    ----------------------------------
     Context manager to make it easier to wrap progressBars
     
     >>> #Example of using this in code
@@ -370,6 +468,8 @@ class ProgressBarContext(object):
        
 class HIKContext(object):
     """
+    CONTEXT MANAGER : CONTEXT MANAGER :
+    ----------------------------------
     Simple Context Manager for restoring HIK Animation settings and managing HIK callbacks
     """
     def __init__(self, NodeList):
@@ -409,6 +509,8 @@ class HIKContext(object):
     
 class SceneRestoreContext(object):
     """
+    CONTEXT MANAGER : CONTEXT MANAGER :
+    ----------------------------------
     Simple Context Manager for restoring Scene Global settings
     
     Basically we store the state of all the modelPanels and timeLine
@@ -553,7 +655,7 @@ class SceneRestoreContext(object):
         log.debug('Scene Restored fully')
         return True
     
-                    
+#---------------------------------------------------------------------------------               
 # General ---
 #---------------------------------------------------------------------------------
 
@@ -664,7 +766,7 @@ def getModifier():
     else:
         return False
 
-    
+#---------------------------------------------------------------------------------
 # OS functions ---
 #---------------------------------------------------------------------------------
 

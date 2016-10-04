@@ -13,20 +13,24 @@ This is the Audio library of utils used throughout the modules
 
 '''
 from __future__ import with_statement  # required only for Maya2009/8
-from functools import partial
-import os
-import wave
-import contextlib
-import logging
-
 import maya.cmds as cmds
 import maya.mel as mel
+from functools import partial
+import os
+import struct
+import math
+import re
 
 import Red9_General as r9General
 import Red9.startup.setup as r9Setup
 import Red9_Meta as r9Meta
 import Red9_CoreUtils as r9Core
 
+
+import wave
+import contextlib
+   
+import logging
 logging.basicConfig()
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
@@ -77,7 +81,7 @@ def frame_to_timecode(frame, smpte=True, framerate=None):
 def frame_to_milliseconds(frame, framerate=None):
     return bind_pro_audio().frame_to_milliseconds(frame, framerate=framerate)
 
-# ProPack End ----
+# ProPack Bind End ----
 
 
 
@@ -191,7 +195,7 @@ class AudioHandler(object):
         all BWav and Timecode support is in the Red9 ProPack
     '''
     def __init__(self, audio=None):
-        self._audioNodes = None
+        self._audioNodes = []
         if audio:
             self.audioNodes = audio
         else:
@@ -211,17 +215,39 @@ class AudioHandler(object):
     
     @audioNodes.setter
     def audioNodes(self, val):
-        #print val, type(val)
         if not val:
             raise StandardError('No AudioNodes selected or given to process')
         if not type(val)==list:
             val = [val]
-        self._audioNodes = [AudioNode(audio) for audio in val]
+        for a in val:
+            if issubclass(type(a), AudioNode):
+                log.debug('Instantiated AudioNode passed in  : %s' % a)
+                self._audioNodes.append(a)
+            else:
+                log.debug('unicode audio str passed in  : %s' % a)
+                self._audioNodes.append(AudioNode(a))
+        #self._audioNodes = [AudioNode(audio) for audio in val]
     
     @property
     def mayaNodes(self):
         return [audio.audioNode for audio in self.audioNodes]
-    
+
+    def getAudioInRange(self, time=(), asNodes=True):
+        '''
+        return any audio in the handler within a given timerange
+        
+        @param time: tuple, (min,max) timerange within which returned audio has 
+        fall within else it's ignored.
+        '''
+        audio_in_range=[]
+        for a in self.audioNodes:
+            if not a.startFrame>=time[0] or not a.endFrame<=time[1]:
+                continue
+            audio_in_range.append(a)
+        if not asNodes:
+            return [a.audioNode for a in audio_in_range]
+        return audio_in_range
+       
     def getOverallRange(self):
         '''
         return the overall frame range of the given audioNodes (min/max)
@@ -256,7 +282,7 @@ class AudioHandler(object):
             return (minV,maxV)
         else:
             return (self.pro_audio.milliseconds_to_Timecode(minV), self.pro_audio.milliseconds_to_Timecode(maxV))
-         
+               
     def setTimelineToAudio(self, audioNodes=None):
         '''
         set the current TimeSlider to the extent of the given audioNodes
@@ -391,6 +417,7 @@ class AudioHandler(object):
         TODO: Deal with offset start and end data + silence
         '''
         status=True
+        failed=[]
         if not len(self.audioNodes)>1:
             raise ValueError('We need more than 1 audio node in order to compile')
 
@@ -405,7 +432,7 @@ class AudioHandler(object):
                     break
                 else:
                     raise IOError('Combined Audio path is already imported into Maya')
-            
+        
         frmrange = self.getOverallRange()
         neg_adjustment=0
         if frmrange[0] < 0:
@@ -416,10 +443,20 @@ class AudioHandler(object):
         baseTrack = audio_segment.AudioSegment.silent(duration)
 
         for audio in self.audioNodes:
-            sound = audio_segment.AudioSegment.from_wav(audio.path)
+            if not os.path.exists(audio.path):
+                log.warning('Audio file not found!  : "%s" == %s' % (audio.audioNode, audio.path))
+                status = False
+                failed.append(audio)
+                continue
+            #deal with any trimming of the audio node in Maya (thanks JanR)
+            sourceStart = cmds.getAttr(audio.audioNode + '.sourceStart')
+            sourceEnd = cmds.getAttr(audio.audioNode + '.sourceEnd')
+            sound = audio_segment.AudioSegment.from_wav(audio.path)[(sourceStart / r9General.getCurrentFPS()) * 1000:(sourceEnd / r9General.getCurrentFPS()) * 1000]
+            #sound = audio_segment.AudioSegment.from_wav(audio.path)
             if sound.sample_width not in [1, 2, 4]:
                 log.warning('24bit Audio is NOT supported in Python audioop lib!  : "%s" == %i' % (audio.audioNode, sound.sample_width))
                 status = False
+                failed.append(audio)
                 continue
             insertFrame = (audio.startFrame + abs(neg_adjustment))
             log.info('inserting sound : %s at %f adjusted to %f' % \
@@ -452,6 +489,9 @@ class AudioNode(object):
         
         if not filepath:
             if audioNode:
+                if issubclass(type(audioNode), AudioNode):
+                    #log.info('Audio is already an instatiated audioNode')
+                    self.audioNode = audioNode.audioNode
                 self.audioNode = audioNode
             else:
                 self.audioNode = audioSelected()
@@ -626,7 +666,19 @@ class AudioNode(object):
     def endTime(self, val):
         if self.isLoaded:
             cmds.setAttr('%s.offset' % self.audioNode, self.pro_audio.milliseconds_to_frame(val, framerate=None))
+            
+    @property
+    def offset(self):
+        '''
+        simply get the offset
+        '''
+        return cmds.getAttr('%s.offset' % self.audioNode)
     
+    @offset.setter
+    def offset(self, offset):
+        if self.isLoaded:
+            cmds.setAttr('%s.offset' % self.audioNode, offset)
+            
     # ---------------------------------------------------------------------------------
     # PRO_PACK : BWAV support ---
     # ---------------------------------------------------------------------------------
@@ -692,6 +744,13 @@ class AudioNode(object):
         else:
             raise r9Setup.ProPack_Error()
 
+    def isConnected_AudioGrp(self):
+        '''
+        PRO_PACK : is this audioNode connected to a Pro_ AudioGrp metaNode 
+        for asset management in the Pro systems
+        '''
+        return r9Meta.getConnectedMetaNodes(self.audioNode,mTypes='AudioGroup')
+        
     # ---------------------------------------------------------------------------------
     # General utils ---
     # ---------------------------------------------------------------------------------
@@ -702,7 +761,7 @@ class AudioNode(object):
         If the audionode is NOT loaded and we just have a pth check if that path exists
         '''
         if self.isLoaded:
-            return (self.audioNode and cmds.objExists(self.audioNode)) or False
+            return (self.audioNode and cmds.objExists(self.audioNode) and os.path.exists(self.path)) or False
         else:
             return os.path.exists(self.path)
     
@@ -722,7 +781,7 @@ class AudioNode(object):
             else:
                 cmds.setAttr('%s.offset' % self.audioNode, self.startFrame + offset)
     
-    def importAndActivate(self):
+    def importAndActivate(self, active=True):
         '''
         If self was instantiated with filepath then this will import that wav
         into Maya and activate it on the timeline. Note that if there is already
@@ -733,10 +792,11 @@ class AudioNode(object):
         >>> audio = r9Audio.AudioNode(filepath = 'c:/my_audio.wav')
         >>> audio.importAndActivate()
         '''
+        
         a=cmds.ls(type='audio')
         cmds.file(self.path, i=True, type='audio', options='o=0')
         b=cmds.ls(type='audio')
- 
+  
         if not a == b:
             self.audioNode = (list(set(a) ^ set(b))[0])
         else:
@@ -747,7 +807,8 @@ class AudioNode(object):
                 log.warning("can't find match audioNode for path : %s" % self.path)
                 return
         self.isLoaded=True
-        self.setActive()
+        if active:
+            self.setActive()
         
     def setActive(self):
         '''
@@ -936,9 +997,9 @@ class AudioToolsWrap(object):
             else:
                 raise IOError("selected Audio node is NOT a Bwav so can't be used as reference")
         else:
-            selectedNode = cmds.ls(sl=True)
+            selectedNode = cmds.ls(sl=True,l=True)
             if len(selectedNode)==1:
-                relativeTC = self.pro_audio.Timecode().getTimecode_from_node(selectedNode[0])
+                relativeTC = self.pro_audio.Timecode(selectedNode[0]).getTimecode_from_node()
                 actualframe = cmds.currentTime(q=True)
                 self.__cached_tc_offset = actualframe - self.pro_audio.timecode_to_frame(relativeTC)
                 cmds.text('bwavRefTC', edit=True,

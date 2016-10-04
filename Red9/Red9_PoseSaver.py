@@ -19,20 +19,20 @@ posePointCloud and the snapping core
 
 '''
 
-import os
-import time
-import getpass
-import logging
-
-import maya.cmds as cmds
-
 import Red9.startup.setup as r9Setup
 import Red9_CoreUtils as r9Core
 import Red9_General as r9General
 import Red9_AnimationUtils as r9Anim
 import Red9_Meta as r9Meta
-import Red9.packages.configobj as configobj
 
+import maya.cmds as cmds
+import os
+import Red9.packages.configobj as configobj
+import time
+import getpass
+
+
+import logging
 logging.basicConfig()
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
@@ -104,6 +104,14 @@ class DataMap(object):
     
     @property
     def metaPose(self):
+        '''
+        this flag adds in the additional MetaData block for all the matching code and info extraction.
+        True if self.metaRig is filled, self.settings.metaRig=True or self.metaPose=True
+        '''
+        if self.metaRig:
+            return True
+        if self.settings.metaRig:
+            return True
         return self.__metaPose
     
     @metaPose.setter
@@ -296,12 +304,14 @@ class DataMap(object):
             # this call is the specific collection of data for this node required by this map type
             self._collectNodeData(node, key)
 
-    def buildBlocks_fill(self, nodes):
+    def buildBlocks_fill(self, nodes=None):
         '''
         To Be Overloaded : What capture routines to run in order to build the DataMap up.
         Note that the self._buildBlock_poseDict(nodes) calls the self._collectNodeData per node
         as a way of gathering what info to be stored against each node.
         '''
+        if not nodes:
+            nodes=self.nodesToStore
         self.poseDict={}
         self._buildBlock_info()
         self._buildBlock_poseDict(nodes)
@@ -410,9 +420,9 @@ class DataMap(object):
                 raise IOError('File is Read-Only - write aborted : %s' % filepath)
         
         ConfigObj = configobj.ConfigObj(indent_type='\t')
+        ConfigObj['info']=self.infoDict
         ConfigObj['filterNode_settings']=self.settings.__dict__
         ConfigObj['poseData']=self.poseDict
-        ConfigObj['info']=self.infoDict
         if self.skeletonDict:
             ConfigObj['skeletonDict']=self.skeletonDict
         ConfigObj.filename = filepath
@@ -453,24 +463,11 @@ class DataMap(object):
         if not type(nodes)==list:
             nodes=[nodes]  # cast to list for consistency
             
-        if self.metaPose:
-            self.setMetaRig(nodes[0])
-            
         if self.filepath and not os.path.exists(self.filepath):
             raise StandardError('Given Path does not Exist')
-                
-        if self.filepath and self.hasFolderOverload():  # and useFilter:
-            self.nodesToLoad = self.getNodesFromFolderConfig(nodes, mode='load')
-        else:
-            self.nodesToLoad=self.getNodes(nodes)
-        if not self.nodesToLoad:
-            raise StandardError('Nothing selected or returned by the filter to load the pose onto')
-        
-        if self.filepath:
-            self._readPose(self.filepath)
-            log.info('Pose Read Successfully from : %s' % self.filepath)
-
+         
         if self.metaPose:
+            self.setMetaRig(nodes[0])
             print 'infoDict : ', self.infoDict
             print 'metaRig : ', self.metaRig
             if 'metaPose' in self.infoDict and self.metaRig:
@@ -481,6 +478,17 @@ class DataMap(object):
                     self.matchMethod = 'metaData'
             else:
                 log.debug('Warning, trying to load a NON metaPose to a MRig - switching to NameMatching')
+            
+        if self.filepath and self.hasFolderOverload():  # and useFilter:
+            self.nodesToLoad = self.getNodesFromFolderConfig(nodes, mode='load')
+        else:
+            self.nodesToLoad=self.getNodes(nodes)
+        if not self.nodesToLoad:
+            raise StandardError('Nothing selected or returned by the filter to load the pose onto')
+        
+        if self.filepath:
+            self._readPose(self.filepath)
+            log.info('Pose Read Successfully from : %s' % self.filepath)
         
         #fill the skip list, these attrs will be totally ignored by the code
         self.skipAttrs=self.getSkippedAttrs(nodes[0])
@@ -718,7 +726,7 @@ class PoseData(DataMap):
         '''
         self.skeletonDict={}
         if not rootJnt:
-            log.info('skeleton rootJnt joint was not found')
+            log.info('skeleton rootJnt joint was not found - [skeletonDict] pose section will not be propagated')
             return
         
         fn=r9Core.FilterNode(rootJnt)
@@ -730,16 +738,18 @@ class PoseData(DataMap):
             key=r9Core.nodeNameStrip(jnt)
             self.skeletonDict[key]={}
             self.skeletonDict[key]['attrs']={}
-            for attr in ['translateX','translateY','translateZ', 'rotateX','rotateY','rotateZ']:
+            for attr in ['translateX','translateY','translateZ', 'rotateX','rotateY','rotateZ','jointOrientX','jointOrientY','jointOrientZ']:
                 try:
                     self.skeletonDict[key]['attrs'][attr]=cmds.getAttr('%s.%s' % (jnt,attr))
                 except:
                     log.debug('%s : attr is invalid in this instance' % attr)
 
-    def buildBlocks_fill(self, nodes):
+    def buildBlocks_fill(self, nodes=None):
         '''
         What capture routines to run in order to build the poseDict data
         '''
+        if not nodes:
+            nodes=self.nodesToStore
         self.poseDict={}
         self._buildBlock_info()
         self._buildBlock_poseDict(nodes)
@@ -859,7 +869,8 @@ class PoseData(DataMap):
         :param percent: percentage of the pose to apply, used by the poseBlender in the UIs
         '''
         
-        if relativePose and not cmds.ls(sl=True):
+        objs=cmds.ls(sl=True, l=True)
+        if relativePose and not objs:
             raise StandardError('Nothing selected to align Relative Pose too')
         if not type(nodes)==list:
             nodes=[nodes]  # cast to list for consistency
@@ -889,7 +900,7 @@ class PoseData(DataMap):
                     self.nodesToLoad.reverse()
                     
                 #setup the PosePointCloud -------------------------------------------------
-                reference=cmds.ls(sl=True,l=True)[0]
+                reference=objs[0]
                 self.PosePointCloud=PosePointCloud(self.nodesToLoad)
                 self.PosePointCloud.buildOffsetCloud(reference, raw=True)
                 resetCache=[cmds.getAttr('%s.translate' % self.PosePointCloud.posePointRoot),
@@ -953,6 +964,9 @@ class PoseData(DataMap):
                 self.PosePointCloud.snapNodestoPosePnts()
                 self.PosePointCloud.delete()
                 cmds.select(reference)
+            else:
+                if objs:
+                    cmds.select(objs)
 
 
 class PosePointCloud(object):
@@ -1022,9 +1036,11 @@ class PosePointCloud(object):
         hierarchy and is designed for overloading if required.
         '''
         if self.settings.filterIsActive():
+            __searchPattern_cached=self.settings.searchPattern
             if self.prioritySnapOnly:
                 self.settings.searchPattern=self.settings.filterPriority
             self.inputNodes=r9Core.FilterNode(self.inputNodes, self.settings).ProcessFilter()
+            self.settings.searchPattern=__searchPattern_cached  # restore the settings back!!
             
         # auto logic for MetaRig - go find the renderMeshes wired to the systems
         if self.settings.metaRig:
@@ -1091,14 +1107,15 @@ class PosePointCloud(object):
         
         self.deleteCurrentInstances()
 
-        self.posePointRoot=cmds.ls(cmds.spaceLocator(name='posePointCloud'),l=True)[0]
+        self.posePointRoot=cmds.ls(cmds.spaceLocator(name='posePointCloud'),sl=True,l=True)[0]
+        print self.posePointRoot
         cmds.setAttr('%s.visibility' % self.posePointRoot, self.isVisible)
-       
-        ppcShape=cmds.listRelatives(self.posePointRoot,type='shape')[0]
+
+        ppcShape=cmds.listRelatives(self.posePointRoot,type='shape',f=True)[0]
         cmds.setAttr("%s.localScaleZ" % ppcShape, 30)
         cmds.setAttr("%s.localScaleX" % ppcShape, 30)
         cmds.setAttr("%s.localScaleY" % ppcShape, 30)
-        
+
         if rootReference:
             self.rootReference=rootReference
         
@@ -1199,11 +1216,13 @@ class PoseCompare(object):
     >>> #build an mPose object and fill the internal poseDict
     >>> mPoseA=r9Pose.PoseData()
     >>> mPoseA.metaPose=True
-    >>> mPoseA.buildInternalPoseData(cmds.ls(sl=True))
+    >>> mPoseA.buildDataMap(cmds.ls(sl=True))
+    >>> mPoseA.buildBlocks_fill()
     >>> 
     >>> mPoseB=r9Pose.PoseData()
     >>> mPoseB.metaPose=True
-    >>> mPoseB.buildInternalPoseData(cmds.ls(sl=True))
+    >>> mPoseB.buildDataMap(cmds.ls(sl=True))
+    >>> mPoseB.buildBlocks_fill()
     >>> 
     >>> compare=r9Pose.PoseCompare(mPoseA,mPoseB)
     >>> 
@@ -1216,7 +1235,7 @@ class PoseCompare(object):
     >>> compare.fails['failedAttrs']
     '''
     def __init__(self, currentPose, referencePose, angularTolerance=0.1, linearTolerance=0.01, 
-                 compareDict='poseDict', filterMap=[], ignoreBlocks=[]):
+                 compareDict='poseDict', filterMap=[], ignoreBlocks=[], ignoreStrings=[]):
         '''
         Make sure we have 2 PoseData objects to compare
         :param currentPose: either a PoseData object or a valid pose file
@@ -1226,8 +1245,10 @@ class PoseCompare(object):
         :param linearTolerance: the tolerance used to check all other float attrs
         :param compareDict: the internal main dict in the pose file to compare the data with
         :param filterMap: if given this is used as a high level filter, only matching nodes get compared
-            others get skipped. Good for passing in a mater core skeleton to test whilst ignoring extra nodes
+            others get skipped. Good for passing in a master core skeleton to test whilst ignoring extra nodes
         :param ignoreBlocks: allows the given failure blocks to be ignored. We mainly use this for ['missingKeys']
+        :param ignoreStrings: allows you to pass in a list of strings, if any of the keys in the data contain
+             that string it will be skipped, note this is a partial match so you can pass in wildcard searches ['_','_end']
         
         .. note::
             In the new setup if the skeletonRoot jnt is found we add a whole
@@ -1241,13 +1262,14 @@ class PoseCompare(object):
         self.status = False
         self.compareDict = compareDict
         self.angularTolerance = angularTolerance
-        self.angularAttrs = ['rotateX', 'rotateY', 'rotateZ']
+        self.angularAttrs = ['rotateX', 'rotateY', 'rotateZ', 'jointOrientX', 'jointOrientY', 'jointOrientZ']
         
         self.linearTolerance = linearTolerance
         self.linearAttrs = ['translateX', 'translateY', 'translateZ']
         
         self.filterMap = filterMap
         self.ignoreBlocks = ignoreBlocks
+        self.ignoreStrings = ignoreStrings
         
         if isinstance(currentPose, PoseData):
             self.currentPose = currentPose
@@ -1295,6 +1317,10 @@ class PoseCompare(object):
             if self.filterMap and not key in self.filterMap:
                 log.debug('node not in filterMap - skipping key %s' % key)
                 continue
+            if self.ignoreStrings:
+                for istr in self.ignoreStrings:
+                    if istr in key:
+                        continue
             if key in referenceDic:
                 referenceAttrBlock = referenceDic[key]
             else:
@@ -1325,6 +1351,7 @@ class PoseCompare(object):
                     continue
                 
                 # test the attrs value matches
+                #print 'key : ', key, 'Value :  ', value
                 value = r9Core.decodeString(value)  # decode as this may be a configObj
                 refValue = r9Core.decodeString(referenceAttrBlock['attrs'][attr])  # decode as this may be a configObj
                 
