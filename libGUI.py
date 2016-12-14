@@ -313,14 +313,14 @@ class ObjManagerGUI(ManagerGUI):
             if libGeo.multiple_top_nodes_exists():
                 warnWindow.setText("Multiple top groups found")
                 warnWindow.setWindowTitle("Multiple Top Groups")
-                detailed = """There are multiple top groups in the scene. The tool would perform better if you merge the groups.
-Otherwise this tool would work on the first top group which is determined by Maya."""
+                detailed = ("There are multiple top groups in the scene. "
+                            "The tool would perform better if you merge the groups. "
+                            "Otherwise this tool would work on the first top group which is determined by Maya.")
                 warnWindow.setDetailedText(detailed)
                 warnWindow.exec_()
                 return
 
             errorInfo = libGeo.find_heirachy_errors(topNode)
-            detailed_text = ""
 
             if errorInfo["Namespace Transform"]:
                 warnWindow.setText("Namespace transform found")

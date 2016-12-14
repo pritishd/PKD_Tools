@@ -3,9 +3,7 @@
 @brief Some maths related functions
 '''
 
-
 from fractions import Fraction
-
 
 def normalise_range(originalVals, newNormal, roundValue=3):
     """

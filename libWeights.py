@@ -106,9 +106,9 @@ class Weights(object):
     def _error_checks_(self):
         '''Check that the folder and deformer type is defined'''
         if self.folder is None:
-            raise Exception("No Path Defined")
+            raise RuntimeError("No Path Defined")
         if self.deformer is None:
-            raise Exception("No Defomer Defined")
+            raise RuntimeError("No Defomer Defined")
 
     def _get_target_defomer_(self):
         '''Define the current deformer property'''
@@ -137,7 +137,7 @@ class Weights(object):
         node = pm.createNode(deformerString)
         # Make sure the deformer type is a supported by Maya
         if node.type() == "unknown":
-            raise Exception("Unknown Deformer:" + deformerString)
+            raise RuntimeError("Unknown Deformer:" + deformerString)
         self._deformer_ = deformerString
         pm.delete(node)
         if sel:
@@ -152,7 +152,7 @@ class Weights(object):
     def _set_file_(self, fileName):
         # Check the file ends with xml file
         if not libFile.has_extension(fileName, "xml"):
-            raise Exception("Weight file must end with .xml extension")
+            raise RuntimeError("Weight file must end with .xml extension")
         # Set the name of data xml file that is linked to the geo
         self._file_ = fileName
 
@@ -169,9 +169,9 @@ class Weights(object):
                 # Save as maya compliant path
                 self._folder_ = libFile.linux_path(folder)
             else:
-                raise Exception("Not a folder: %s" % folder)
+                raise RuntimeError("Not a folder: %s" % folder)
         else:
-            raise Exception("Folder does not exists: %s" % folder)
+            raise RuntimeError("Folder does not exists: %s" % folder)
 
     def _create_deformers_(self):
         '''To be defined in the subclasses'''
@@ -183,7 +183,7 @@ class Weights(object):
         deformer = pm.PyNode(deformer)
         # Ensure that deformer processes belong to the deformer class
         if deformer.type() != self.deformer:
-            raise Exception("Deformer type mismatch")
+            raise RuntimeError("Deformer type mismatch")
         else:
             self._target_deformer_ = deformer
 
@@ -792,10 +792,6 @@ class WeightManager(object):
             return libUtilities.get_selected(stringMode=True, scriptEditorWarning=self.command_mode)
         else:
             return libXml.ConvertXmlToDict(self.info_file)["%sInfo" % self.deformer.capitalize()].keys()
-
-        # Return the parent folder of the info file
-        return
-
         # @endcond
 
 

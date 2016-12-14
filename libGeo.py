@@ -32,10 +32,10 @@ def multiple_top_nodes_exists():
     return len(topNodes) > 1
 
 
-def find_heirachy_errors(topNode):
-    """ Return a dictanary of lists with common heirachy errors
-    @param topNode The top node of a group
-    @return A dictonary of errors
+def find_hierachy_errors(topNode):
+    """ Return a dictanary of lists with common hierachy errors
+    @param topNode (pynode, string) The top node of a group
+    @return A dictionary of errors
     """
     duplicateTransform = []
     duplicateShapes = []
@@ -75,7 +75,7 @@ def find_heirachy_errors(topNode):
 
 def fix_duplicates_shapes(duplicateShapes=None):
     """ Attempt to fix duplicate shapes by renaming based on parent dags name
-    @param duplicateShapes list of pynodes with duplicated shapes
+    @param duplicateShapes (list) Pynodes with duplicated shapes
     """
     if not duplicateShapes:
         duplicateShapes = []
@@ -85,18 +85,18 @@ def fix_duplicates_shapes(duplicateShapes=None):
 
 
 class ObjManager(object):
-    """Class to manage obj import/export. This class also maintains heirachy and pivot information. However the heirachy must be
+    """Class to manage obj import/export. This class also maintains hierachy and pivot information. However the hierachy must be
     clean of any common issues such as duplicate transform name.
     @attention The obj plugin is loaded by default for safety whenever this class is initialised"""
 
     def __init__(self):
         """@property new_scene
-        @brief Is the obj heirachy being imported into a new scene. Useful if you want to start from scratch
+        @brief Is the obj hierachy being imported into a new scene. Useful if you want to start from scratch
         @property cleansing_mode
         @brief In cleansing the mode the original geometery is deleted as soon as it is exported. This way any
         shader information is not lost
-        @property heirachy_file_info
-        @brief The file which contains all the heirachy information such as structure and pivots
+        @property hierachy_file_info
+        @brief The file which contains all the hierachy information such as structure and pivots
         @property geo_file_info
         @brief The file which contains information about all geo that was exported and it's current path
         @property progress_tracker
@@ -114,27 +114,27 @@ class ObjManager(object):
         self.current_target = None
         self.current_mode = ""
 
-    def write_heirachy_data(self):
-        """Write the current scale and rotate pivots of all the transform in the heirachy to a json file"""
-        # Get heirachy data
+    def write_hierarchy_data(self):
+        """Write the current scale and rotate pivots of all the transform in the hierachy to a json file"""
+        # Get hierachy data
 
         hierachy = []
         pivots = {}
         for transform in pm.listRelatives(self.top_node, type="transform", ad=1, ni=True) + [pm.PyNode(self.top_node)]:
-            # Get the long name to build a proper heirachy
+            # Get the long name to build a proper hierachy
             hierachy.append(transform.longName())
             pivots[transform.name()] = {
                 "RotatePivot": list(transform.getRotatePivot()),
                 "ScalePivot": list(transform.getScalePivot())
             }
 
-        # Sort the heirachy by string size
+        # Sort the hierachy by string size
         hierachy.sort(key=len)
-        info = {"heirachy": hierachy, "pivots": pivots}
-        self.heirachy_file_info = info
+        info = {"hierachy": hierachy, "pivots": pivots}
+        self.hierachy_file_info = info
 
-    def export_heirachy_obj(self):
-        """Export the individual meshes in the heirachy"""
+    def export_hierarchy_obj(self):
+        """Export the individual meshes in the hierachy"""
         fileInfo = {}
         # Reverse the geo list so that the deepest geo is deleted first in case there is a geo inside geo
         geo_list = self.geo_list
@@ -165,7 +165,7 @@ class ObjManager(object):
         # Write the geo file_info
         self.geo_file_info = fileInfo
 
-    def import_heirachy_geo(self):
+    def import_hierachy_geo(self):
         """Import all the obj objects"""
         fileInfo = self.geo_file_info
         for self.current_target in fileInfo.keys():
@@ -197,12 +197,12 @@ class ObjManager(object):
                         pm.refresh()
             self.update_progress()
 
-    def rebuild_heirachy(self):
-        """ Rebuild the heirachy by reading the heirachy info file"""
-        read_info = self.heirachy_file_info
+    def rebuild_hierachy(self):
+        """ Rebuild the hierachy by reading the hierachy info file"""
+        read_info = self.hierachy_file_info
 
-        # Rebuild the heirachy
-        for transform in read_info["heirachy"]:
+        # Rebuild the hierachy
+        for transform in read_info["hierachy"]:
             # Split the names
             splitNames = transform.split("|")
 
@@ -224,7 +224,7 @@ class ObjManager(object):
                 # Set the parent name
                 target.setParent(parent)
 
-            # Set the heirachy
+            # Set the hierachy
             pm.setAttr(target.scalePivot, read_info["pivots"][target.name()]["ScalePivot"])
             pm.setAttr(target.rotatePivot, read_info["pivots"][target.name()]["RotatePivot"])
 
@@ -248,19 +248,19 @@ class ObjManager(object):
         topNode.translate.unlock()
 
     def export_all(self):
-        """Export All Geo and heirachy info"""
+        """Export All Geo and hierachy info"""
         libUtilities.freeze_transform(self.top_node)
         self.current_mode = "Export"
-        self.write_heirachy_data()
-        self.export_heirachy_obj()
+        self.write_hierarchy_data()
+        self.export_hierarchy_obj()
 
     def import_all(self):
-        """Import All Geo and heirachy info"""
+        """Import All Geo and hierachy info"""
         self.current_mode = "Import"
-        self.import_heirachy_geo()
+        self.import_hierachy_geo()
         pm.select(cl=1)
         mel.eval("FrameAll;")
-        self.rebuild_heirachy()
+        self.rebuild_hierachy()
         return self._geo_list_
 
     def update_progress(self):
@@ -271,7 +271,7 @@ class ObjManager(object):
             self.progress_tracker.update()
 
 
-            # @cond DOXYGEN_SHOULD_SKIP_THIS
+    # @cond DOXYGEN_SHOULD_SKIP_THIS
 
     @property
     def top_node(self):
@@ -311,8 +311,8 @@ class ObjManager(object):
 
     @property
     def datapath(self):
-        """File path to the json file which contains the heirachy info."""
-        return libFile.linux_path(libFile.join(self.export_dir, "heirachy_info.json"))
+        """File path to the json file which contains the hierachy info."""
+        return libFile.linux_path(libFile.join(self.export_dir, "hierachy_info.json"))
 
     @property
     def geoListPath(self):
@@ -323,7 +323,7 @@ class ObjManager(object):
     def geo_file_info(self):
         """Read the geo path info from a json file"""
         if not libFile.exists(self.geoListPath):
-            raise Exception("No geo has been exported to this path")
+            raise RuntimeError("No geo has been exported to this path")
         return libFile.load_json(self.geoListPath)
 
     @geo_file_info.setter
@@ -333,29 +333,29 @@ class ObjManager(object):
         libFile.write_json(self.geoListPath, path_info)
 
     @property
-    def heirachy_file_info(self):
-        """Read the heirachy info from a json file"""
+    def hierachy_file_info(self):
+        """Read the hierachy info from a json file"""
         if not libFile.exists(self.datapath):
-            raise Exception("No geo has been exported to this path")
+            raise RuntimeError("No geo has been exported to this path")
         return libFile.load_json(self.datapath)
 
-    @heirachy_file_info.setter
-    def heirachy_file_info(self, heirachy_info):
-        """Write the heirachy info into a json file"""
-        libFile.write_json(self.datapath, heirachy_info)
-        # @endcond
+    @hierachy_file_info.setter
+    def hierachy_file_info(self, hierachy_info):
+        """Write the hierachy info into a json file"""
+        libFile.write_json(self.datapath, hierachy_info)
+    # @endcond
 
 
 def convert_joint_to_cluster(targetGeo, skipList=[]):
     """
     Convert a skin cluster to a cluster based setup on a target geometery
-    @param targetGeo: the geometery which has the skin cluster
-    @param skipList: any joints which should not processed such as a base joint
-    @return A dictonary of cluster with the name of the joints as keys
+    @param targetGeo (string/pynode) The geometry which has the skin cluster
+    @param skipList (list): Any joints which should not processed such as a base joint
+    @return A dictionary of cluster with the name of the joints as keys
 
     """
     # Convert to PyNode
-    targetGeo = pm.PyNode(targetGeo)
+    targetGeo = libUtilities.force_pynode(targetGeo)
     skin = libUtilities.get_target_defomer(targetGeo, "skinCluster")
 
     # Create the dictionary
@@ -372,7 +372,7 @@ def convert_joint_to_cluster(targetGeo, skipList=[]):
         # Get the vertex affected and the weight
         vertZip, weightList = skin.getPointsAffectedByInfluence(jnt)
         if not vertZip:
-            raise Exception("Current Joint Has No Vertices:%s" % jnt)
+            raise RuntimeError("Current Joint Has No Vertices:%s" % jnt)
         pm.select(vertZip)
 
         # Iterate through selection and decompress vertic group  into individual index
@@ -486,8 +486,8 @@ def createFollicle(position, geo=None):
     """
     Create a follice for a position on a target geometery. Converted to Pymel version of the following script
     http://www.tommasosanguigni.it/blog/function-createfollicle/
-    @param position: The target position
-    @param geo: The target geo
+    @param position (vector) The target position
+    @param geo (pynode) The target geo
     @return: follicle transform
     """
     if geo.getShape().type() not in ["nurbsSurface", "mesh"]:
@@ -541,9 +541,9 @@ def createFollicle(position, geo=None):
 def createStickyControl(position, geo, name):
     """
     Temp setup to create sticky control at position for given geometery
-    @param position: The position in worldspace where this will created
-    @param geo: The target geomentery
-    @param name: The name given to this geometery
+    @param position (vector) The position in worldspace where this will created
+    @param geo (pynode) The target geomentery
+    @param name (string) The name given to this geometery
     @return: A ctrl object setup
     """
     # Create space locator
