@@ -9,12 +9,13 @@ from maya import cmds, mel
 from pymel.internal.plogging import pymelLogger as pyLog
 
 
-def _force_pynode_(node):
+def force_pynode(node):
     """
     Force the node to be pynode
     @param node: This could be a string or pynode
     @return: The converted pynode
     """
+    # Check that target is a pynode
     if not isinstance(node, pm.PyNode):
         node = pm.PyNode(node)
     return node
@@ -58,7 +59,7 @@ def reverse_attribute(attribute, name=""):
     """
 
     # PyNode the attribute
-    attribute = _force_pynode_(attribute)
+    attribute = force_pynode(attribute)
     reverse = pm.createNode("reverse")
     attribute >> reverse.inputX
     if name:
@@ -128,7 +129,7 @@ def addBoolAttr(target, label, sn=""):
 def addStrAttr(target, attrName, sn=""):
     """
     Add a string attribute on a transform node
-    @param target: Tranform node
+    @param target: Transform node
     @param attrName: The attribute name
     @param sn: The shortname of the atttribute
     """
@@ -196,8 +197,8 @@ def snap(target, source, translate=True, rotate=True):
     @param rotate: Should we do the rotation?
     @return:
     """
-    target = _force_pynode_(target)
-    source = _force_pynode_(source)
+    target = force_pynode(target)
+    source = force_pynode(source)
     if translate:
         # Set the world space translation
         target.setTranslation(get_world_space_pos(source), space="world")
@@ -238,8 +239,8 @@ def snap_pivot(target, source):
     Snap the pivot of source tranform to target transform
     """
 
-    target = _force_pynode_(target)
-    source = _force_pynode_(source)
+    target = force_pynode(target)
+    source = force_pynode(source)
 
     target.scalePivot.set(source.scalePivot.get())
     target.rotatePivot.set(source.rotatePivot.get())
@@ -270,7 +271,7 @@ def setDrivenKey(driverInfo, drivenInfo):
     """
 
     if type(driverInfo) != dict or type(drivenInfo) != dict:
-        raise Exception("Not a dictInfo")
+        raise RuntimeError("Not a dictInfo")
 
     driver = driverInfo.keys()[0]
     driven = drivenInfo.keys()[0]
@@ -315,8 +316,8 @@ def skinGeo(target, jointInfluences, **kwargs):
     @param kwargs (dict) Any other keyword arguement that needs to be pass on to the maya command
     @return pynode of the skincluster that is made
     """
-    target = _force_pynode_(target)
-    jointInfluences = [_force_pynode_(inf) for inf in jointInfluences]
+    target = force_pynode(target)
+    jointInfluences = [force_pynode(inf) for inf in jointInfluences]
 
     # Apply Defomers
     jnts = []
@@ -404,8 +405,8 @@ def transfer_shape(source, target, snapToTarget=True):
     @param snapToTarget: Should be we reparent with world space or object space
     @return:
     """
-    source = _force_pynode_(source)
-    target = _force_pynode_(target)
+    source = force_pynode(source)
+    target = force_pynode(target)
     if snapToTarget:
         snap(source, target)
         pm.makeIdentity(source, apply=1)
@@ -444,7 +445,7 @@ def remove_cv_from_deformer(deformerSet, vertices):
     """
     pyVert = []
     for item in vertices:
-        pyVert.append(_force_pynode_(item))
+        pyVert.append(force_pynode(item))
 
     for item in pyVert:
         mel.eval("sets -rm %s %s" % (deformerSet, item))
@@ -528,7 +529,7 @@ def print_list(listItems):
     @param listItems (list) the items that needs to be printed
     """
     if type(listItems) != list:
-        raise Exception("Not a list datatype")
+        raise RuntimeError("Not a list datatype")
     else:
         for item in listItems:
             print item
@@ -549,7 +550,7 @@ def pyList(listItems):
     @return list of pynodes
 
     """
-    return [_force_pynode_(node) for node in listItems]
+    return [force_pynode(node) for node in listItems]
 
 
 def numberList(listItems):
@@ -643,7 +644,7 @@ def get_default_lock_status(node):
     @param node: The pynode that is being evaluated
     @return: Dictonary of the various attributes lock status
     """
-    node = _force_pynode_(node)
+    node = force_pynode(node)
     lockStatus = {}
     for attr in _default_attibute_list_():
         lockStatus[attr] = node.attr(attr).isLocked()
@@ -656,7 +657,7 @@ def set_lock_status(node, lockStatusDict):
     @param node: The pynode that is being evaluated
     @param lockStatusDict: Dictonary of the various attributes lock status
     """
-    node = _force_pynode_(node)
+    node = force_pynode(node)
     for attr in lockStatusDict:
         if lockStatusDict[attr]:
             node.attr(attr).lock()
@@ -668,7 +669,7 @@ def unlock_default_attribute(node):
     """
     Unlock the the default status of a node
     """
-    node = _force_pynode_(node)
+    node = force_pynode(node)
     for attr in _default_attibute_list_():
         node.attr(attr).unlock()
 
@@ -680,7 +681,7 @@ def freeze_transform(transform):
     """
     # Get the current lock status of the default attributes
     defaultLockStatus = get_default_lock_status(transform)
-    transform = _force_pynode_(transform)
+    transform = force_pynode(transform)
     childrenLockStatus = {}
     # Check to see if there are any children
     if transform.getChildren(ad=1, type="transform"):
@@ -714,7 +715,7 @@ def lock_default_attribute(transform):
     """Lock all the translation attr
     @param transform: The transform node that is being evaluated
     """
-    node = _force_pynode_(transform)
+    node = force_pynode(transform)
     for attr in _default_attibute_list_():
         node.attr(attr).set(lock=True, keyable=False, channelBox=False)
 
@@ -723,7 +724,7 @@ def lock_translate(transform):
     """Lock all the position attr
     @param transform: The transform node that is being evaluated
     """
-    node = _force_pynode_(transform)
+    node = force_pynode(transform)
     for attr in _translate_attribute_list_():
         node.attr(attr).set(lock=True, keyable=False, channelBox=False)
 
@@ -732,7 +733,7 @@ def lock_rotate(transform):
     """Lock all the rotation attr
     @param transform: The transform node that is being evaluated
     """
-    node = _force_pynode_(transform)
+    node = force_pynode(transform)
     for attr in _rotate_attribute_list_():
         node.attr(attr).set(lock=True, keyable=False, channelBox=False)
 
@@ -741,7 +742,7 @@ def lock_scale(transform):
     """Lock all the scale attr
     @param transform: The transform node that is being evaluated
     """
-    node = _force_pynode_(transform)
+    node = force_pynode(transform)
     for attr in _scale_attribute_list_():
         node.attr(attr).set(lock=True, keyable=False, channelBox=False)
 
