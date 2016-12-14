@@ -20,7 +20,7 @@ def linux_path(windowsPath):
     # Result: 'c:/myDir/mayaFile.ma' #
     @endcode
 
-    @param windowsPath (string) folder or file path
+    @param windowsPath (string) Folder or file path
     @return maya compliant file path
 
     """
@@ -34,7 +34,7 @@ def windows_path(linuxPath):
     # Result: 'c:\\myDir\\mayaFile.ma' #
     @endcode
 
-    @param linuxPath (string) folder or file path
+    @param linuxPath (string) Folder or file path
     @return return a windows based file path
     """
     return str(linuxPath.replace("/", "\\"))
@@ -102,7 +102,7 @@ def safePath(path):
 def folder_check(dirPath):
     """
     Check the existence of a folder. If not, create the necessary folder tree
-    @param dirPath (string) folder path
+    @param dirPath (string) Folder path
     @return same folder path with the '/' at the end
     """
     dirPath = linux_path(dirPath)
@@ -114,7 +114,7 @@ def folder_check(dirPath):
 def folder_check_advanced(folder):
     """
     Advanced Folder Checking. Raise exception in case an folder type is not given or it does not exists
-    @param folder (string) folder path
+    @param folder (string) Folder path
     @return folder (string) maya compliant path
     """
     # Get the root folder from the user
@@ -125,14 +125,14 @@ def folder_check_advanced(folder):
             # Save as maya compliant path
             return safePath(folder)
         else:
-            raise Exception("Not a folder: " + folder)
+            raise RuntimeError("Not a folder: " + folder)
     else:
-        raise Exception("Folder does not exists: " + folder)
+        raise RuntimeError("Folder does not exists: " + folder)
 
 
 def get_parent_folder(filePath):
     """Get the parent folder for the path.
-    @param filePath (string)
+    @param filePath (string) The path that is being queried
     @return The parent folder of the path
 
     """
@@ -142,7 +142,7 @@ def get_parent_folder(filePath):
 def join(folder, fileName):
     """Return a Maya Compliant File Path
     @param folder (string) The target folder
-    @param fileName (string) the File name
+    @param fileName (string) The file name
     @return Joined maya compliant path
     """
     return linux_path(os.path.join(folder, fileName))
@@ -206,7 +206,7 @@ def ma_export(path):
 
 def get_file_folder_extension(path):
     """Return a tuple of split paths
-    @param path (string) path which needs to be evaluated
+    @param path (string) Path which needs to be evaluated
     """
     fileOnlyName = os.path.basename(path)
     # Filter out the extension
@@ -218,14 +218,14 @@ def get_file_folder_extension(path):
 
 def copyfile(source, target):
     """Convenience method tp copy file from one location to another
-    @param source (string)for the source file
-    @param target (string) path for the destination file
+    @param source (string) Path for the source file
+    @param target (string) Path for the destination file
     """
     shutil.copy(source, target)
 
 def delete_folder_content(folderPath):
     """Delete all the contents in folder path
-    @param folderPath (string) folder whose content needs to be deleted
+    @param folderPath (string) Folder whose content needs to be deleted
     """
     if exists(folderPath):
         for root, dirs, files in os.walk(folderPath):
@@ -246,7 +246,7 @@ def open_folder_in_windows_explorer(path):
 def current_working_directory():
     """
     Returns the location where this module is being excecuted
-    @return (string) path on the drive.
+    @return (string) Path on the drive.
     """
     currentPath = os.path.normpath(os.path.dirname(inspect.getfile(inspect.currentframe())))
     return currentPath
@@ -255,7 +255,7 @@ def current_working_directory():
 def search_pattern_in_folder(searchPattern, folder):
     """
     Search for certain files in a folder based on a pattern
-    @param searchPattern (string) search pattern that is queried
+    @param searchPattern (string) Search pattern that is queried
     @param folder (string) The target folder
     @return list of file names that matches the pattern
     """
@@ -268,7 +268,7 @@ def search_pattern_in_folder(searchPattern, folder):
 
 def load_json(path):
     """Read json information
-    @param path The path to the json file"""
+    @param path (string) The path to the json file"""
 
     with open(path, 'r') as f:
         return json.load(f)
@@ -276,8 +276,8 @@ def load_json(path):
 
 def write_json(path, data):
     """Write json information
-    @param path The path to the json file
-    @param data The information that is written
+    @param path (string) The path to the json file
+    @param data (string) The information that is written
     """
     with open(path, 'w') as f:
         json.dump(data, f, indent=4)
@@ -285,6 +285,6 @@ def write_json(path, data):
 
 def remove(path):
     """Delete a file
-    @param path Delete filepath
+    @param path (string) Delete filepath
     """
     os.remove(path)
