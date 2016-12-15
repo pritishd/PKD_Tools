@@ -1,7 +1,8 @@
 var searchData=
 [
-  ['scene_5fcheck_5fbutton',['scene_check_button',['../class_p_k_d___tools_1_1lib_g_u_i_1_1_obj_manager_g_u_i.html#a3cd6d6ee8b65e96e5d43f74147801d88',1,'PKD_Tools::libGUI::ObjManagerGUI']]],
-  ['statechanged',['stateChanged',['../class_p_k_d___tools_1_1lib_py_side_1_1_checkable_tab_widget.html#a6c9e675cde1db6d8d168b0f394f1d365',1,'PKD_Tools::libPySide::CheckableTabWidget']]],
-  ['suite',['suite',['../class_p_k_d___tools_1_1lib_unit_tests_1_1_batch_test.html#af129a644a9933612557c9f702c9fd2fc',1,'PKD_Tools::libUnitTests::BatchTest']]],
-  ['systemtype',['systemType',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_meta_rig.html#af4f28eb1e52f20776dd532338c66ad89',1,'PKD_Tools::Rigging::core::MetaRig']]]
+  ['returnnodesasmeta',['returnNodesAsMeta',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_meta_rig.html#a55d04b6429b31dde68bd344c50d871ae',1,'PKD_Tools::Rigging::core::MetaRig']]],
+  ['rigtype',['rigType',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_meta_rig.html#a35bf75d48f7af677cacada3dad6e379c',1,'PKD_Tools::Rigging::core::MetaRig']]],
+  ['rollattrs',['rollAttrs',['../class_p_k_d___tools_1_1_rigging_1_1limb_1_1_hoof.html#a9f44f37da4bfce5abe8dbe47772310a3',1,'PKD_Tools.Rigging.limb.Hoof.rollAttrs()'],['../class_p_k_d___tools_1_1_rigging_1_1limb_1_1_foot.html#a54bcdbc3481eeb78e53c010759e1f404',1,'PKD_Tools.Rigging.limb.Foot.rollAttrs()'],['../class_p_k_d___tools_1_1_rigging_1_1limb_1_1_paw.html#ae0fec975444dfcd0736ab4b8e25d90b5',1,'PKD_Tools.Rigging.limb.Paw.rollAttrs()']]],
+  ['rollsystem',['RollSystem',['../class_p_k_d___tools_1_1_rigging_1_1limb_1_1_hoof.html#a9ee3b82233ef9aab8254223e0763846f',1,'PKD_Tools::Rigging::limb::Hoof']]],
+  ['rotateorder',['rotateOrder',['../class_p_k_d___tools_1_1_rigging_1_1parts_1_1_rig.html#ac44d8dfac484197de7acb433f20aa32d',1,'PKD_Tools::Rigging::parts::Rig']]]
 ];

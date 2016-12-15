@@ -6,7 +6,46 @@ var hierarchy =
           [ "PKD_Tools.Rigging.core.Ctrl", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_ctrl.html", null ],
           [ "PKD_Tools.Rigging.core.Joint", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_joint.html", null ],
           [ "PKD_Tools.Rigging.core.SpaceLocator", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_space_locator.html", null ],
-          [ "PKD_Tools.Rigging.core.SubSystem", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_sub_system.html", null ]
+          [ "PKD_Tools.Rigging.core.SubSystem", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_sub_system.html", [
+            [ "PKD_Tools.Rigging.parts.Rig", "class_p_k_d___tools_1_1_rigging_1_1parts_1_1_rig.html", [
+              [ "PKD_Tools.Rigging.parts.Blender", "class_p_k_d___tools_1_1_rigging_1_1parts_1_1_blender.html", null ],
+              [ "PKD_Tools.Rigging.parts.Generic", "class_p_k_d___tools_1_1_rigging_1_1parts_1_1_generic.html", [
+                [ "PKD_Tools.Rigging.parts.FK", "class_p_k_d___tools_1_1_rigging_1_1parts_1_1_f_k.html", [
+                  [ "PKD_Tools.Rigging.parts.Hand", "class_p_k_d___tools_1_1_rigging_1_1parts_1_1_hand.html", null ],
+                  [ "PKD_Tools.Rigging.parts.Quad", "class_p_k_d___tools_1_1_rigging_1_1parts_1_1_quad.html", null ]
+                ] ]
+              ] ],
+              [ "PKD_Tools.Rigging.parts.Ik", "class_p_k_d___tools_1_1_rigging_1_1parts_1_1_ik.html", [
+                [ "PKD_Tools.Rigging.limb.LimbIk", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_limb_ik.html", [
+                  [ "PKD_Tools.Rigging.limb.Arm", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_arm.html", [
+                    [ "PKD_Tools.Rigging.limb.ArmFoot", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_arm_foot.html", null ],
+                    [ "PKD_Tools.Rigging.limb.ArmHand", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_arm_hand.html", null ],
+                    [ "PKD_Tools.Rigging.limb.ArmHoof", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_arm_hoof.html", null ],
+                    [ "PKD_Tools.Rigging.limb.ArmPaw", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_arm_paw.html", null ],
+                    [ "PKD_Tools.Rigging.limb.Hip", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_hip.html", [
+                      [ "PKD_Tools.Rigging.limb.HipFoot", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_hip_foot.html", null ],
+                      [ "PKD_Tools.Rigging.limb.HipHand", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_hip_hand.html", null ],
+                      [ "PKD_Tools.Rigging.limb.HipHoof", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_hip_hoof.html", null ],
+                      [ "PKD_Tools.Rigging.limb.HipPaw", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_hip_paw.html", null ]
+                    ] ]
+                  ] ],
+                  [ "PKD_Tools.Rigging.limb.Quad", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_quad.html", [
+                    [ "PKD_Tools.Rigging.limb.QuadFoot", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_quad_foot.html", null ],
+                    [ "PKD_Tools.Rigging.limb.QuadHand", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_quad_hand.html", null ],
+                    [ "PKD_Tools.Rigging.limb.QuadHoof", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_quad_hoof.html", null ],
+                    [ "PKD_Tools.Rigging.limb.QuadPaw", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_quad_paw.html", null ]
+                  ] ]
+                ] ],
+                [ "PKD_Tools.Rigging.spine.IkSpine", "class_p_k_d___tools_1_1_rigging_1_1spine_1_1_ik_spine.html", [
+                  [ "PKD_Tools.Rigging.spine.SimpleSpine", "class_p_k_d___tools_1_1_rigging_1_1spine_1_1_simple_spine.html", null ],
+                  [ "PKD_Tools.Rigging.spine.SubControlSpine", "class_p_k_d___tools_1_1_rigging_1_1spine_1_1_sub_control_spine.html", [
+                    [ "PKD_Tools.Rigging.spine.ComplexSpine", "class_p_k_d___tools_1_1_rigging_1_1spine_1_1_complex_spine.html", null ],
+                    [ "PKD_Tools.Rigging.spine.HumanSpine", "class_p_k_d___tools_1_1_rigging_1_1spine_1_1_human_spine.html", null ]
+                  ] ]
+                ] ]
+              ] ]
+            ] ]
+          ] ]
         ] ],
         [ "PKD_Tools.Rigging.core.Network", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_network.html", [
           [ "PKD_Tools.Rigging.core.CartoonySystem", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_cartoony_system.html", null ],
@@ -32,6 +71,26 @@ var hierarchy =
       ] ],
       [ "PKD_Tools.Rigging.core.MetaEnhanced", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_meta_enhanced.html", [
         [ "PKD_Tools.Rigging.core.MetaRig", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_meta_rig.html", null ]
+      ] ],
+      [ "PKD_Tools.Rigging.limb.Hand", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_hand.html", [
+        [ "PKD_Tools.Rigging.limb.ArmHand", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_arm_hand.html", null ],
+        [ "PKD_Tools.Rigging.limb.HipHand", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_hip_hand.html", null ],
+        [ "PKD_Tools.Rigging.limb.QuadHand", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_quad_hand.html", null ]
+      ] ],
+      [ "PKD_Tools.Rigging.limb.Hoof", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_hoof.html", [
+        [ "PKD_Tools.Rigging.limb.ArmHoof", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_arm_hoof.html", null ],
+        [ "PKD_Tools.Rigging.limb.Foot", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_foot.html", [
+          [ "PKD_Tools.Rigging.limb.ArmFoot", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_arm_foot.html", null ],
+          [ "PKD_Tools.Rigging.limb.HipFoot", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_hip_foot.html", null ],
+          [ "PKD_Tools.Rigging.limb.Paw", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_paw.html", [
+            [ "PKD_Tools.Rigging.limb.ArmPaw", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_arm_paw.html", null ],
+            [ "PKD_Tools.Rigging.limb.HipPaw", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_hip_paw.html", null ],
+            [ "PKD_Tools.Rigging.limb.QuadPaw", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_quad_paw.html", null ]
+          ] ],
+          [ "PKD_Tools.Rigging.limb.QuadFoot", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_quad_foot.html", null ]
+        ] ],
+        [ "PKD_Tools.Rigging.limb.HipHoof", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_hip_hoof.html", null ],
+        [ "PKD_Tools.Rigging.limb.QuadHoof", "class_p_k_d___tools_1_1_rigging_1_1limb_1_1_quad_hoof.html", null ]
       ] ]
     ] ],
     [ "QGroupBox", null, [
