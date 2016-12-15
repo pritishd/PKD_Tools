@@ -1,16 +1,25 @@
+"""
+@package PKD_Tools.Rigging.limb
+@brief This package creates various limb system. There are essentially three types of limb system
+
+<i>Arm: A 2 joint solver</i>
+<i>Hip: A 3 joint solver where the last two joints is a typical ik solver and first joint is single joint solver where it
+follows the Ik</i>
+
+"""
+
 __author__ = 'pritish.dogra'
 from PKD_Tools.Rigging import core
+from PKD_Tools.Rigging import parts
 from PKD_Tools.Rigging import utils
-
-reload(core)
-reload(utils)
-
 from PKD_Tools import libUtilities
-
-reload(libUtilities)
 from PKD_Tools import libVector
-
 import pymel.core as pm
+
+if __name__ == '__main__':
+    for module in parts, utils, libUtilities:
+        reload(module)
+
 
 SOLVERS = {
     "Single": "ikSCsolver",
@@ -21,19 +30,19 @@ SOLVERS = {
 
 
 def _build_ik_(metaClass, solver, handleSuffix, startJointNumber, endJointNumber):
-    """Construct a meta Ik Handle and make sure that it is parented
-    @param metaClass:
+    """A generic function to create a IK solver that is used by the various metaClasses.
+    @param metaClass: The metaclass object
     @param solver:
     @param handleSuffix:
     @param startJointNumber:
     @param endJointNumber:
     @return:
     """
-    name = utils.nameMe(metaClass.side, metaClass.part, handleSuffix)
-    startJoint = metaClass.JointSystem.Joints[startJointNumber].shortName()
-    endJoint = metaClass.JointSystem.Joints[endJointNumber].shortName()
+    name = utils.name_me(metaClass.side, metaClass.part, handleSuffix)
+    startJoint = metaClass.jointSystem.joints[startJointNumber].shortName()
+    endJoint = metaClass.jointSystem.joints[endJointNumber].shortName()
     ikHandle = pm.ikHandle(name=name, sj=startJoint, ee=endJoint, sol=solver, sticky="sticky")[0]
-    ikHandleMeta = core.MetaRig(ikHandle.name())
+    ikHandleMeta = core.MovableSystem(ikHandle.name())
     metaClass.transferPropertiesToChild(ikHandleMeta, "ikHandle")
     ikHandleMeta.v = False
     # IK Handle needs to be in it's own group in case the polevector is not set. Otherwise if you reparent it
@@ -47,11 +56,11 @@ def _build_ik_(metaClass, solver, handleSuffix, startJointNumber, endJointNumber
     return ikHandleMeta
 
 
-class LimbIk(core.Ik):
+class LimbIk(parts.Ik):
     def __init__(self, *args, **kwargs):
         super(LimbIk, self).__init__(*args, **kwargs)
         self.ikSolver = SOLVERS["Single"]
-        self.custom_pv_position = None
+        self.customPVPosition = None
         self.startJointNumber = 0
         self.endJointNumber = 1
 
@@ -64,11 +73,13 @@ class LimbIk(core.Ik):
         # Load any IK plugin
         self.loadIKPlugin()
         # Build the IK System
-        self.build_ik()
+        self.buildIk()
         # Build the controls
-        self.build_control()
+        self.buildControl()
+        # Clean up the heirachy
+        self.cleanUp()
 
-    def build_PV(self):
+    def buildPv(self):
         self.pv = core.Ctrl(part="%s_PV" % self.part, side=self.side)
         self.pv.ctrlShape = "Locator"
         self.pv.build()
@@ -78,10 +89,10 @@ class LimbIk(core.Ik):
 
         default_pole_vector = libVector.vector(list(self.ikHandle.poleVector))
 
-        # Check userdefined pos. If not then take then find the vector from the second joint in the chain
-        pv_position = self.custom_pv_position
-        if not self.custom_pv_position:
-            second_joint_position = self.JointSystem.Joints[self.startJointNumber + 1].pynode.getTranslation(
+        # Check user user defined pos. If not then take then find the vector from the second joint in the chain
+        pv_position = self.customPVPosition
+        if not pv_position:
+            second_joint_position = self.jointSystem.joints[self.startJointNumber + 1].pynode.getTranslation(
                 space="world")
             pv_position = (default_pole_vector * [30, 30, 30]) + second_joint_position
 
@@ -90,7 +101,7 @@ class LimbIk(core.Ik):
         pvTwist = 0
 
         # Find the twist of the new pole vector if to a new positiion
-        if self.custom_pv_position:
+        if self.customPVPosition:
             pm.poleVectorConstraint(self.pv.mNode, self.ikHandle.mNode, w=1)
             offset_pole_vector = self.ikHandle.poleVector
 
@@ -98,15 +109,15 @@ class LimbIk(core.Ik):
             pm.delete(self.ikHandle.mNode, cn=1)
             self.ikHandle.poleVector = default_pole_vector
 
+            # Find the twist value so it goes back to zero
             from PKD_Tools.Rigging import nilsNoFlipIK
-
             pvTwist = nilsNoFlipIK.nilsNoFlipIKProc(offset_pole_vector[0],
                                                     offset_pole_vector[1],
                                                     offset_pole_vector[2],
                                                     self.ikHandle.mNode)
 
         # Pole vector points at second joint
-        pm.aimConstraint(self.JointSystem.Joints[self.startJointNumber + 1].pynode,
+        pm.aimConstraint(self.jointSystem.joints[self.startJointNumber + 1].pynode,
                          self.pv.pynode,
                          aimVector=(0, 0, 1),
                          upVector=(0, 0, 1))
@@ -114,25 +125,25 @@ class LimbIk(core.Ik):
         pm.poleVectorConstraint(self.pv.mNode, self.ikHandle.mNode, weight=1)
         self.ikHandle.twist = pvTwist
 
-    def align_control(self):
-        self.mainIK.snap(self.JointSystem.Joints[self.endJointNumber].mNode, not self.ikControlToWorld)
+    def alignControl(self):
+        self.mainIK.snap(self.jointSystem.joints[self.endJointNumber].mNode, not self.ikControlToWorld)
 
-    def build_control(self):
-        self.mainIK = self._create_ctrl_obj_(self.part)
-        self.align_control()
+    def buildControl(self):
+        self.mainIK = self.createCtrlObj(self.part)
+        self.alignControl()
         self.mainIK.addChild(self.ikHandle.SUP_Prnt.pynode)
 
-    def build_ik(self):
+    def buildIk(self):
         # Setup the IK handle RP solver
         self.ikHandle = _build_ik_(self, self.ikSolver, "IkHandle", self.startJointNumber, self.endJointNumber)
 
-    def build_twist(self):
+    def buildTwist(self):
         # Check that that a pv exists
         if self.pv is None:
             # Create one
-            self.build_PV()
+            self.buildPv()
         # Create a new meta node.
-        self.twist = core.MetaRig(part=self.part, side=self.side, endSuffix="TwistGrp")
+        self.twist = core.MovableSystem(part=self.part, side=self.side, endSuffix="TwistGrp")
         # Match it to the first joint
         self.twist.snap(self.ikHandle.mNode, True)
         # Parent the PV Control
@@ -140,7 +151,7 @@ class LimbIk(core.Ik):
         # Rotate the new node 90 on first axis of the rotate order
         self.twist.pynode.attr("r%s" % self.primary_axis[0]).set(90)
         # Zero out the transform
-        twistPrnt = core.MetaRig(part=self.part, side=self.side, endSuffix="TwistPrnt")
+        twistPrnt = core.MovableSystem(part=self.part, side=self.side, endSuffix="TwistPrnt")
         twistPrnt.snap(self.twist.pynode, rotate=True)
         self.twist.setParent(twistPrnt)
         self.twist.addSupportNode(twistPrnt, "Prnt")
@@ -157,27 +168,6 @@ class LimbIk(core.Ik):
         self.mainIK.pynode.twist >> self.twist.pynode.attr("r%s" % self.primary_axis[0])
         # Hide the PV
         # self.pv.prnt.visibility = False
-
-    def test_build(self):
-
-        # Build the joint system
-        self.JointSystem = core.JointSystem(side="C", part="%sJoints" % self.part)
-        # Build the joints
-        joints = utils.create_test_joint(self.__class__.__name__)
-
-        self.JointSystem.Joints = joints
-        self.JointSystem.convertJointsToMetaJoints()
-        self.JointSystem.setRotateOrder(self.rotateOrder)
-        # Build IK
-
-        self.build()
-
-        # Setup the parent
-        if not self.JointSystem.Joints[0].pynode.getParent():
-            self.JointSystem.setParent(self)
-
-        for i in range(len(self.JointSystem.Joints) - 1):
-            self.create_test_cube(self.JointSystem.Joints[i].pynode, self.JointSystem.Joints[i + 1].pynode)
 
     @property
     def twist(self):
@@ -205,12 +195,6 @@ class LimbIk(core.Ik):
         # TODO: Pass the slot number before and axis data
         self.addRigCtrl(data, ctrType="MainIK", mirrorData=self.mirrorData)
 
-
-class Fk(core.Rig):
-    """This is base Fk System."""
-    pass
-
-
 class Arm(LimbIk):
     """This is base IK System. with a three joint"""
 
@@ -219,9 +203,9 @@ class Arm(LimbIk):
         self.ikSolver = SOLVERS["2Bone"]
         self.endJointNumber = 2
 
-    def test_build(self):
-        super(Arm, self).test_build()
-        self.build_PV()
+    def testBuild(self):
+        super(Arm, self).testBuild()
+        self.buildPv()
 
 
 # class arm(ik2jnt):
@@ -244,14 +228,14 @@ class Hip(Arm):
         self.startJointNumber = 1
         self.endJointNumber = 3
 
-    def build_ik(self):
-        super(Hip, self).build_ik()
+    def buildIk(self):
+        super(Hip, self).buildIk()
         self.hipIKHandle = _build_ik_(self, SOLVERS["Single"], "ClavIkHandle", 0, 1)
 
-    def build_control(self):
-        super(Hip, self).build_control()
+    def buildControl(self):
+        super(Hip, self).buildControl()
         # Build the Hip Control
-        hipCtrl = core.Ctrl(part=self.JointSystem.Joints[0].part, side=self.side)
+        hipCtrl = core.Ctrl(part=self.jointSystem.joints[0].part, side=self.side)
         hipCtrl.ctrlShape = "Circle"
         hipCtrl.build()
         hipCtrl.addGimbalMode()
@@ -259,7 +243,7 @@ class Hip(Arm):
             hipCtrl.addParentMaster()
         hipCtrl.setRotateOrder(self.rotateOrder)
         # First joint alias
-        firstJoint = self.JointSystem.Joints[0]
+        firstJoint = self.jointSystem.joints[0]
         # Align with first joint
         hipCtrl.snap(firstJoint.pynode)
         # Parent the hip IkControl
@@ -275,10 +259,10 @@ class Hip(Arm):
         self.aimHelper.jointOrient = firstJoint.jointOrient
         # New upVector
         second_joint_position = list(
-            self.JointSystem.Joints[self.startJointNumber + 1].pynode.getTranslation(space="world"))
+            self.jointSystem.joints[self.startJointNumber + 1].pynode.getTranslation(space="world"))
         default_pole_vector = libVector.vector(list(self.ikHandle.poleVector))
         aimPosition = (default_pole_vector * [30, 30, 30]) + libVector.vector(second_joint_position)
-        upVector = core.MetaRig(part=firstJoint.part, side=self.side, endSuffix="UpVector")
+        upVector = core.MovableSystem(part=firstJoint.part, side=self.side, endSuffix="UpVector")
         upVector.pynode.setTranslation(aimPosition)
         self.aimHelper.addSupportNode(upVector, "UpVector")
         self.aimHelper.v = False
@@ -296,8 +280,8 @@ class Hip(Arm):
         self.hipIK = hipCtrl
 
         # Create main grp
-        mainGrp = core.MetaRig(part=self.part + "Main", side=self.side)
-        hipGrp = core.MetaRig(part=self.part + "Hip", side=self.side)
+        mainGrp = core.MovableSystem(part=self.part + "Main", side=self.side)
+        hipGrp = core.MovableSystem(part=self.part + "Hip", side=self.side)
 
         # Reparent
         self.addSupportNode(mainGrp, "MainGrp")
@@ -316,8 +300,8 @@ class Hip(Arm):
         self.mainIK.setParent(mainGrp)
         firstJoint.setParent(mainGrp)
 
-    def build_PV(self):
-        super(Hip, self).build_PV()
+    def buildPv(self):
+        super(Hip, self).buildPv()
         self.pv.setParent(self.getSupportNode("MainGrp"))
 
     @property
@@ -352,8 +336,8 @@ class Quad(LimbIk):
         self.endJointNumber = 3
         self.ikSolver = SOLVERS["Spring"]
 
-    def build_control(self):
-        super(Quad, self).build_control()
+    def buildControl(self):
+        super(Quad, self).buildControl()
         # Adding controls to the sprink bias
         self.mainIK.addDivAttr("SpringBias", "lblSpringBias")
         self.mainIK.addFloatAttr("Start", sn="StartBias", df=0.5)
@@ -361,9 +345,9 @@ class Quad(LimbIk):
         self.mainIK.pynode.StartBias >> self.ikHandle.pynode.springAngleBias[0].springAngleBias_FloatValue
         self.mainIK.pynode.EndBias >> self.ikHandle.pynode.springAngleBias[1].springAngleBias_FloatValue
 
-    def test_build(self):
-        super(Quad, self).test_build()
-        self.build_PV()
+    def testBuild(self):
+        super(Quad, self).testBuild()
+        self.buildPv()
 
 
 class Hand(object):
@@ -394,35 +378,35 @@ class Hand(object):
 
 
 class ArmHand(Arm, Hand):
-    def build_control(self):
+    def buildControl(self):
         self.hasPivot = True
-        Arm.build_control(self)
+        Arm.buildControl(self)
         Hand.build_control(self)
 
-    def build_ik(self):
-        Arm.build_ik(self)
+    def buildIk(self):
+        Arm.buildIk(self)
         Hand.build_ik(self)
 
 
 class QuadHand(Quad, Hand):
-    def build_control(self):
+    def buildControl(self):
         self.hasPivot = True
-        Quad.build_control(self)
+        Quad.buildControl(self)
         Hand.build_control(self)
 
-    def build_ik(self):
-        Quad.build_ik(self)
+    def buildIk(self):
+        Quad.buildIk(self)
         Hand.build_ik(self)
 
 
 class HipHand(Hip, Hand):
-    def build_control(self):
+    def buildControl(self):
         self.hasPivot = True
-        Hip.build_control(self)
+        Hip.buildControl(self)
         Hand.build_control(self)
 
-    def build_ik(self):
-        Hip.build_ik(self)
+    def buildIk(self):
+        Hip.buildIk(self)
         Hand.build_ik(self)
 
 
@@ -438,7 +422,7 @@ class Hoof(object):
 
         if not self.ikControlToWorld:
             # Create a new joint at the position of the end joint
-            pm.select(self.JointSystem.Joints[self.endJointNumber].mNode)
+            pm.select(self.jointSystem.joints[self.endJointNumber].mNode)
             helperJnt = pm.joint()
             # Reset the joint orientation
             pm.parent(helperJnt, world=True)
@@ -460,22 +444,23 @@ class Hoof(object):
             libUtilities.addAttr(self.mainIK.pynode, attr, 270, -270)
 
             # Create the 2 rotate system
-        tipToeRoll = core.MetaRig(part=self.part, side=self.side, endSuffix="TipToeRoll")
+        tipToeRoll = core.MovableSystem(part=self.part, side=self.side, endSuffix="TipToeRoll")
         tipToeRoll.addParent(snap=False, endSuffix="TipToeRollPrnt")
-        tipToeRoll.snap(self.JointSystem.Joints[-2].mNode)
-        libUtilities.snap(tipToeRoll.prnt.mNode, self.JointSystem.Joints[self.endJointNumber].mNode, translate=False)
+        tipToeRoll.snap(self.jointSystem.joints[-2].mNode)
+        libUtilities.snap(tipToeRoll.prnt.mNode, self.jointSystem.joints[self.endJointNumber].mNode, translate=False)
 
-        # self.toeRoll.setParent(self.JointSystem.Joints[-1])
-        heelRoll = core.MetaRig(part=self.part, side=self.side, endSuffix="HeelRoll")
+        # self.toeRoll.setParent(self.jointSystem.Joints[-1])
+        heelRoll = core.MovableSystem(part=self.part, side=self.side, endSuffix="HeelRoll")
         heelRoll.addParent(snap=False, endSuffix="HeelRollPrnt")
-        heelRoll.snap(self.JointSystem.Joints[-1].mNode)
-        libUtilities.snap(heelRoll.prnt.mNode, self.JointSystem.Joints[self.endJointNumber].mNode, translate=False)
+        heelRoll.snap(self.jointSystem.joints[-1].mNode)
+        libUtilities.snap(heelRoll.prnt.mNode, self.jointSystem.joints[self.endJointNumber].mNode, translate=False)
 
         # Create a negative multiply divide for the heel
-        heelMd = libUtilities.inverseMultiplyDivide(utils.nameMe(self.side,
-                                                                 self.part + "HeelInverse",
-                                                                 "MD"))
-        heelMdMeta = core.MetaRig(heelMd.name(), nodeType="multiplyDivide")
+        heelMd = libUtilities.inverseMultiplyDivide()
+        heelMdMeta = core.MovableSystem(heelMd.name(), nodeType="multiplyDivide")
+        heelMdMeta.part = "%sHeel" % self.part
+        heelMdMeta.rigType = "InverseMD"
+        heelMdMeta.resetName()
         self.RollSystem.addSupportNode(heelMdMeta, "heelMD")
 
         # Parent to the heel
@@ -498,8 +483,8 @@ class Hoof(object):
         self.mainIK.addChild(tipToeRoll.prnt.mNode)
 
     def reparent_joints(self):
-        self.JointSystem.Joints[-1].setParent(
-            self.JointSystem.Joints[self.endJointNumber])
+        self.jointSystem.joints[-1].setParent(
+            self.jointSystem.joints[self.endJointNumber])
 
     def build_ik(self):
         # Reparent the toe
@@ -532,17 +517,17 @@ class ArmHoof(Arm, Hoof):
         Arm.__init__(self, *args, **kwargs)
         Hoof.__init__(self, *args, **kwargs)
 
-    def build_control(self):
+    def buildControl(self):
         self.hasPivot = True
-        Arm.build_control(self)
+        Arm.buildControl(self)
         Hoof.build_control(self)
 
-    def build_ik(self):
-        Arm.build_ik(self)
+    def buildIk(self):
+        Arm.buildIk(self)
         Hoof.build_ik(self)
 
-    def align_control(self):
-        Arm.align_control(self)
+    def alignControl(self):
+        Arm.alignControl(self)
         Hoof.align_control(self)
 
 
@@ -551,17 +536,17 @@ class HipHoof(Hip, Hoof):
         Hip.__init__(self, *args, **kwargs)
         Hoof.__init__(self, *args, **kwargs)
 
-    def build_control(self):
+    def buildControl(self):
         self.hasPivot = True
-        Hip.build_control(self)
+        Hip.buildControl(self)
         Hoof.build_control(self)
 
-    def build_ik(self):
-        Hip.build_ik(self)
+    def buildIk(self):
+        Hip.buildIk(self)
         Hoof.build_ik(self)
 
-    def align_control(self):
-        Hip.align_control(self)
+    def alignControl(self):
+        Hip.alignControl(self)
         Hoof.align_control(self)
 
 
@@ -570,17 +555,17 @@ class QuadHoof(Quad, Hoof):
         Quad.__init__(self, *args, **kwargs)
         Hoof.__init__(self, *args, **kwargs)
 
-    def build_control(self):
+    def buildControl(self):
         self.hasPivot = True
-        Quad.build_control(self)
+        Quad.buildControl(self)
         Hoof.build_control(self)
 
-    def build_ik(self):
-        Quad.build_ik(self)
+    def buildIk(self):
+        Quad.buildIk(self)
         Hoof.build_ik(self)
 
-    def align_control(self):
-        Quad.align_control(self)
+    def alignControl(self):
+        Quad.alignControl(self)
         Hoof.align_control(self)
 
 
@@ -608,21 +593,21 @@ class Foot(Hoof):
     def build_control(self):
         super(Foot, self).build_control()
         # Create reverse foot
-        ballRoll = core.MetaRig(part=self.part, side=self.side, endSuffix="BallRoll")
+        ballRoll = core.MovableSystem(part=self.part, side=self.side, endSuffix="BallRoll")
         ballRoll.addParent(snap=False, endSuffix="ballRollPrnt")
         self.RollSystem.addSupportNode(ballRoll, "ballRoll")
         # Snap to ball
-        ballRoll.snap(self.JointSystem.Joints[-3].mNode)
-        libUtilities.snap(ballRoll.prnt.mNode, self.JointSystem.Joints[self.endJointNumber].mNode, translate=False)
+        ballRoll.snap(self.jointSystem.joints[-3].mNode)
+        libUtilities.snap(ballRoll.prnt.mNode, self.jointSystem.joints[self.endJointNumber].mNode, translate=False)
 
         # Create toe control
-        toeRoll = core.MetaRig(part=self.part, side=self.side, endSuffix="ToeRoll")
+        toeRoll = core.MovableSystem(part=self.part, side=self.side, endSuffix="ToeRoll")
         toeRoll.addParent(snap=False, endSuffix="toeRollPrnt")
 
         self.RollSystem.addSupportNode(toeRoll, "toeRoll")
         # Snap to toe
-        toeRoll.snap(self.JointSystem.Joints[-3].mNode)
-        libUtilities.snap(toeRoll.prnt.mNode, self.JointSystem.Joints[self.endJointNumber].mNode, translate=False)
+        toeRoll.snap(self.jointSystem.joints[-3].mNode)
+        libUtilities.snap(toeRoll.prnt.mNode, self.jointSystem.joints[self.endJointNumber].mNode, translate=False)
         # Parent main ik to reverse
         self.ikHandle.setParent(ballRoll)
         # Parent the toe handle to to control
@@ -649,17 +634,17 @@ class ArmFoot(Arm, Foot):
         Arm.__init__(self, *args, **kwargs)
         Foot.__init__(self, *args, **kwargs)
 
-    def build_control(self):
+    def buildControl(self):
         self.hasPivot = True
-        Arm.build_control(self)
+        Arm.buildControl(self)
         Foot.build_control(self)
 
-    def build_ik(self):
-        Arm.build_ik(self)
+    def buildIk(self):
+        Arm.buildIk(self)
         Foot.build_ik(self)
 
-    def align_control(self):
-        Arm.align_control(self)
+    def alignControl(self):
+        Arm.alignControl(self)
         Foot.align_control(self)
 
 
@@ -668,17 +653,17 @@ class HipFoot(Hip, Foot):
         Hip.__init__(self, *args, **kwargs)
         Foot.__init__(self, *args, **kwargs)
 
-    def build_control(self):
+    def buildControl(self):
         self.hasPivot = True
-        Hip.build_control(self)
+        Hip.buildControl(self)
         Foot.build_control(self)
 
-    def build_ik(self):
-        Hip.build_ik(self)
+    def buildIk(self):
+        Hip.buildIk(self)
         Foot.build_ik(self)
 
-    def align_control(self):
-        Hip.align_control(self)
+    def alignControl(self):
+        Hip.alignControl(self)
         Foot.align_control(self)
 
 
@@ -687,17 +672,17 @@ class QuadFoot(Quad, Foot):
         Quad.__init__(self, *args, **kwargs)
         Foot.__init__(self, *args, **kwargs)
 
-    def build_control(self):
+    def buildControl(self):
         self.hasPivot = True
-        Quad.build_control(self)
+        Quad.buildControl(self)
         Foot.build_control(self)
 
-    def build_ik(self):
-        Quad.build_ik(self)
+    def buildIk(self):
+        Quad.buildIk(self)
         Foot.build_ik(self)
 
-    def align_control(self):
-        Quad.align_control(self)
+    def alignControl(self):
+        Quad.alignControl(self)
         Foot.align_control(self)
 
 
@@ -707,8 +692,8 @@ class Paw(Foot):
         self.rollAttrs = ["Heel", "Ball", "Ankle", "Toe", "TipToe"]
 
     def reparent_joints(self):
-        self.JointSystem.Joints[-1].setParent(
-            self.JointSystem.Joints[self.endJointNumber + 1])
+        self.jointSystem.joints[-1].setParent(
+            self.jointSystem.joints[self.endJointNumber + 1])
 
     def build_ik(self):
         # Reparent the toe
@@ -723,13 +708,13 @@ class Paw(Foot):
     def build_control(self):
         super(Paw, self).build_control()
         # Create toe control
-        ankleRoll = core.MetaRig(part=self.part, side=self.side, endSuffix="AnkleRoll")
+        ankleRoll = core.MovableSystem(part=self.part, side=self.side, endSuffix="AnkleRoll")
         ankleRoll.addParent(snap=False, endSuffix="ankleRollPrnt")
 
         self.RollSystem.addSupportNode(ankleRoll, "ankleRoll")
         # Snap to toe
-        ankleRoll.snap(self.JointSystem.Joints[self.endJointNumber + 1].mNode)
-        libUtilities.snap(ankleRoll.prnt.mNode, self.JointSystem.Joints[self.endJointNumber].mNode, translate=False)
+        ankleRoll.snap(self.jointSystem.joints[self.endJointNumber + 1].mNode)
+        libUtilities.snap(ankleRoll.prnt.mNode, self.jointSystem.joints[self.endJointNumber].mNode, translate=False)
 
         self.RollSystem.addSupportNode(ankleRoll, "ankleRoll")
         ballRoll = self.getSupportNode("ballRoll")
@@ -756,17 +741,17 @@ class ArmPaw(Arm, Paw):
         Arm.__init__(self, *args, **kwargs)
         Paw.__init__(self, *args, **kwargs)
 
-    def build_control(self):
+    def buildControl(self):
         self.hasPivot = True
-        Arm.build_control(self)
+        Arm.buildControl(self)
         Paw.build_control(self)
 
-    def build_ik(self):
-        Arm.build_ik(self)
+    def buildIk(self):
+        Arm.buildIk(self)
         Paw.build_ik(self)
 
-    def align_control(self):
-        Arm.align_control(self)
+    def alignControl(self):
+        Arm.alignControl(self)
         Paw.align_control(self)
 
 
@@ -775,17 +760,17 @@ class HipPaw(Hip, Paw):
         Hip.__init__(self, *args, **kwargs)
         Paw.__init__(self, *args, **kwargs)
 
-    def build_control(self):
+    def buildControl(self):
         self.hasPivot = True
-        Hip.build_control(self)
+        Hip.buildControl(self)
         Paw.build_control(self)
 
-    def build_ik(self):
-        Hip.build_ik(self)
+    def buildIk(self):
+        Hip.buildIk(self)
         Paw.build_ik(self)
 
-    def align_control(self):
-        Hip.align_control(self)
+    def alignControl(self):
+        Hip.alignControl(self)
         Paw.align_control(self)
 
 
@@ -794,17 +779,17 @@ class QuadPaw(Quad, Paw):
         Quad.__init__(self, *args, **kwargs)
         Paw.__init__(self, *args, **kwargs)
 
-    def build_control(self):
+    def buildControl(self):
         self.hasPivot = True
-        Quad.build_control(self)
+        Quad.buildControl(self)
         Paw.build_control(self)
 
-    def build_ik(self):
-        Quad.build_ik(self)
+    def buildIk(self):
+        Quad.buildIk(self)
         Paw.build_ik(self)
 
-    def align_control(self):
-        Quad.align_control(self)
+    def alignControl(self):
+        Quad.alignControl(self)
         Paw.align_control(self)
 
 
@@ -812,13 +797,12 @@ core.Red9_Meta.registerMClassInheritanceMapping()
 core.Red9_Meta.registerMClassNodeMapping(nodeTypes=['ikHandle',
                                                     'multiplyDivide',
                                                     "clamp"])
-
 if __name__ == '__main__':
     pm.newFile(f=1)
     mainSystem = core.SubSystem(side="C", part="Core")
-    ikSystem = QuadPaw(side="C", part="Core")
+    ikSystem = ArmHand(side="C", part="Core")
     mainSystem.addMetaSubSystem(ikSystem, "IK")
-    ikSystem.ikControlToWorld = True
-    ikSystem.test_build()
-    ikSystem.convertSystemToComponent(ikSystem.systemType)
+    # ikSystem.ikControlToWorld = True
+    ikSystem.testBuild()
+    ikSystem.convertSystemToSubSystem(ikSystem.systemType)
     # TODO: Double transform node for the mainSystem

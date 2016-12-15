@@ -1,3 +1,4 @@
+# @cond DOXYGEN_SHOULD_SKIP_THIS
 __author__ = 'pritish.dogra'
 
 #pm.joint(zso=1, ch=1, e=1, oj='yzx', secondaryAxisOrient='ydown')
@@ -12,3 +13,4 @@ __author__ = 'pritish.dogra'
 #pm.selected()[0].rotateOrder.set("zxy")
 
 
+# @endcond

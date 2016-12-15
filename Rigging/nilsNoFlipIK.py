@@ -4,8 +4,6 @@
 
 from pymel.all import *
 
-
-
 def nilsGetLocalPos(vector, baseX, baseY, baseZ):
     """First is the input-vector given in world space. Argument 2-4 are the baseVectors in target space"""
 

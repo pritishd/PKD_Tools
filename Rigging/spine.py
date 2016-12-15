@@ -2,35 +2,38 @@ __author__ = 'admin'
 
 from PKD_Tools.Rigging import core
 from PKD_Tools.Rigging import utils
+from PKD_Tools.Rigging import parts
 from PKD_Tools import libUtilities, libVector, libMath
 import pymel.core as pm
 
+# TODO: SubCtrl needs have their system so that we can navigate
 
-class IkSpine(core.Ik):
+class IkSpine(parts.Ik):
     """This is a Spline IK System"""
 
     def __init__(self, *args, **kwargs):
         super(IkSpine, self).__init__(*args, **kwargs)
         self.devSpine = False
 
-    def build_helper_joints(self):
+    def buildHelperJoints(self):
         # Build the help joint system
-        self.HelpJointSystem = self.JointSystem.replicate(side=self.side, part="%sHelpJoints" % self.part,
+        self.helpJointSystem = self.jointSystem.replicate(side=self.side, part="%sHelpJoints" % self.part,
                                                           supportType="Help")
 
-    def build_dev_solver(self):
-        self.build_solver()
+    def buildDevSolver(self):
+        self.buildSolver()
 
-    def _ik_joint_system_(self):
+    @property
+    def ikJointSystem(self):
         # Decide which joints has the solver
-        return self.JointSystem
+        return self.jointSystem
 
-    def build_solver(self):
-        jntSystem = self._ik_joint_system_()
+    def buildSolver(self):
+        jntSystem = self.ikJointSystem
         # Build the main single degree curve
         baseCurve = utils.create_curve(jntSystem.positions, degree=1)
-        baseCurve.rename(utils.nameMe(self.side, self.part, "CtrlCurve"))
-        self.controlCurve = core.MetaRig(baseCurve.name())
+        baseCurve.rename(utils.name_me(self.side, self.part, "CtrlCurve"))
+        self.controlCurve = core.MovableSystem(baseCurve.name())
         self.controlCurve.part = self.part
         self.transferPropertiesToChild(self.controlCurve, "CtrlCurve")
         self.controlCurve.resetName()
@@ -39,20 +42,20 @@ class IkSpine(core.Ik):
         ikCurve, fitNode = pm.fitBspline(baseCurve,
                                          ch=1,
                                          tol=0.01,
-                                         n=utils.nameMe(self.side, self.part, "BaseCurve"))
-        self.ikCurve = core.MetaRig(ikCurve.name())
+                                         n=utils.name_me(self.side, self.part, "BaseCurve"))
+        self.ikCurve = core.MovableSystem(ikCurve.name())
         self.ikCurve.part = self.part
         self.transferPropertiesToChild(self.ikCurve, "BaseCurve")
-        fitNodeMeta = core.MetaRig(fitNode.name())
+        fitNodeMeta = core.MovableSystem(fitNode.name())
         fitNodeMeta.part = self.part
         self.ikCurve.addSupportNode(fitNodeMeta, "BaseDriver")
         self.ikCurve.transferPropertiesToChild(fitNodeMeta, "FitNode")
         fitNodeMeta.resetName()
 
         # Build the spline IK
-        name = utils.nameMe(self.side, self.part, "IkHandle")
-        startJoint = jntSystem.Joints[0].shortName()
-        endJoint = jntSystem.Joints[-1].shortName()
+        name = utils.name_me(self.side, self.part, "IkHandle")
+        startJoint = jntSystem.joints[0].shortName()
+        endJoint = jntSystem.joints[-1].shortName()
         ikHandle = pm.ikHandle(name=name,
                                sj=startJoint,
                                ee=endJoint,
@@ -62,7 +65,7 @@ class IkSpine(core.Ik):
                                freezeJoints=False,
                                rootOnCurve=True
                                )[0]
-        ikHandleMeta = core.MetaRig(ikHandle.name(), nodeType="IkHandle")
+        ikHandleMeta = core.MovableSystem(ikHandle.name(), nodeType="IkHandle")
         self.transferPropertiesToChild(ikHandleMeta, "IkHandle")
         ikHandleMeta.part = "IkHandle"
         ikHandleMeta.v = False
@@ -70,47 +73,30 @@ class IkSpine(core.Ik):
         self.ikHandle = ikHandleMeta
 
     def build_ik(self):
-        self.build_helper_joints()
+        self.buildHelperJoints()
         # Build a single degree curve
         if self.devSpine:
             self.build_solver_dev()
         else:
-            self.build_solver()
+            self.buildSolver()
         # Reparent to the skin joint to the helper joint
-        if self.HelpJointSystem:
+        if self.helpJointSystem:
             # Reparent the main joints to the helperjoints
-            for joint, helpJoint in zip(self.JointSystem.Joints, self.HelpJointSystem.Joints):
+            for joint, helpJoint in zip(self.jointSystem.joints, self.helpJointSystem.joints):
                 joint.setParent(helpJoint)
 
-    def test_build(self):
-        # Build the help joints
-        self.JointSystem = core.JointSystem(side=self.side, part="%sJoints" % self.part)
-        try:
-            joints = utils.create_test_joint(self.__class__.__name__)
-        except:
-            try:
-                joints = utils.create_test_joint(self.__class__.__bases__[0].__name__)
-            except:
-                joints = utils.create_test_joint(self.__class__.__bases__[0].__bases__[0].__name__)
-        self.JointSystem.Joints = joints
-        self.JointSystem.convertJointsToMetaJoints()
-        self.JointSystem.setRotateOrder(self.rotateOrder)
-        self.build()
-        for i in range(len(self.JointSystem.Joints) - 1):
-            self.create_test_cube(self.JointSystem.Joints[i].pynode, self.JointSystem.Joints[i + 1].pynode)
-
-    def add_stretch(self):
+    def addStretch(self):
         pass
 
     def build(self):
         self.build_ik()
-        self.build_control()
-        self.connect_to_control()
-        self.clean_up()
+        self.buildControl()
+        self.connectToControl()
+        self.cleanUp()
 
-    def build_control(self):
+    def buildControl(self):
         # Create the info group which does not translate
-        infoGrp = core.MetaRig(side=self.side, part=self.part, endSuffix="InfGrp")
+        infoGrp = core.MovableSystem(side=self.side, part=self.part, endSuffix="InfGrp")
         # Reparent the info group
         infoGrp.setParent(self)
         # Set the Meta Group
@@ -118,26 +104,27 @@ class IkSpine(core.Ik):
         # Set the main grp
         self.infoGrp = infoGrp
 
-    def connect_to_control(self):
+    def connectToControl(self):
         pass
 
-    def reparent_ik_joint(self):
+    def reparentIkJoint(self):
         # Reparent the Joint
-        self.HelpJointSystem.Joints[0].setParent(self)
+        self.helpJointSystem.joints[0].setParent(self)
 
-    def clean_up(self):
+    def cleanUp(self):
         # Reparent the Joint
-        self.reparent_ik_joint()
+        self.reparentIkJoint()
         # Reparent the two curve and ik Handle
         for crv in [self.ikCurve, self.controlCurve, self.ikHandle.prnt]:
             crv.setParent(self.infoGrp)
+            crv.setParent(self.infoGrp)
 
         # Create the control grp
-        if self.MainCtrls:
-            self.ctrlGrp = core.MetaRig(side=self.side, part=self.part, endSuffix="MainCtrlGrp")
+        if self.mainCtrls:
+            self.ctrlGrp = core.MovableSystem(side=self.side, part=self.part, endSuffix="MainCtrlGrp")
             self.ctrlGrp.rotateOrder = self.rotateOrder
             self.ctrlGrp.setParent(self)
-            for ctrl in self.MainCtrls:
+            for ctrl in self.mainCtrls:
                 ctrl.setParent(self.ctrlGrp)
 
     @property
@@ -173,36 +160,37 @@ class IkSpine(core.Ik):
         self.addSupportNode(data, "IkCurve")
 
     @property
-    def MainCtrls(self):
-        return self.getChildren(asMeta=self.returnNodesAsMeta, walk=True, cAttrs=["SUP_MainCtrls"])
+    def mainCtrls(self):
+        return self.getChildren(asMeta=self.returnNodesAsMeta, walk=True, cAttrs=["MainCtrls"])
 
-    @MainCtrls.setter
-    def MainCtrls(self, ctrlList):
+    @mainCtrls.setter
+    def mainCtrls(self, ctrlList):
         if not ctrlList:
-            raise Exception("Please input a list of meta Ctrls")
+            raise RuntimeError("Please input a list of meta Ctrls")
         self.connectChildren(ctrlList, "MainCtrls", allowIncest=True, cleanCurrent=True)
 
     @property
-    def HelpJointSystem(self):
+    def helpJointSystem(self):
         return self.getSupportNode("HelpJointSystem")
 
-    @HelpJointSystem.setter
-    def HelpJointSystem(self, data):
+    @helpJointSystem.setter
+    def helpJointSystem(self, data):
         self.addSupportNode(data, "HelpJointSystem")
 
 
 class SimpleSpine(IkSpine):
-    def _ik_joint_system_(self):
+    @property
+    def ikJointSystem(self):
         # The help joint systerm has the solver
-        return self.HelpJointSystem
+        return self.helpJointSystem
 
-    def build_control(self):
-        super(SimpleSpine, self).build_control()
+    def buildControl(self):
+        super(SimpleSpine, self).buildControl()
         ctrls = []
-        for joint, pos in zip(self.JointSystem.joint_data,
-                              range(len(self.JointSystem))):
+        for joint, pos in zip(self.jointSystem.joint_data,
+                              range(len(self.jointSystem))):
             # Create the control
-            spineCtrl = self._create_ctrl_obj_(joint["Name"])
+            spineCtrl = self.createCtrlObj(joint["Name"])
             # Add the space locator
             spineCtrl.addSpaceLocator(parent=True)
             spineCtrl.locator.v = False
@@ -213,13 +201,13 @@ class SimpleSpine(IkSpine):
             ctrls.append(spineCtrl)
 
             # Snap to position
-            spineCtrl.snap(self.JointSystem.Joints[pos].mNode,
+            spineCtrl.snap(self.jointSystem.joints[pos].mNode,
                            rotate=not self.ikControlToWorld)
 
-        # # Append the control
-        self.MainCtrls = ctrls
+        # Append the control
+        self.mainCtrls = ctrls
 
-    def connect_to_control(self):
+    def connectToControl(self):
         # Skiplist
         skipAxis = []
         for axis in ["x", "y", "z"]:
@@ -227,20 +215,20 @@ class SimpleSpine(IkSpine):
                 skipAxis.append(axis)
 
         # Iterate through all the joints
-        for pos in range(len(self.JointSystem)):
+        for pos in range(len(self.jointSystem)):
             # Cluster the CV point on the control curve
-            self.MainCtrls[pos].locator.clusterCV(self.controlCurve.pynode.cv[pos])
+            self.mainCtrls[pos].locator.clusterCV(self.controlCurve.pynode.cv[pos])
 
             # OrientConstraint the Joint
-            pm.orientConstraint(self.MainCtrls[pos].parentDriver.pynode, self.JointSystem.Joints[pos].pynode, mo=True,
+            pm.orientConstraint(self.mainCtrls[pos].parentDriver.pynode, self.jointSystem.joints[pos].pynode, mo=True,
                                 skip=skipAxis)
 
-            # def test_build(self):
-            #     super(SimpleSpine, self).test_build()
-            #     # Make a fake parenting chain
-            #     for i in range(len(self.JointSystem)):
-            #         if i:
-            #             self.MainCtrls[i].addConstraint(self.MainCtrls[i - 1].pynode)
+    # def test_build(self):
+    #     super(SimpleSpine, self).test_build()
+    #     # Make a fake parenting chain
+    #     for i in range(len(self.JointSystem)):
+    #         if i:
+    #             self.MainCtrls[i].addConstraint(self.MainCtrls[i - 1].pynode)
 
 
 class SubControlSpine(IkSpine):
@@ -254,16 +242,16 @@ class SubControlSpine(IkSpine):
         if not hasattr(self, "numHighLevelCtrls"):
             self.numHighLevelCtrls = 3
 
-    def reparent_ik_joint(self):
+    def reparentIkJoint(self):
         # Reparent the Joint
-        self.JointSystem.Joints[0].setParent(self)
+        self.jointSystem.joints[0].setParent(self)
 
-    def build_helper_joints(self):
+    def buildHelperJoints(self):
         pass
 
-    def build_solver(self):
+    def buildSolver(self):
         # Make the default spline
-        super(SubControlSpine, self).build_solver()
+        super(SubControlSpine, self).buildSolver()
         # Delete the history on the main curve
         pm.delete(self.ikCurve.mNode, constructionHistory=True)
         # Delete the shape under the Ik curve
@@ -277,8 +265,8 @@ class SubControlSpine(IkSpine):
         # Rename the shape
         libUtilities.fix_shape_name(self.ikDriveCurve)
 
-    def build_solver_dev(self):
-        super(SubControlSpine, self).build_solver()
+    def buildDevSolver(self):
+        super(SubControlSpine, self).buildSolver()
         # Blendshape
         self.controlCurve.select()
         self.ikCurve.select(add=True)
@@ -286,7 +274,7 @@ class SubControlSpine(IkSpine):
         currentName = self.controlCurve.shortName()
         self.ikDriveCurve.rename("SpineDriver")
         # Blendshape
-        blendShape = pm.blendShape(name=utils.nameMe(self.side, self.part, "BlendShape"))[0]
+        blendShape = pm.blendShape(name=utils.name_me(self.side, self.part, "BlendShape"))[0]
         blendShape.setWeight(0, 1)
         # Rename the control back
         self.ikDriveCurve.rename(currentName)
@@ -298,7 +286,7 @@ class SubControlSpine(IkSpine):
     def skinCtrlCurve(self):
         crvSkinJnts = []
         # Iterate through main controls
-        for ctrl in self.MainCtrls:
+        for ctrl in self.mainCtrls:
             # Create Joint and snap and parent to the control
             curveJoint = core.Joint(side=ctrl.side, part=ctrl.part, endSuffix="CurveJoint")
             curveJoint.rotateOrder = self.rotateOrder
@@ -318,12 +306,12 @@ class SubControlSpine(IkSpine):
         skinClusterMeta.resetName()
 
         # Help Joint system
-        self.DriveJointSystem = core.JointSystem(side=self.side, part="%sHelpJoints" % self.part)
-        self.DriveJointSystem.rigType = "Help"
-        self.DriveJointSystem.Joints = joints
-        self.DriveJointSystem.rebuildJointData()
+        self.driveJointSystem = core.JointSystem(side=self.side, part="%sHelpJoints" % self.part)
+        self.driveJointSystem.rigType = "Help"
+        self.driveJointSystem.joints = joints
+        self.driveJointSystem.rebuild_joint_data()
 
-    def _calc_position_fall_off_(self, center, overRideJoints=None):
+    def _calcPositionFallOff_(self, center, overRideJoints=None):
         """
         Calculate the falloff for the joints where the position becomes a new centre
         eg for the first position the weight will [1,.75,.25,0]
@@ -338,7 +326,7 @@ class SubControlSpine(IkSpine):
             joints = overRideJoints
         else:
             # Get the number of joints
-            joints = float(len(self.JointSystem))
+            joints = float(len(self.jointSystem))
 
         # Init the weight list
         falloff = []
@@ -360,13 +348,13 @@ class SubControlSpine(IkSpine):
         if overRideJoints:
             joints = overRideJoints
         else:
-            joints = float(len(self.JointSystem))
+            joints = float(len(self.jointSystem))
         spreadPosition = list(libMath.spread(1, joints, self.numHighLevelCtrls - 1))
 
         # Build [joint][CV] weightmap
         weightMap = []
         for sub in range(self.numHighLevelCtrls):
-            weightMap.append(self._calc_position_fall_off_(spreadPosition[sub], overRideJoints))
+            weightMap.append(self._calcPositionFallOff_(spreadPosition[sub], overRideJoints))
 
         if transpose:
             # Transpose the weightmap to [CV][joint]
@@ -382,8 +370,8 @@ class SubControlSpine(IkSpine):
         # self.currentWeightMap.append(list(zeroWeights))
 
         # For each CV calculate weights
-        for cv in range(len(self.JointSystem)):
-            # for cv in range(1, len(self.JointSystem) - 1):
+        for cv in range(len(self.jointSystem)):
+            # Init the skinDataCV
             skinDataCV = []
             # Get the distance from CV
             for joint in range(self.numHighLevelCtrls):
@@ -461,18 +449,18 @@ class SubControlSpine(IkSpine):
         # Pruneweights
         self.ikSkin.normalizeWeights.set(1)
 
-    def connect_to_main_control(self):
+    def connectToMainControl(self):
         self.skinCtrlCurve()
         self.calculateIkSkinFallOff()
         self.calculateHeatPoints()
         self.setIkWeights()
 
-    def connect_to_control(self):
-        self.connect_to_main_control()
-        self.connect_twist()
+    def connectToControl(self):
+        self.connectToMainControl()
+        self.connectTwist()
         self.build_sub_controls()
 
-    def connect_twist(self):
+    def connectTwist(self):
         pass
 
     def build_sub_controls(self):
@@ -488,7 +476,7 @@ class SubControlSpine(IkSpine):
         subCtrlGrp = rideOnLocGrp = None
 
         for newGrp in ["subCtrlGrp", "rideOnLocGrp"]:
-            newGrpMeta = core.MetaRig(side=self.side, part=self.part, endSuffix=newGrp.capitalize())
+            newGrpMeta = core.MovableSystem(side=self.side, part=self.part, endSuffix=newGrp.capitalize())
             newGrpMeta.rotateOrder = self.rotateOrder
             self.addSupportNode(newGrpMeta, newGrp.capitalize())
             newGrpMeta.setParent(self.infoGrp)
@@ -500,10 +488,10 @@ class SubControlSpine(IkSpine):
             # Set the subpart name
             SubPart = "Sub%i" % i
             # Get the CV position
-            joint = self.JointSystem.Joints[i].pynode
+            joint = self.jointSystem.joints[i].pynode
             npc.inPosition.set(libUtilities.get_world_space_pos(joint))
             # Create a new control object
-            subCtrl = self._create_ctrl_obj_(SubPart, "Ball", False)
+            subCtrl = self.createCtrlObj(SubPart, "Ball", False)
             subCtrls.append(subCtrl)
             # Add a ctrl locator
             subCtrl.addSpaceLocator(parent=True)
@@ -599,11 +587,11 @@ class SubControlSpine(IkSpine):
         return self.controlCurve.pynode
 
     @property
-    def DriveJointSystem(self):
+    def driveJointSystem(self):
         return self.getSupportNode("DriveJointSystem")
 
-    @DriveJointSystem.setter
-    def DriveJointSystem(self, data):
+    @driveJointSystem.setter
+    def driveJointSystem(self, data):
         self.addSupportNode(data, "DriveJointSystem")
 
     @property
@@ -612,34 +600,34 @@ class SubControlSpine(IkSpine):
 
 
 class HumanSpine(SubControlSpine):
-    def build_control(self):
-        super(HumanSpine, self).build_control()
-        self.build_main_controls()
+    def buildControl(self):
+        super(HumanSpine, self).buildControl()
+        self.buildMainControls()
 
-    def build_main_controls(self):
+    def buildMainControls(self):
         # Build the first control at 0
-        firstCtrl = self._create_ctrl_obj_("%s1" % self.part)
+        firstCtrl = self.createCtrlObj("%s1" % self.part)
         firstCtrl.lockScale()
         # Snap to position
-        firstCtrl.snap(self.JointSystem.Joints[0].mNode,
+        firstCtrl.snap(self.jointSystem.joints[0].mNode,
                        rotate=not self.ikControlToWorld)
         # Build the last control at last joint
-        lastCtrl = self._create_ctrl_obj_("%s3" % self.part)
+        lastCtrl = self.createCtrlObj("%s3" % self.part)
         lastCtrl.lockScale()
         # Snap to position
-        lastCtrl.snap(self.JointSystem.Joints[-1].mNode,
+        lastCtrl.snap(self.jointSystem.joints[-1].mNode,
                       rotate=not self.ikControlToWorld)
         # middle
-        middleCtrl = self._create_ctrl_obj_("%s2" % self.part)
+        middleCtrl = self.createCtrlObj("%s2" % self.part)
         middleCtrl.lockScale()
 
-        if (len(self.JointSystem) % 2):
+        if (len(self.jointSystem) % 2):
             # Odd number
-            middleCtrl.snap(self.JointSystem.Joints[len(self.JointSystem) / 2].mNode,
+            middleCtrl.snap(self.jointSystem.joints[len(self.jointSystem) / 2].mNode,
                             rotate=not self.ikControlToWorld)
         else:
-            middleJntA = self.JointSystem.Joints[len(self.JointSystem) / 2].mNode
-            middleJntB = self.JointSystem.Joints[len(self.JointSystem) / 2 - 1].mNode
+            middleJntA = self.jointSystem.joints[len(self.jointSystem) / 2].mNode
+            middleJntB = self.jointSystem.joints[len(self.jointSystem) / 2 - 1].mNode
             # Align position
             middleCtrl.addConstraint(middleJntA, "point", False)
             middleCtrl.addConstraint(middleJntB, "point", False)
@@ -651,9 +639,9 @@ class HumanSpine(SubControlSpine):
             middleCtrl.orientConstraint.delete()
 
         # Append the control
-        self.MainCtrls = [firstCtrl, middleCtrl, lastCtrl]
+        self.mainCtrls = [firstCtrl, middleCtrl, lastCtrl]
 
-    def connect_twist(self):
+    def connectTwist(self):
         self.ikHandle.rootTwistMode = True
         # Create plusMinusAverage which control the final twist
         twistPlusMinus = core.MetaRig(side=self.side,
@@ -670,18 +658,18 @@ class HumanSpine(SubControlSpine):
         multiplyDivide.input2X = -1
 
         # Connect the top control to the twist
-        self.MainCtrls[2].get_rotate_driver(self.forwardAxis) >> twistPlusMinus.pynode.input1D[0]
+        self.mainCtrls[2].getRotateDriver(self.forwardAxis) >> twistPlusMinus.pynode.input1D[0]
 
         # Connect to the bottom controller to the counter twist and roll
-        self.MainCtrls[0].get_rotate_driver(self.forwardAxis) >> multiplyDivide.pynode.input1X
-        self.MainCtrls[0].get_rotate_driver(self.forwardAxis) >> self.ikHandle.pynode.roll
+        self.mainCtrls[0].getRotateDriver(self.forwardAxis) >> multiplyDivide.pynode.input1X
+        self.mainCtrls[0].getRotateDriver(self.forwardAxis) >> self.ikHandle.pynode.roll
         multiplyDivide.pynode.outputX >> twistPlusMinus.pynode.input1D[1]
 
         # Add PMA and MD as supprt node
         self.ikHandle.addSupportNode(twistPlusMinus, "Twist")
         self.ikHandle.addSupportNode(multiplyDivide, "CounterTwist")
 
-    def connect_twist_legacy(self):
+    def connectTwistLegacy(self):
         # Setup the twist
         self.ikHandle.dTwistControlEnable = True
         self.ikHandle.rootTwistMode = True
@@ -700,9 +688,13 @@ class HumanSpine(SubControlSpine):
         self.ikHandle.dWorldUpVectorEnd = self.upVector
 
         # Set the two end controls as the main drivers for the twist
-        self.MainCtrls[0].parentDriver.pynode.worldMatrix[0] >> self.ikHandle.pynode.dWorldUpMatrix
-        self.MainCtrls[-1].parentDriver.pynode.worldMatrix[0] >> self.ikHandle.pynode.dWorldUpMatrixEnd
+        self.mainCtrls[0].parentDriver.pynode.worldMatrix[0] >> self.ikHandle.pynode.dWorldUpMatrix
+        self.mainCtrls[-1].parentDriver.pynode.worldMatrix[0] >> self.ikHandle.pynode.dWorldUpMatrixEnd
 
+    @property
+    def numHighLevelCtrls(self):
+        # Make it in a read only attibute
+        return 3
 
 class ComplexSpine(SubControlSpine):
     def __init__(self, *args, **kwargs):
@@ -715,29 +707,30 @@ class ComplexSpine(SubControlSpine):
         # Get prenormalised map
         self.twistMap = self.preNormalisedMap
 
-    def build_helper_joints(self):
-        super(SubControlSpine, self).build_helper_joints()
+    def buildHelperJoints(self):
+        super(SubControlSpine, self).buildHelperJoints()
 
-    def _ik_joint_system_(self):
+    @property
+    def ikJointSystem(self):
         # The help joint system has the solver
-        return self.HelpJointSystem
+        return self.helpJointSystem
 
-    def build_control(self):
-        super(ComplexSpine, self).build_control()
-        self.build_main_controls()
+    def buildControl(self):
+        super(ComplexSpine, self).buildControl()
+        self.buildMainControls()
 
-    def reparent_ik_joint(self):
-        super(SubControlSpine, self).reparent_ik_joint()
+    def reparentIkJoint(self):
+        super(SubControlSpine, self).reparentIkJoint()
 
-    def build_main_controls(self):
+    def buildMainControls(self):
         # Get the ctrl postion
-        ctrlPosition = utils.recalculatePosition(self.JointSystem.positions, self.numHighLevelCtrls)
+        ctrlPosition = utils.recalculatePosition(self.jointSystem.positions, self.numHighLevelCtrls)
 
         metaCtrls = []
         # Iterate though all the position
         for i in range(self.numHighLevelCtrls):
             # Create a control object
-            ctrl = self._create_ctrl_obj_("%s%i" % (self.part, i))
+            ctrl = self.createCtrlObj("%s%i" % (self.part, i))
             # Set the position
             ctrl.prnt.translate = list(ctrlPosition[i])
             # Lock the scale
@@ -747,26 +740,26 @@ class ComplexSpine(SubControlSpine):
         # Is orientation set to world
         if not self.ikControlToWorld:
             # Get the closest joint position
-            closestJoints = libMath.spread(0, len(self.JointSystem) - 1, self.numHighLevelCtrls)
+            closestJoints = libMath.spread(0, len(self.jointSystem) - 1, self.numHighLevelCtrls)
             for jointPosition, i in zip(closestJoints, range(self.numHighLevelCtrls)):
                 # Is a closest joint a fraction
                 if jointPosition % 1:
                     # Orient between current and next
                     pm.delete(pm.orientConstraint(
-                        self.JointSystem.jointList[int(jointPosition)],
-                        self.JointSystem.jointList[int(jointPosition) + 1],
+                        self.jointSystem.jointList[int(jointPosition)],
+                        self.jointSystem.jointList[int(jointPosition) + 1],
                         metaCtrls[i].prnt.pynode))
                 else:
                     pm.delete(pm.orientConstraint(
-                        self.JointSystem.jointList[int(jointPosition)],
+                        self.jointSystem.jointList[int(jointPosition)],
                         metaCtrls[i].prnt.pynode))
 
-        self.MainCtrls = metaCtrls
+        self.mainCtrls = metaCtrls
 
     def calculateTwistWeights(self):
         # If distance based falloff method then calculate the position based twist as that gives a better falloff
         # Calculate position based falloff
-        self.positionFallOff(len(self.JointSystem) - 1, False)
+        self.positionFallOff(len(self.jointSystem) - 1, False)
         # Get the currentMap
         prenormalisedTwistMap = self.currentWeightMap
 
@@ -787,7 +780,7 @@ class ComplexSpine(SubControlSpine):
         # Set the twistMap
         self.twistMap = normalisedTwist
 
-    def connect_twist(self):
+    def connectTwist(self):
         self.calculateTwistWeights()
 
         # JointMeta
@@ -813,25 +806,25 @@ class ComplexSpine(SubControlSpine):
                 skipAxis.append(axis)
 
         # Iterate through the weightMap/Joints
-        for weightMap, joint in zip(self.twistMap, range(len(self.JointSystem) - 1)):
+        for weightMap, joint in zip(self.twistMap, range(len(self.jointSystem) - 1)):
             # Do not add weight
-            for singleWeight, ctrl in zip(weightMap, self.MainCtrls):
+            for singleWeight, ctrl in zip(weightMap, self.mainCtrls):
                 if singleWeight != 0.0:
                     # Get the input PMA for the joint
-                    rotateAverage = _get_joint_twist_average_(self.JointSystem.Joints[joint], self.forwardAxis)
+                    rotateAverage = _get_joint_twist_average_(self.jointSystem.joints[joint], self.forwardAxis)
 
                     # Get Rotate Driver
-                    rotateDriver = ctrl.get_rotate_driver(self.forwardAxis)
+                    rotateDriver = ctrl.getRotateDriver(self.forwardAxis)
 
                     # Create a Weight MD
                     weightManager = core.MetaRig(side=ctrl.side,
-                                                 part="%s%s" % (self.JointSystem.Joints[joint].part.capitalize(),
+                                                 part="%s%s" % (self.jointSystem.joints[joint].part.capitalize(),
                                                                 ctrl.part.capitalize()),
                                                  endSuffix="WeightManager%s" % self.forwardAxis,
                                                  nodeType="multiplyDivide")
 
                     # Add it as support node to joint
-                    self.JointSystem.Joints[joint].getSupportNode("rotateAverage").addSupportNode(weightManager,
+                    self.jointSystem.joints[joint].getSupportNode("rotateAverage").addSupportNode(weightManager,
                                                                                                   "WeightManage%s" % self.forwardAxis)
 
                     # Connect the Rotate Driver
@@ -847,22 +840,15 @@ class ComplexSpine(SubControlSpine):
 if __name__ == '__main__':
     pm.newFile(f=1)
 
-    # subSystem = SubSystem(side="U", part="Core")
-    # print "s"
-
-    # print ikSystem
-
-    ikSystem = ComplexSpine(side="L", part="Core")
+    mainSystem = core.SubSystem(side="C", part="Core")
+    ikSystem = HumanSpine(side="L", part="Core")
     ikSystem.ikControlToWorld = False
-    ikSystem.numHighLevelCtrls = 5
+    #ikSystem.numHighLevelCtrls = 5
     ikSystem.fallOffMethod = "Distance"
     # ikSystem.devSpine = True
-    ikSystem.test_build()
+    ikSystem.testBuild()
+
+    mainSystem.addMetaSubSystem(ikSystem, "FK")
+    ikSystem.convertSystemToSubSystem(ikSystem.systemType)
 
 
-    # Iterate through all the CV curve
-    # Get UfV position of the CV
-    # Create a ctrl obj
-    # Attach to motion path.
-    # Delete the anim
-    # Set to the closest UV
