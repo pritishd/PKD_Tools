@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.12"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>PKD_Tools.libGeo Namespace Reference</title>
+<title>PKD Rig: PKD_Tools.libGeo Namespace Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -28,9 +28,11 @@
  <tbody>
  <tr style="height: 56px;">
   <td id="projectlogo"><img alt="Logo" src="WinLabel.png"/></td>
-    <td style="padding-left: 0.5em;">
-    <div id="projectbrief">Set of Pipeline and Rigging Tools</div>
-    </td>
+  <td id="projectalign" style="padding-left: 0.5em;">
+   <div id="projectname">PKD Rig
+   </div>
+   <div id="projectbrief">Set of Pipeline and Rigging Tools</div>
+  </td>
  </tr>
  </tbody>
 </table>
@@ -105,9 +107,9 @@ Functions</h2></td></tr>
 <tr class="memitem:ad01313ac28a1eca4ec624ea08bdc94fa"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespace_p_k_d___tools_1_1lib_geo.html#ad01313ac28a1eca4ec624ea08bdc94fa">multiple_top_nodes_exists</a> ()</td></tr>
 <tr class="memdesc:ad01313ac28a1eca4ec624ea08bdc94fa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if the the scene has multiple top level groups.  <a href="#ad01313ac28a1eca4ec624ea08bdc94fa">More...</a><br /></td></tr>
 <tr class="separator:ad01313ac28a1eca4ec624ea08bdc94fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae671beda1774234deb3577b021739797"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespace_p_k_d___tools_1_1lib_geo.html#ae671beda1774234deb3577b021739797">find_heirachy_errors</a> (topNode)</td></tr>
-<tr class="memdesc:ae671beda1774234deb3577b021739797"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return a dictanary of lists with common heirachy errors.  <a href="#ae671beda1774234deb3577b021739797">More...</a><br /></td></tr>
-<tr class="separator:ae671beda1774234deb3577b021739797"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2ce61a9d1f5cf6ee6553e0aedf432ef4"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespace_p_k_d___tools_1_1lib_geo.html#a2ce61a9d1f5cf6ee6553e0aedf432ef4">find_hierachy_errors</a> (topNode)</td></tr>
+<tr class="memdesc:a2ce61a9d1f5cf6ee6553e0aedf432ef4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return a dictanary of lists with common hierachy errors.  <a href="#a2ce61a9d1f5cf6ee6553e0aedf432ef4">More...</a><br /></td></tr>
+<tr class="separator:a2ce61a9d1f5cf6ee6553e0aedf432ef4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a28127e61f59cef41db8ad255a84aa277"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespace_p_k_d___tools_1_1lib_geo.html#a28127e61f59cef41db8ad255a84aa277">fix_duplicates_shapes</a> (duplicateShapes=None)</td></tr>
 <tr class="memdesc:a28127e61f59cef41db8ad255a84aa277"><td class="mdescLeft">&#160;</td><td class="mdescRight">Attempt to fix duplicate shapes by renaming based on parent dags name.  <a href="#a28127e61f59cef41db8ad255a84aa277">More...</a><br /></td></tr>
 <tr class="separator:a28127e61f59cef41db8ad255a84aa277"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -169,12 +171,12 @@ Variables</h2></td></tr>
 <p>Convert a skin cluster to a cluster based setup on a target geometery. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">targetGeo</td><td>the geometery which has the skin cluster </td></tr>
-    <tr><td class="paramname">skipList</td><td>any joints which should not processed such as a base joint </td></tr>
+    <tr><td class="paramname">targetGeo</td><td>(string/pynode) The geometry which has the skin cluster </td></tr>
+    <tr><td class="paramname">skipList</td><td>(list): Any joints which should not processed such as a base joint </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>A dictonary of cluster with the name of the joints as keys </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>A dictionary of cluster with the name of the joints as keys </dd></dl>
 
 <p>Definition at line <a class="el" href="lib_geo_8py_source.html#l00382">382</a> of file <a class="el" href="lib_geo_8py_source.html">libGeo.py</a>.</p>
 
@@ -244,8 +246,8 @@ Variables</h2></td></tr>
 <p>Create a follice for a position on a target geometery. </p>
 <p>Converted to Pymel version of the following script <a href="http://www.tommasosanguigni.it/blog/function-createfollicle/">http://www.tommasosanguigni.it/blog/function-createfollicle/</a> </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">position</td><td>The target position </td></tr>
-    <tr><td class="paramname">geo</td><td>The target geo </td></tr>
+    <tr><td class="paramname">position</td><td>(vector) The target position </td></tr>
+    <tr><td class="paramname">geo</td><td>(pynode) The target geo </td></tr>
   </table>
   </dd>
 </dl>
@@ -290,9 +292,9 @@ Variables</h2></td></tr>
 <p>Temp setup to create sticky control at position for given geometery. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">position</td><td>The position in worldspace where this will created </td></tr>
-    <tr><td class="paramname">geo</td><td>The target geomentery </td></tr>
-    <tr><td class="paramname">name</td><td>The name given to this geometery </td></tr>
+    <tr><td class="paramname">position</td><td>(vector) The position in worldspace where this will created </td></tr>
+    <tr><td class="paramname">geo</td><td>(pynode) The target geomentery </td></tr>
+    <tr><td class="paramname">name</td><td>(string) The name given to this geometery </td></tr>
   </table>
   </dd>
 </dl>
@@ -302,14 +304,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ae671beda1774234deb3577b021739797"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae671beda1774234deb3577b021739797">&sect;&nbsp;</a></span>find_heirachy_errors()</h2>
+<a id="a2ce61a9d1f5cf6ee6553e0aedf432ef4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2ce61a9d1f5cf6ee6553e0aedf432ef4">&sect;&nbsp;</a></span>find_hierachy_errors()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">def PKD_Tools.libGeo.find_heirachy_errors </td>
+          <td class="memname">def PKD_Tools.libGeo.find_hierachy_errors </td>
           <td>(</td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>topNode</em></td><td>)</td>
@@ -318,14 +320,14 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Return a dictanary of lists with common heirachy errors. </p>
+<p>Return a dictanary of lists with common hierachy errors. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">topNode</td><td>The top node of a group </td></tr>
+    <tr><td class="paramname">topNode</td><td>(pynode, string) The top node of a group </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>A dictonary of errors </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>A dictionary of errors </dd></dl>
 
 <p>Definition at line <a class="el" href="lib_geo_8py_source.html#l00043">43</a> of file <a class="el" href="lib_geo_8py_source.html">libGeo.py</a>.</p>
 
@@ -350,7 +352,7 @@ Variables</h2></td></tr>
 <p>Attempt to fix duplicate shapes by renaming based on parent dags name. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">duplicateShapes</td><td>list of pynodes with duplicated shapes </td></tr>
+    <tr><td class="paramname">duplicateShapes</td><td>(list) Pynodes with duplicated shapes </td></tr>
   </table>
   </dd>
 </dl>
@@ -489,7 +491,7 @@ Variables</h2></td></tr>
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><a class="el" href="namespace_p_k_d___tools.html">PKD_Tools</a></li><li class="navelem"><a class="el" href="namespace_p_k_d___tools_1_1lib_geo.html">libGeo</a></li>
-    <li class="footer">Generated on Mon Oct 3 2016 23:07:48 by
+    <li class="footer">Generated on Wed Dec 14 2016 08:38:50 for PKD Rig by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.12 </li>
   </ul>

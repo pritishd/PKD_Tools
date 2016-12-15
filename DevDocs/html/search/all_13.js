@@ -8,5 +8,8 @@ var searchData=
   ['title',['title',['../namespace_p_k_d___tools_1_1lib_utilities.html#a1a1d56d7d92ffd5b9d3d22d126c4abc0',1,'PKD_Tools::libUtilities']]],
   ['titledict',['titleDict',['../class_p_k_d___tools_1_1lib_py_side_1_1_checkable_tab_widget.html#a5c880e09ff1e5e23b3efa8ecefe20808',1,'PKD_Tools::libPySide::CheckableTabWidget']]],
   ['togglecollapse',['toggleCollapse',['../class_p_k_d___tools_1_1lib_py_side_1_1_q_group_box.html#ab98309508f90d549ce8df44698352dff',1,'PKD_Tools::libPySide::QGroupBox']]],
-  ['transfer_5fshape',['transfer_shape',['../namespace_p_k_d___tools_1_1lib_utilities.html#a2a73a21911bb11ffeb7f4b02aa90353b',1,'PKD_Tools::libUtilities']]]
+  ['toon',['toon',['../namespace_p_k_d___tools_1_1_rigging_1_1core.html#a7633183c29472a4ae419e1f48e059a33',1,'PKD_Tools::Rigging::core']]],
+  ['transfer_5fshape',['transfer_shape',['../namespace_p_k_d___tools_1_1lib_utilities.html#a2a73a21911bb11ffeb7f4b02aa90353b',1,'PKD_Tools::libUtilities']]],
+  ['transferpropertiestochild',['transferPropertiesToChild',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_meta_rig.html#ad140d760f6c23672ea929d6a52b6edd7',1,'PKD_Tools::Rigging::core::MetaRig']]],
+  ['truename',['trueName',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_meta_rig.html#ae74036f7e0e6dbb7996ca9a612c670ba',1,'PKD_Tools::Rigging::core::MetaRig']]]
 ];

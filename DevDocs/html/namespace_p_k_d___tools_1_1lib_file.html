@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.12"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>PKD_Tools.libFile Namespace Reference</title>
+<title>PKD Rig: PKD_Tools.libFile Namespace Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -28,9 +28,11 @@
  <tbody>
  <tr style="height: 56px;">
   <td id="projectlogo"><img alt="Logo" src="WinLabel.png"/></td>
-    <td style="padding-left: 0.5em;">
-    <div id="projectbrief">Set of Pipeline and Rigging Tools</div>
-    </td>
+  <td id="projectalign" style="padding-left: 0.5em;">
+   <div id="projectname">PKD Rig
+   </div>
+   <div id="projectbrief">Set of Pipeline and Rigging Tools</div>
+  </td>
  </tr>
  </tbody>
 </table>
@@ -193,8 +195,8 @@ Functions</h2></td></tr>
 <p>Convenience method tp copy file from one location to another. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">source</td><td>(string)for the source file </td></tr>
-    <tr><td class="paramname">target</td><td>(string) path for the destination file </td></tr>
+    <tr><td class="paramname">source</td><td>(string) Path for the source file </td></tr>
+    <tr><td class="paramname">target</td><td>(string) Path for the destination file </td></tr>
   </table>
   </dd>
 </dl>
@@ -219,9 +221,9 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Returns the location where this module is being excecuted. </p>
-<dl class="section return"><dt>Returns</dt><dd>(string) path on the drive. </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>(string) Path on the drive. </dd></dl>
 
-<p>Definition at line <a class="el" href="lib_file_8py_source.html#l00271">271</a> of file <a class="el" href="lib_file_8py_source.html">libFile.py</a>.</p>
+<p>Definition at line <a class="el" href="lib_file_8py_source.html#l00270">270</a> of file <a class="el" href="lib_file_8py_source.html">libFile.py</a>.</p>
 
 </div>
 </div>
@@ -244,12 +246,12 @@ Functions</h2></td></tr>
 <p>Delete all the contents in folder path. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">folderPath</td><td>(string) folder whose content needs to be deleted </td></tr>
+    <tr><td class="paramname">folderPath</td><td>(string) Folder whose content needs to be deleted </td></tr>
   </table>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="lib_file_8py_source.html#l00248">248</a> of file <a class="el" href="lib_file_8py_source.html">libFile.py</a>.</p>
+<p>Definition at line <a class="el" href="lib_file_8py_source.html#l00247">247</a> of file <a class="el" href="lib_file_8py_source.html">libFile.py</a>.</p>
 
 </div>
 </div>
@@ -301,7 +303,7 @@ Functions</h2></td></tr>
 <p>Check the existence of a folder. </p>
 <p>If not, create the necessary folder tree </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">dirPath</td><td>(string) folder path </td></tr>
+    <tr><td class="paramname">dirPath</td><td>(string) Folder path </td></tr>
   </table>
   </dd>
 </dl>
@@ -330,7 +332,7 @@ Functions</h2></td></tr>
 <p>Advanced Folder Checking. </p>
 <p>Raise exception in case an folder type is not given or it does not exists </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">folder</td><td>(string) folder path </td></tr>
+    <tr><td class="paramname">folder</td><td>(string) Folder path </td></tr>
   </table>
   </dd>
 </dl>
@@ -359,7 +361,7 @@ Functions</h2></td></tr>
 <p>Return a tuple of split paths. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">path</td><td>(string) path which needs to be evaluated </td></tr>
+    <tr><td class="paramname">path</td><td>(string) Path which needs to be evaluated </td></tr>
   </table>
   </dd>
 </dl>
@@ -387,7 +389,7 @@ Functions</h2></td></tr>
 <p>Get the parent folder for the path. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">filePath</td><td>(string) </td></tr>
+    <tr><td class="paramname">filePath</td><td>(string) The path that is being queried </td></tr>
   </table>
   </dd>
 </dl>
@@ -520,7 +522,7 @@ Functions</h2></td></tr>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">folder</td><td>(string) The target folder </td></tr>
-    <tr><td class="paramname">fileName</td><td>(string) the File name </td></tr>
+    <tr><td class="paramname">fileName</td><td>(string) The file name </td></tr>
   </table>
   </dd>
 </dl>
@@ -549,7 +551,7 @@ Functions</h2></td></tr>
 <p>Convert Windows Path to Linux Path. </p>
 <div class="fragment"><div class="line"><span class="keywordflow">print</span> libFile.linux_path(<span class="stringliteral">r&quot;c:\myDir\mayaFile.ma&quot;</span>)</div><div class="line"><span class="comment"># Result: &#39;c:/myDir/mayaFile.ma&#39; #</span></div></div><!-- fragment --><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">windowsPath</td><td>(string) folder or file path </td></tr>
+    <tr><td class="paramname">windowsPath</td><td>(string) Folder or file path </td></tr>
   </table>
   </dd>
 </dl>
@@ -647,12 +649,12 @@ Functions</h2></td></tr>
 <p>Read json information. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">path</td><td>The path to the json file </td></tr>
+    <tr><td class="paramname">path</td><td>(string) The path to the json file </td></tr>
   </table>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="lib_file_8py_source.html#l00294">294</a> of file <a class="el" href="lib_file_8py_source.html">libFile.py</a>.</p>
+<p>Definition at line <a class="el" href="lib_file_8py_source.html#l00293">293</a> of file <a class="el" href="lib_file_8py_source.html">libFile.py</a>.</p>
 
 </div>
 </div>
@@ -708,7 +710,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="lib_file_8py_source.html#l00262">262</a> of file <a class="el" href="lib_file_8py_source.html">libFile.py</a>.</p>
+<p>Definition at line <a class="el" href="lib_file_8py_source.html#l00261">261</a> of file <a class="el" href="lib_file_8py_source.html">libFile.py</a>.</p>
 
 </div>
 </div>
@@ -731,12 +733,12 @@ Functions</h2></td></tr>
 <p>Delete a file. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">path</td><td>Delete filepath </td></tr>
+    <tr><td class="paramname">path</td><td>(string) Delete filepath </td></tr>
   </table>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="lib_file_8py_source.html#l00314">314</a> of file <a class="el" href="lib_file_8py_source.html">libFile.py</a>.</p>
+<p>Definition at line <a class="el" href="lib_file_8py_source.html#l00313">313</a> of file <a class="el" href="lib_file_8py_source.html">libFile.py</a>.</p>
 
 </div>
 </div>
@@ -799,14 +801,14 @@ Functions</h2></td></tr>
 <p>Search for certain files in a folder based on a pattern. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">searchPattern</td><td>(string) search pattern that is queried </td></tr>
+    <tr><td class="paramname">searchPattern</td><td>(string) Search pattern that is queried </td></tr>
     <tr><td class="paramname">folder</td><td>(string) The target folder </td></tr>
   </table>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>list of file names that matches the pattern </dd></dl>
 
-<p>Definition at line <a class="el" href="lib_file_8py_source.html#l00283">283</a> of file <a class="el" href="lib_file_8py_source.html">libFile.py</a>.</p>
+<p>Definition at line <a class="el" href="lib_file_8py_source.html#l00282">282</a> of file <a class="el" href="lib_file_8py_source.html">libFile.py</a>.</p>
 
 </div>
 </div>
@@ -829,7 +831,7 @@ Functions</h2></td></tr>
 <p>Convert Linux Path to Windows Path. </p>
 <div class="fragment"><div class="line"><span class="keywordflow">print</span> libFile.windows_path(<span class="stringliteral">&#39;c:/myDir/mayaFile.ma&#39;</span>)</div><div class="line"><span class="comment"># Result: &#39;c:\\myDir\\mayaFile.ma&#39; #</span></div></div><!-- fragment --><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">linuxPath</td><td>(string) folder or file path </td></tr>
+    <tr><td class="paramname">linuxPath</td><td>(string) Folder or file path </td></tr>
   </table>
   </dd>
 </dl>
@@ -868,13 +870,13 @@ Functions</h2></td></tr>
 <p>Write json information. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">path</td><td>The path to the json file </td></tr>
-    <tr><td class="paramname">data</td><td>The information that is written </td></tr>
+    <tr><td class="paramname">path</td><td>(string) The path to the json file </td></tr>
+    <tr><td class="paramname">data</td><td>(string) The information that is written </td></tr>
   </table>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="lib_file_8py_source.html#l00305">305</a> of file <a class="el" href="lib_file_8py_source.html">libFile.py</a>.</p>
+<p>Definition at line <a class="el" href="lib_file_8py_source.html#l00304">304</a> of file <a class="el" href="lib_file_8py_source.html">libFile.py</a>.</p>
 
 </div>
 </div>
@@ -884,7 +886,7 @@ Functions</h2></td></tr>
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><a class="el" href="namespace_p_k_d___tools.html">PKD_Tools</a></li><li class="navelem"><a class="el" href="namespace_p_k_d___tools_1_1lib_file.html">libFile</a></li>
-    <li class="footer">Generated on Mon Oct 3 2016 23:07:48 by
+    <li class="footer">Generated on Wed Dec 14 2016 08:38:50 for PKD Rig by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.12 </li>
   </ul>

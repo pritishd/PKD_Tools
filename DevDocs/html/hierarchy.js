@@ -1,5 +1,19 @@
 var hierarchy =
 [
+    [ "MetaRig", null, [
+      [ "PKD_Tools.Rigging.core.MetaRig", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_meta_rig.html", [
+        [ "PKD_Tools.Rigging.core.MovableSystem", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_movable_system.html", [
+          [ "PKD_Tools.Rigging.core.Ctrl", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_ctrl.html", null ],
+          [ "PKD_Tools.Rigging.core.Joint", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_joint.html", null ],
+          [ "PKD_Tools.Rigging.core.SpaceLocator", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_space_locator.html", null ],
+          [ "PKD_Tools.Rigging.core.SubSystem", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_sub_system.html", null ]
+        ] ],
+        [ "PKD_Tools.Rigging.core.Network", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_network.html", [
+          [ "PKD_Tools.Rigging.core.CartoonySystem", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_cartoony_system.html", null ],
+          [ "PKD_Tools.Rigging.core.JointSystem", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_joint_system.html", null ]
+        ] ]
+      ] ]
+    ] ],
     [ "object", null, [
       [ "PKD_Tools.libGeo.ObjManager", "class_p_k_d___tools_1_1lib_geo_1_1_obj_manager.html", null ],
       [ "PKD_Tools.libUnitTests.BatchTest", "class_p_k_d___tools_1_1lib_unit_tests_1_1_batch_test.html", null ],
@@ -15,6 +29,9 @@ var hierarchy =
           [ "PKD_Tools.libWeights.ClusterWeights", "class_p_k_d___tools_1_1lib_weights_1_1_cluster_weights.html", null ]
         ] ],
         [ "PKD_Tools.libWeights.SkinWeights", "class_p_k_d___tools_1_1lib_weights_1_1_skin_weights.html", null ]
+      ] ],
+      [ "PKD_Tools.Rigging.core.MetaEnhanced", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_meta_enhanced.html", [
+        [ "PKD_Tools.Rigging.core.MetaRig", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_meta_rig.html", null ]
       ] ]
     ] ],
     [ "QGroupBox", null, [
