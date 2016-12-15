@@ -97,7 +97,6 @@ def save_test_joint(parentJoint, systemType):
 
 def create_test_joint(systemType):
     """
-    @param parentJoint: the parent joint
     @param systemType: The test joint associated with the class
     joint -e -zso -oj yzx -sao zup joint1;
     """
