@@ -10,9 +10,10 @@ from PKD_Tools.Red9 import Red9_Meta
 from PKD_Tools.Rigging import core
 from PKD_Tools.Rigging import limb
 
+if __name__ == '__main__':
 
-for module in [libUnitTests, core, limb]:
-    reload(module)
+    for module in [libUnitTests, core, limb]:
+        reload(module)
 
 
 class UnitTestCase(libUnitTests.UnitTestCase):
@@ -61,7 +62,7 @@ class Droid(object):
 
         fkCtrls = [self.myCtrl]
         fkSystem.connectChildren(fkCtrls, "Ctrl")
-        fkSystem.convertSystemToComponent("FK")
+        fkSystem.convertSystemToSubSystem("FK")
 
     def reinitialise_meta_network(self):
         self.save_file()
@@ -85,7 +86,7 @@ class Droid(object):
     def create_advanced_ctrl_meta_network(self):
         self.create_simple_ctrl_meta_network()
         self.myCtrl.addGimbalMode()
-        self.myCtrl.addParentMaster()
+        self.myCtrl.add_parent_master()
 
 class ikDroid(Droid):
     def __init__(self):
@@ -95,7 +96,7 @@ class ikDroid(Droid):
     def create_simple_ik(self):
         pm.newFile(f=1)
         self.ikSystem = limb.Arm(side="C", part="Core")
-        self.ikSystem.test_build()
+        self.ikSystem.testBuild()
 
     def reinitialise_meta_network(self):
         self.save_file()
@@ -145,7 +146,7 @@ class BatchTest(libUnitTests.BatchTest):
         self.droid.create_simple_ik()
         self.suite = libUnitTests.unittest.TestSuite()
         self.addTest("test_meta_inheritance", targetNode=self.droid.ikSystem)
-        self.addTest("variable_is_not_none", targetNode=self.droid.ikSystem, variable_name="JointSystem")
+        self.addTest("variable_is_not_none", targetNode=self.droid.ikSystem, variable_name="jointSystem")
         self.addTest("variable_is_not_none", targetNode=self.droid.ikSystem, variable_name="ikHandle")
         self.addTest("variable_is_not_none", targetNode=self.droid.ikSystem, variable_name="mainIK")
         self.run_test("Testing IK")
@@ -155,7 +156,7 @@ class BatchTest(libUnitTests.BatchTest):
         self.droid.reinitialise_meta_network()
         self.suite = libUnitTests.unittest.TestSuite()
         self.addTest("test_meta_inheritance", targetNode=self.droid.ikSystem)
-        self.addTest("variable_is_not_none", targetNode=self.droid.ikSystem, variable_name="JointSystem")
+        self.addTest("variable_is_not_none", targetNode=self.droid.ikSystem, variable_name="jointSystem")
         self.addTest("variable_is_not_none", targetNode=self.droid.ikSystem, variable_name="ikHandle")
         self.addTest("variable_is_not_none", targetNode=self.droid.ikSystem, variable_name="mainIK")
         self.addTest("variable_is_not_none", targetNode=self.droid.ikSystem, variable_name="pv")
@@ -186,8 +187,8 @@ class BatchTest(libUnitTests.BatchTest):
 
 
 unit = BatchTest()
-#unit.test_meta_simple_create()
-#unit.test_meta_reopen()
+# unit.test_meta_simple_create()
+# unit.test_meta_reopen()
 # #
 # unit.test_meta_advanced_create()
 # unit.test_meta_advanced_reopen()
