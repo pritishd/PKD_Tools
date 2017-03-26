@@ -840,7 +840,7 @@ class ComplexSpine(SubControlSpine):
 if __name__ == '__main__':
     pm.newFile(f=1)
 
-    mainSystem = core.SubSystem(side="C", part="Core")
+    mainSystem = core.TransSubSystem(side="C", part="Core")
     ikSystem = HumanSpine(side="L", part="Core")
     ikSystem.ikControlToWorld = False
     #ikSystem.numHighLevelCtrls = 5
