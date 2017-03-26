@@ -1,10 +1,21 @@
 """
 @package PKD_Tools.Rigging.core
-@brief The main classes for the PKD rig system. All new system are created here until they can be grouped together to create new packages.
+@brief The main core classes for the PKD rig system. All new system are created here until they can be grouped together to create new packages.
+@details The PKD rig system uses the combination of the Red9 meta rig system and Pymel API as part of the core development process
+
+Red9 comes with many development API to traversing networks, getting control nodes easily and initialising objects after you open scene.
+In addition to this this makes PKD tools compatible  with the tools that comes with Red9 such as a well defined pose libary and mirroring system.
+
+PyMel which is natively supported also comes with powerful and developer friendly API such as their easy way to make connections and OpenMaya based functionality.
+
+However using these do come at the cost of speed however in the long run it will payoff for easier development process
+
+The PKD tools also officially compatible with the ZV Parent Master tool which is a very refined and production tested constraint management system.
+
+Just a small note with regards tto naming convention, while other aspects of the PKD_Tools tries to keep to the Pep8 convention however in the rigging
+part of the tool we use camelCase for all variable, properties and function to conform to naming standards in maya, Red9 and pymel
 """
 
-# TODO: Start documentation before the next rig system
-# TODO: rigging will user camelCase for all variable, properties and function to conform to naming standards in maya, Red9 and pymel
 # TODO: Try to create more meta subsystem eg for the spine, so that it is easier to navigate eg subCtrlSystem or hipSystem
 # TODO: Implement using format instead of % operate for string
 
@@ -30,12 +41,15 @@ def _fullSide_(side):
                 "C": "Centre"
                 }
     if side not in sideDict.keys():
-        raise RuntimeError("This is not supported short name for a side side: %s" % side)
-
+        raise RuntimeError("This is not supported short name for a side side: {0}".format(side))
     return sideDict[side]
 
 
 _SUBCOMPONENTS_ = ["FK", "IK", "DYN"]
+
+
+def buildSubComponent():
+    pass
 
 
 def forcePyNode(node):
@@ -54,7 +68,7 @@ def forcePyNode(node):
                 node = pm.PyNode(node)
             except:
                 print type(node)
-                raise Exception("Failed to Convert %" % node)
+                raise Exception("Failed to Convert {0}".format(node))
 
     return node
 
@@ -64,6 +78,7 @@ class MetaEnhanced(object):
     a metaRig class and never by itself"""
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     _pynode_ = None
+    debugMode = False
 
     # @endcond
 
@@ -84,20 +99,12 @@ class MetaEnhanced(object):
         if hasattr(self, "rotateOrder"):
             return self.pynode.rotateOrder.get(asString=True)
 
-    @property
-    def side(self):
-        """Return the current mirror side as string"""
-        return self.pynode.mirrorSide.get(asString=True)[0]
-
 
 class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
     """
     @brief An modfied Red9 meta rig class
-    @details This is overwridden class from Red9 MetaRig object. This is a very critical component as it has all the goodies
-    associated wih the red9 such as traversing networks, getting control components easily and initialising objects
-    after reloading scenes. In addition to this the rig will be compatible with tools that red9 offers such as pose library
-    and mirroring tools.
-    The MetaEnhanced is also a parent class give access to pynode functionality
+    @details This is overwridden class from Red9 MetaRig object. This is a very critical component
+    The MetaEnhanced is atttached as parent class give access to pymel pased functionality
     """
 
     def __init__(self, *args, **kwargs):
@@ -137,15 +144,12 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
         self.isSubComponent = False
 
         # An existing of systemType attribute means that this is a component
-        if hasattr( self, "systemType"):
+        if hasattr(self, "systemType"):
             if self.systemType in _SUBCOMPONENTS_:
                 self.isSubComponent = True
 
         # Return connected as meta
         self.returnNodesAsMeta = True
-
-        # debugMode
-        self.debugMode = False
 
     def __bindData__(self, *args, **kwgs):
         """Overwrite th e bind data so that we can add our own custom attributes"""
@@ -159,34 +163,44 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
                      attrType='enum', hidden=True)
         self.addAttr('rigType', '')
 
+    def addMetaSubSystem(self, subSystem, system="FK", **kwargs):
+        """Override red 9 add function """
+        if isinstance(subSystem, MovableSystem):
+            # Parent the group
+            subSystem.setParent(self)
+        # Connect it as a child
+        self.connectChild(subSystem, "%s_System" % system)
+        subSystem.systemType = system
+
     def convertToComponent(self, component="FK"):
         """
         Convert this system to a sub component.
         @param component (string) Type of subcomponent
         """
-        try:
-            if not self.isSubComponent:
-                componentName = "%s_%s" % (self.part, component)
-                nodeName = self.shortName().replace(self.part, componentName)
-                self.pynode.rename(nodeName)
-                self.mNodeID = nodeName
-            else:
-                # Node is already converted into a subcomponent
-                return
-        except Exception as e:
-            libUtilities.pyLog.info(str(e))
-            libUtilities.pyLog.info("Rename failed on:%s" % self.mNode)
-            self.select()
-            raise RuntimeError("Rename Failed")
-
-        libUtilities.strip_integer(self.pynode)
         # Add a new attr
         if not hasattr(self, "systemType"):
             self.addAttr("systemType", component)
         else:
             self.systemType = component
 
-        self.isSubComponent = True
+        hasConverted = True
+        if not self.isSubComponent:
+            self.isSubComponent = True
+            hasConverted = False
+        try:
+            if not hasConverted:
+                self.resetName()
+                self.mNodeID = self.trueName
+            else:
+                # Node is already converted into a subcomponent
+                return
+        except Exception as e:
+            libUtilities.pyLog.info(str(e))
+            libUtilities.pyLog.info("Rename failed on:{0}".format(self.mNode))
+            self.select()
+            raise RuntimeError("Rename Failed")
+
+        libUtilities.strip_integer(self.pynode)
 
     def getRigCtrl(self, target):
         """
@@ -275,9 +289,26 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
         """Return the name based on attributes in the meta rig. ThiS is used to rename duplicate node or in case it was
         renamed incorrectly"""
         # TODO: Adjust for subsystem type name
-        if not (self.side and self.part and self.rigType):
+        side = None
+        if type(self.side) == int:
+            side = self.pynode.mirrorSide.get(asString=True)[0]
+        else:
+            side = self.side
+
+        if not (side and self.part and self.rigType):
+            print "Side: {0}".format(side)
+            print "Part: {0}".format(self.part)
+            print "RigType: {0}".format(self.rigType)
             raise ValueError("One of the attribute are not defined. Cannot get true name")
-        return utils.name_me(self.side, self.part, self.rigType)
+        part = self.part
+        if self.isSubComponent:
+            part = "{0}_{1}".format(self.part, self.systemType)
+        return utils.name_me(side, part, self.rigType)
+
+    @property
+    def side(self):
+        """Return the current mirror side as string"""
+        return self.pynode.mirrorSide.get(asString=True)[0]
 
 
 class MovableSystem(MetaRig):
@@ -298,7 +329,7 @@ class MovableSystem(MetaRig):
         elif self.pynode.type() in ["transform", "joint"]:
             self.pynode.setParent(targetNode)
         else:
-            libUtilities.pyLog.error("{0:s} is not a transform/joint node. Unable to parent".format(self.pynode))
+            libUtilities.pyLog.error("{0} is not a transform/joint node. Unable to parent".format(self.pynode))
 
     def addParent(self, **kwargs):
         """Add parent node for the transform node"""
@@ -341,7 +372,7 @@ class MovableSystem(MetaRig):
         constraintNode = consFunc(target, self.constrainedNode, maintainOffset=kwargs["mo"]).name()
         if not eval("self.%sConstraint" % conType):
             constraintMeta = MetaRig(str(constraintNode))
-            constraintMeta.rigType = "%sCon" % libUtilities.capitalize(conType)
+            constraintMeta.rigType = "{0}{1}Con".format(self.rigType, libUtilities.capitalize(conType))
             constraintMeta.mirrorSide = self.mirrorSide
             constraintMeta.part = self.part
             self.addSupportNode(constraintMeta, "%sConstraint" % conType)
@@ -378,6 +409,7 @@ class MovableSystem(MetaRig):
     @property prnt
     @brief Get the parent node
     """
+
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     @property
     def constrainedNode(self):
@@ -421,30 +453,30 @@ class MovableSystem(MetaRig):
         # @endcond
 
 
-class SubSystem(MovableSystem):
+class TransSubSystem(MovableSystem):
     """This is a MovableSystem which can be converted to a subcomponent. Artist will not interact with this node."""
 
     def __bindData__(self, *args, **kwgs):
         """Ensure to add a systemType attribute is added"""
-        super(SubSystem, self).__bindData__(*args, **kwgs)
+        super(TransSubSystem, self).__bindData__(*args, **kwgs)
         self.addAttr('systemType', "")
-
-    def addMetaSubSystem(self, subSystem, system="FK", **kwargs):
-        """Override some the red9 function """
-        # Parent the group
-        subSystem.setParent(self)
-        # Connect it as a child
-        self.connectChild(subSystem, "%s_System" % system)
-        subSystem.systemType = system
 
 
 class Network(MetaRig):
-    """@details This is a MetaRig that doesn't create a transform node.
-    @details Used for organising nodes"""
+    """@brief This is a MetaRig that doesn't create a transform node.
+    @details Used for organising nodes and creating subsystem"""
+
     def __init__(self, *args, **kwargs):
         kwargs["nodeType"] = "network"
         kwargs["endSuffix"] = "Sys"
         super(Network, self).__init__(*args, **kwargs)
+
+
+class NetSubSystem(Network):
+    def __bindData__(self, *args, **kwgs):
+        """Ensure to add a systemType attribute is added"""
+        super(NetSubSystem, self).__bindData__(*args, **kwgs)
+        self.addAttr('systemType', "")
 
 
 class Joint(MovableSystem):
@@ -457,6 +489,7 @@ class Joint(MovableSystem):
         kwargs["nodeType"] = "joint"
         kwargs["endSuffix"] = kwargs.get("endSuffix", "Joint")
         super(Joint, self).__init__(*args, **kwargs)
+        self.pynode.side.set(self.pynode.mirrorSide.get())
 
     def setParent(self, targetSystem):
         """
@@ -474,8 +507,12 @@ class Joint(MovableSystem):
 
 
 class JointSystem(Network):
-    """Network class which deals with a collection of joint.  
+    """Network class which deals with a collection of joint.
+    TODO: it might be more useful to make the JointSystem aware to ignore the last joint instead of making the other systems
+    take care of that. Perhaps they can pass on this information to the joint system so that it prunes the last joint information
+    when something queries it. It need be it can always be switched to
     """
+
     # @cond DOXYGEN_SHOULD_SKIP_THIS
 
     def __init__(self, *args, **kwargs):
@@ -584,7 +621,7 @@ class JointSystem(Network):
         Create a new joint system object based on existing one. This can be customised to have new suffix or partial
         chain.
 
-        The easiest way to have customised suffic is to give an keyword argument
+        The easiest way to have customised suffix is to give an keyword argument
         """
         if self.jointData:
             # New joint system option
@@ -636,6 +673,7 @@ class JointSystem(Network):
     @property positions
     @brief Return the positions of the joints in world space
     '''
+
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     @property
     def joints(self):
@@ -660,7 +698,8 @@ class JointSystem(Network):
         else:
             libUtilities.pyLog.error("No joint data found")
         return positionList
-    # @endcond
+        # @endcond
+
 
 class SpaceLocator(MovableSystem):
     """
@@ -703,14 +742,48 @@ class Ctrl(MovableSystem):
                 <li>Gimbal - An extra controller to take handle gimbal lock issues</li>
     </ul>
     Depending on the rig requirement some controls may also have an additional ZV parent master setup to work with the
-    tool. It might be ideal to disable the extra transform for a lighter hierachy
+    tool. It might be ideal to disable the extra transform for a lighter hierarchy
     """
 
     def __init__(self, *args, **kwargs):
-        """Here we ensure that the control always has a Ctrl prefix"""
+        """Here we ensure that the control always has a Ctrl prefix
+           @property constrainedNode
+            @brief User defined folder where the weight and data file are saved
+            @property createdNodes
+            @brief Get the list of nodes that are already created
+            @property constrainedNode
+            @brief Get the list of all created transform meta nodes.
+            @property parantDriver
+            @brief Return the gimbal node or the control
+            @property xtra
+            @brief The node right above the control. Useful for doing things like set driven keys or alternative constraint setup
+            @property prnt
+            @brief The top most node in the hierarchy. This what get the constraint
+            @property gimbal
+            @brief The node right underneath the control. This allows us to take of rotation where it
+            @property hasGimbal
+            @brief Convenience bool function to see if there is a gimbal node.
+            @property pivot
+            @brief Allow to change the pivot of the control. This is parented underneath the control. Used mostly in a foot setup
+            @property hasPivot
+            @brief Convenience bool function to see if there is a pivot node
+            @property locator
+            @brief A locator that is connected to this control
+            @property parentMasterSN
+            @brief Node for the parent master setup
+            @property parentMasterPH
+            @brief Node for the parent master setup
+
+
+        """
         kwargs["endSuffix"] = "Ctrl"
         super(Ctrl, self).__init__(*args, **kwargs)
         # @cond DOXYGEN_SHOULD_SKIP_THIS
+        # @property hasLocator
+        # @brief Convenience bool function to see if there is a locator
+        # @property hasParentMaster
+        # @brief Convenience bool property to see if there is a parent master setup
+
         # Whether to create an xtra transform node inbetween. eg pole vector control do not require xtra
         self.createXtra = kwargs.get("createXtra", True)
         # Define the control shape
@@ -800,6 +873,7 @@ class Ctrl(MovableSystem):
 
     def addPivot(self):
         """Add animatable pivot to a control. Most useful in a @ref limb.Foot setup"""
+        # @cond DOXYGEN_SHOULD_SKIP_THIS
         self.pivot = MovableSystem(name=utils.name_me(self.side, self.part, "Pivot"), nodeType="transform")
         self.pivot.part = self.part
         self.pivot.rigType = "pivot"
@@ -821,6 +895,7 @@ class Ctrl(MovableSystem):
         self.addDivAttr("Show", "pivotVis")
         self.addBoolAttr("Pivot")
         self.pynode.Pivot >> self.pivot.pynode.v
+        # @endcond
 
     def addChild(self, targetNode):
         """In case we have gimbal we will add children to that other we will add to the ctrl itself"""
@@ -845,12 +920,12 @@ class Ctrl(MovableSystem):
         libUtilities.addDivAttr(self.mNode, label=label, ln=ln)
 
     def addBoolAttr(self, label, sn=""):
-        "Add a boolean atrbiture"
+        """Add a boolean atrbiture"""
         libUtilities.addBoolAttr(self.mNode, label=label, sn=sn)
 
     def addFloatAttr(self, attrName="", attrMax=1, attrMin=0, SV=0, sn="", df=0):
         """
-        Add a float attribute. Same arguments as @ref  libUtilities.addAttr 'addAttr'
+        Add a float attribute. Same arguments as @ref  libUtilities.addAttr "addAttr"
         """
         libUtilities.addAttr(self.mNode, attrName=attrName, attrMax=attrMax, attrMin=attrMin, SV=SV, sn=sn, df=df)
 
@@ -869,9 +944,8 @@ class Ctrl(MovableSystem):
         for item in self.createdNodes:
             libUtilities.lock_scale(item.pynode)
 
-
     def _createRotateDriver_(self):
-
+        """Internal function to create a rotate driver"""
         pmaMeta = MetaRig(side=self.side,
                           part=self.part,
                           endSuffix="RotateDriver",
@@ -882,6 +956,7 @@ class Ctrl(MovableSystem):
         return pmaMeta
 
     def _connectAxisRotateDriver_(self, axis):
+        """Internal function to connect rotate driver"""
         pmaMeta = self.getSupportNode("RotateDriver")
         if not pmaMeta:
             pmaMeta = self._createRotateDriver_()
@@ -905,7 +980,10 @@ class Ctrl(MovableSystem):
     def getRotateDriver(self, axis):
         """
         A rotate driver is where instead of using direct connections we use plus minus average
-        This will allows us to add rotation value from gimbal node and the control"""
+        This will allows us to add rotation value from gimbal node and the control
+        @param axis (string) Which XYZ axis that is being driven
+        @return Pynode attribute that needs to be connected
+        """
         if self.hasGimbal:
             pmaMeta = self._connectAxisRotateDriver_(axis)
             if axis == "X":
@@ -915,35 +993,8 @@ class Ctrl(MovableSystem):
             else:
                 return pmaMeta.pynode.output3Dz
         else:
-            self.pynode.attr("rotate{0:s}".format(axis))
+            self.pynode.attr("rotate{0}".format(axis))
 
-
-    '''
-    @property constrainedNode
-    @brief User defined folder where the weight and data file are saved
-    @property createdNodes
-    @brief Get the list of nodes that are already created
-    @property constrainedNode
-    @brief Get the list of all created transform meta nodes.
-    @property parantDriver
-    @brief Return the gimbal node or the control
-    @property xtra
-    @brief The node right above the control. Useful for doing things like set driven keys or alternative constraint setup
-    @property gimbal
-    @brief The node right underneath the control. This allows us to take of rotation where it
-    @property hasGimbal
-    @brief Convenience bool function to see if there is a gimbal node.
-    @property pivot
-    @brief Allow to change the pivot of the control. This is parented underneath the control. Used mostly in a foot setup
-    @property hasPivot
-    @brief Convenience bool function to see if there is a pivot node
-    @property locator
-    @brief A locator that is connectected to this control
-    @property hasLocator
-    @brief Convenience bool function to see if there is a locator
-    @property hasParentMaster
-    @brief Convenience bool property to see if there is a parent master setup
-    '''
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     @property
     def createdNodes(self):
@@ -1036,7 +1087,7 @@ class Ctrl(MovableSystem):
     def parentMasterSN(self, data):
         # TODO: Pass the slot number before and axis data
         self.addSupportNode(data, "ParentMasterSN")
-    #
+
 
 class Anno_Loc(SpaceLocator):
     """This is a a annoated locator"""
@@ -1056,13 +1107,15 @@ class MyCameraMeta(Red9_Meta.MetaClass, MetaEnhanced):
 
     def __init__(self, *args, **kwargs):
         super(MyCameraMeta, self).__init__(nodeType='camera', *args, **kwargs)
-    # @endcond
+        # @endcond
+
 
 class CartoonySystem(Network):
-    """@brief A setup which simulates the squash and stretch effect through a joints
-    @details This is setup which simulates a squash and stretch deformer that can be driven by the scale value on the joints
-    It needs a trigger atrribute whose value can range from 0.001 to infinity. This can come from a joint or lenght value
+    """@brief A setup which simulates the squash and stretch effect through joints
+    @details The effect that can be driven by the scale value on the joints
+    It needs a trigger attribute whose value can range from 0.001 to infinity. This can come from a joint or length value
     """
+
     def __init__(self, *args, **kwargs):
         super(CartoonySystem, self).__init__(*args, **kwargs)
 
@@ -1151,6 +1204,7 @@ class CartoonySystem(Network):
         positiveClamp.pynode.outputR >> triggerCondition.pynode.colorIfTrueR
         negativeClamp.pynode.outputR >> triggerCondition.pynode.colorIfFalseR
         inverseMultiply.pynode.outputX >> inverseCondition.pynode.colorIfTrueR
+
     # @endcond
 
     def connectDisable(self, attr):
@@ -1214,7 +1268,8 @@ class CartoonySystem(Network):
     @property
     def inverseMultiply(self):
         return self.getSupportNode("InverseMultiply")
-    # @endcond
+        # @endcond
+
 
 Red9_Meta.registerMClassInheritanceMapping()
 Red9_Meta.registerMClassNodeMapping(nodeTypes=['transform',
