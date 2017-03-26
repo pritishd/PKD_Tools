@@ -390,7 +390,7 @@ def strip_integer(item):
 def strip_integer_in_string(name):
     """Strip interger from string"""
     i = 0
-    for i in range(len(name) - 1, 0 - 1, -1):
+    for i in range(len(name) - 1, - 1, -1):
         if not name[i].isdigit():
             i += 1
             break
