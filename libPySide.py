@@ -28,7 +28,7 @@ def getMayaMainWindow():
     return wrapInstance(long(accessMainWindow), QtGui.QMainWindow)
 
 class QMessageBox(QtGui.QMessageBox):
-    """ Setup up of convience message boxes"""
+    """ Setup up of convenience message boxes"""
 
     def __init__(self):
         super(QMessageBox, self).__init__(parent=getMayaMainWindow())
@@ -478,7 +478,7 @@ def horizontal_divider():
     return divider
 
 
-def vLine_divider():
+def vertical_divider():
     """Return a vertical divider"""
     divider = QtGui.QFrame()
     divider.setFrameShape(QtGui.QFrame.VLine)
