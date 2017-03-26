@@ -6,12 +6,12 @@ from PKD_Tools.Red9 import Red9_CoreUtils
 from PKD_Tools.Rigging import core
 from PKD_Tools.Rigging import utils
 
+if __name__ == '__main__':
+    for module in core, utils, libUtilities:
+        reload(module)
 
-# if __name__ == '__main__':
-#     for module in core, utils, libUtilities:
-#         reload(module)
 
-class Rig(core.SubSystem):
+class Rig(core.TransSubSystem):
     """This is base System. Transform is the main"""
 
     def __init__(self, *args, **kwargs):
@@ -23,6 +23,7 @@ class Rig(core.SubSystem):
         self.mirrorData = {'side': self.mirrorSide, 'slot': 1}
         self.hasParentMaster = False
         self.hasPivot = False
+        self._evaluateLastJoint = True
 
     def createProxyCube(self, targetJoint, childJoint):
         # Get the height
@@ -111,22 +112,44 @@ class Rig(core.SubSystem):
         pass
 
     def addStretch(self):
-        for position, ctrl in enumerate(self.MainCtrls):
+        for position, ctrl in enumerate(self.mainCtrls):
             if position:
                 # Get the driver joint
                 driveJoint = self.offsetJointSystem.joints[position - 1]
                 # Parent Constraint the ctrl to the previous joint
                 ctrl.addConstraint(driveJoint.pynode, maintainOffset=True)
             # Connect the scale lenght
-            scaleAxis = "s%s" % self.primaryAxis[0]
+            scaleAxis = "s{0}".format(self.primaryAxis[0])
             # Connect the stretch axis
             ctrl.pynode.attr(scaleAxis) >> self.jointSystem.joints[position].pynode.attr(scaleAxis)
 
+    def addSquash(self):
+        # Add a network
+        mainCartoonySystem = core.NetSubSystem(side=self.side, part="Cartoony")
+        self.addMetaSubSystem(mainCartoonySystem, "Cartoony")
+
+        axis = self.mainCtrls[0].primaryAxis.upper()
+        for i in range(len(self.jointSystem)-int(bool(self.evaluateLastJoint))):
+            cartoonySystem = core.CartoonySystem(side=self.side, part="{0}Toon".format(self.mainCtrls[i].part))
+            mainCartoonySystem.addMetaSubSystem(cartoonySystem, "Cartoony{0}".format(self.mainCtrls[i].part))
+            cartoonySystem.build()
+            self.mainCtrls[i].addBoolAttr("disable")
+            self.mainCtrls[i].addFloatAttr("elasticity", 50, -50)
+            cartoonySystem.connectDisable(self.mainCtrls[i].pynode.disable)
+            cartoonySystem.connectElasticity(self.mainCtrls[i].pynode.elasticity)
+            cartoonySystem.connectTrigger(self.mainCtrls[i].pynode.attr("scale%s" % axis[0]))
+            cartoonySystem.connectOutput(self.jointSystem.joints[i].pynode.attr("scale%s" % axis[1]))
+            cartoonySystem.connectOutput(self.jointSystem.joints[i].pynode.attr("scale%s" % axis[2]))
+
+        if self.systemType:
+            mainCartoonySystem.convertSystemToSubSystem(self.systemType)
+
     def buildSquashStretch(self):
+        # TODO: Ensure the rig is built already
         if self.isDeformable:
             self.addStretch()
             if self.isCartoony:
-                self.add_squash()
+                self.addSquash()
 
     @property
     def jointSystem(self):
@@ -147,6 +170,20 @@ class Rig(core.SubSystem):
     @property
     def isDeformable(self):
         return self.isCartoony or self.isStretchable
+
+    @property
+    def evaluateLastJoint(self):
+        if self._evaluateLastJoint:
+            return None
+        else:
+            return -1
+
+    @evaluateLastJoint.setter
+    def evaluateLastJoint(self, boolData):
+        if not isinstance(boolData, bool):
+            raise TypeError("Value must be a boolean")
+        else:
+            self._evaluateLastJoint = boolData
 
 
 class Ik(Rig):
@@ -176,7 +213,7 @@ class Generic(Rig):
         # Setup the mainCtrl
         ctrls = []
         # Iterate through all the joints
-        for position, joint in enumerate(self.jointSystem.joints):
+        for position, joint in enumerate(self.jointSystem.joints[0:self.evaluateLastJoint]):
             # Create and snap the control
             ctrlMeta = self.createCtrlObj(joint.part, self.mainCtrlShape)
             ctrlMeta.snap(joint.pynode)
@@ -198,9 +235,9 @@ class Generic(Rig):
     def buildOffsetJoint(self):
         # Build the help joint system
         self.offsetJointSystem = self.jointSystem.replicate(side=self.side,
-                                                            part="%sOffsetJoints" % self.part,
-                                                            endPosition=-1,
-                                                            supportType="Offset")
+                                                            part=self.part,
+                                                            endPosition=-1-int(bool(self.evaluateLastJoint)),
+                                                            supportType="OffsetJoints")
 
         # snap each offset joint to the same position as the next joint
         for i in range(len(self.offsetJointSystem)):
@@ -233,7 +270,6 @@ class Generic(Rig):
         if self.isDeformable:
             self.buildOffsetJoint()
         self.connectControl()
-        self.buildSquashStretch()
         self.cleanUp()
 
     @property
@@ -244,7 +280,7 @@ class Generic(Rig):
     def mainCtrls(self, ctrlList):
         if not ctrlList:
             raise RuntimeError("Please input a list of meta Ctrls")
-        self.connectChildren(ctrlList, "MainCtrls", allowIncest=True, cleanCurrent=True)
+        self.connectChildren(ctrlList, "SUP_MainCtrls", allowIncest=True, cleanCurrent=True)
 
     @property
     def offsetJointSystem(self):
@@ -256,8 +292,18 @@ class Generic(Rig):
 
 
 class FK(Generic):
-    # A system where the translation are locked. Elbow axis can be locked locked
-    pass
+    def __init__(self, *args, **kwargs):
+        super(FK, self).__init__(*args, **kwargs)
+
+    def build(self):
+        # A system where the translation are locked. Elbow axis can be locked locked
+        super(FK, self).build()
+        # Lock the elbow
+        if self.mainCtrls:
+            for attr in self.primaryAxis[1:]:
+                self.mainCtrls[-2].pynode.attr("rotate{0}".format(attr.upper())).lock()
+        else:
+            raise RuntimeError("Main controls are empty")
 
 
 class Hand(FK):
@@ -277,28 +323,13 @@ class Blender(Rig):
 
 if __name__ == '__main__':
     pm.newFile(f=1)
-    mainSystem = core.SubSystem(side="C", part="Core")
-    fkSystem = Generic(side="C", part="Core")
-    fkSystem.isStretchable = True
+    mainSystem = core.TransSubSystem(side="C", part="Core")
+    fkSystem = FK(side="C", part="Core")
+    fkSystem.isCartoony = True
     mainSystem.addMetaSubSystem(fkSystem, "FK")
     # ikSystem.ikControlToWorld = Tru
+    fkSystem.evaluateLastJoint = True
     fkSystem.testBuild()
     fkSystem.convertSystemToSubSystem(fkSystem.systemType)
-    # TODO: Double transform node for the mainSystem
-    cartoonySystem = core.CartoonySystem(side="C", part=fkSystem.mainCtrls[0].part)
-    cartoonySystem.build()
-    mainSystem.addMetaSubSystem(cartoonySystem, "Cartoony")
-    axis = fkSystem.mainCtrls[0].primaryAxis.upper()
-    fkSystem.mainCtrls[0].addBoolAttr("disable")
-    fkSystem.mainCtrls[0].addFloatAttr("elasticity", 50, -50)
-
-    cartoonySystem.convertSystemToSubSystem("Toon")
-    cartoonySystem.connectDisable(fkSystem.mainCtrls[0].pynode.disable)
-    cartoonySystem.connectElasticity(fkSystem.mainCtrls[0].pynode.elasticity)
-    cartoonySystem.connectTrigger(fkSystem.mainCtrls[0].pynode.attr("scale%s" % axis[0]))
-    cartoonySystem.connectOutput(fkSystem.jointSystem.joints[0].pynode.attr("scale%s" % axis[1]))
-    cartoonySystem.connectOutput(fkSystem.jointSystem.joints[0].pynode.attr("scale%s" % axis[2]))
-
-    fkSystem.mainCtrls[0].pynode.attr("scale%s" % axis[0]) >> fkSystem.jointSystem.joints[0].pynode.attr(
-        "scale%s" % axis[0])
+    fkSystem.buildSquashStretch()
     print "Done"
