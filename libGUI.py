@@ -8,13 +8,7 @@ from functools import partial
 import pymel.core as pm
 
 if __name__ == '__main__':
-    localPath = r"C:\Users\admin\Documents\maya\scripts\PKD_Tools"
-    import sys
-
-    if localPath not in sys.path:
-        sys.path.append(localPath)
-
-    localPath = r"H:\maya\scripts\PKD_Tools"
+    localPath = r"C:\Users\Pritish\Documents\maya\scripts\PKD_Tools"
     import sys
 
     if localPath not in sys.path:
