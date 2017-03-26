@@ -433,7 +433,7 @@ class Hoof(object):
             # Delete helper joint
             pm.delete(helperJnt)
 
-    def build_control(self):
+    def buildControl(self):
         # Create the roll system
         self.RollSystem = core.Network(part=self.part + "Roll", side=self.side)
 
@@ -482,13 +482,13 @@ class Hoof(object):
         # Reparent the Syste
         self.mainIK.addChild(tipToeRoll.prnt.mNode)
 
-    def reparent_joints(self):
+    def reparentJoints(self):
         self.jointSystem.joints[-1].setParent(
             self.jointSystem.joints[self.endJointNumber])
 
-    def build_ik(self):
+    def buildIk(self):
         # Reparent the toe
-        self.reparent_joints()
+        self.reparentJoints()
         self.ballIKHandle = _build_ik_(self,
                                        SOLVERS["Single"],
                                        "BallIKHandle",
@@ -520,11 +520,11 @@ class ArmHoof(Arm, Hoof):
     def buildControl(self):
         self.hasPivot = True
         Arm.buildControl(self)
-        Hoof.build_control(self)
+        Hoof.buildControl(self)
 
     def buildIk(self):
         Arm.buildIk(self)
-        Hoof.build_ik(self)
+        Hoof.buildIk(self)
 
     def alignControl(self):
         Arm.alignControl(self)
@@ -539,11 +539,11 @@ class HipHoof(Hip, Hoof):
     def buildControl(self):
         self.hasPivot = True
         Hip.buildControl(self)
-        Hoof.build_control(self)
+        Hoof.buildControl(self)
 
     def buildIk(self):
         Hip.buildIk(self)
-        Hoof.build_ik(self)
+        Hoof.buildIk(self)
 
     def alignControl(self):
         Hip.alignControl(self)
@@ -558,11 +558,11 @@ class QuadHoof(Quad, Hoof):
     def buildControl(self):
         self.hasPivot = True
         Quad.buildControl(self)
-        Hoof.build_control(self)
+        Hoof.buildControl(self)
 
     def buildIk(self):
         Quad.buildIk(self)
-        Hoof.build_ik(self)
+        Hoof.buildIk(self)
 
     def alignControl(self):
         Quad.alignControl(self)
@@ -576,8 +576,8 @@ class Foot(Hoof):
         super(Foot, self).__init__(*args, **kwargs)
         self.rollAttrs = ["Heel", "Ball", "Toe", "TipToe"]
 
-    def build_ik(self):
-        self.reparent_joints()
+    def buildIk(self):
+        self.reparentJoints()
         self.ballIKHandle = _build_ik_(self,
                                        SOLVERS["Single"],
                                        "BallIKHandle",
@@ -590,8 +590,8 @@ class Foot(Hoof):
                                       -3,
                                       -2)
 
-    def build_control(self):
-        super(Foot, self).build_control()
+    def buildControl(self):
+        super(Foot, self).buildControl()
         # Create reverse foot
         ballRoll = core.MovableSystem(part=self.part, side=self.side, endSuffix="BallRoll")
         ballRoll.addParent(snap=False, endSuffix="ballRollPrnt")
@@ -637,11 +637,11 @@ class ArmFoot(Arm, Foot):
     def buildControl(self):
         self.hasPivot = True
         Arm.buildControl(self)
-        Foot.build_control(self)
+        Foot.buildControl(self)
 
     def buildIk(self):
         Arm.buildIk(self)
-        Foot.build_ik(self)
+        Foot.buildIk(self)
 
     def alignControl(self):
         Arm.alignControl(self)
@@ -656,11 +656,11 @@ class HipFoot(Hip, Foot):
     def buildControl(self):
         self.hasPivot = True
         Hip.buildControl(self)
-        Foot.build_control(self)
+        Foot.buildControl(self)
 
     def buildIk(self):
         Hip.buildIk(self)
-        Foot.build_ik(self)
+        Foot.buildIk(self)
 
     def alignControl(self):
         Hip.alignControl(self)
@@ -675,11 +675,11 @@ class QuadFoot(Quad, Foot):
     def buildControl(self):
         self.hasPivot = True
         Quad.buildControl(self)
-        Foot.build_control(self)
+        Foot.buildControl(self)
 
     def buildIk(self):
         Quad.buildIk(self)
-        Foot.build_ik(self)
+        Foot.buildIk(self)
 
     def alignControl(self):
         Quad.alignControl(self)
@@ -691,22 +691,22 @@ class Paw(Foot):
         super(Paw, self).__init__(*args, **kwargs)
         self.rollAttrs = ["Heel", "Ball", "Ankle", "Toe", "TipToe"]
 
-    def reparent_joints(self):
+    def reparentJoints(self):
         self.jointSystem.joints[-1].setParent(
             self.jointSystem.joints[self.endJointNumber + 1])
 
-    def build_ik(self):
+    def buildIk(self):
         # Reparent the toe
-        self.reparent_joints()
-        super(Paw, self).build_ik()
+        self.reparentJoints()
+        super(Paw, self).buildIk()
         self.ankleIKHandle = _build_ik_(self,
                                         SOLVERS["Single"],
                                         "AnkleIKHandle",
                                         self.endJointNumber,
                                         self.endJointNumber + 1)
 
-    def build_control(self):
-        super(Paw, self).build_control()
+    def buildControl(self):
+        super(Paw, self).buildControl()
         # Create toe control
         ankleRoll = core.MovableSystem(part=self.part, side=self.side, endSuffix="AnkleRoll")
         ankleRoll.addParent(snap=False, endSuffix="ankleRollPrnt")
@@ -744,11 +744,11 @@ class ArmPaw(Arm, Paw):
     def buildControl(self):
         self.hasPivot = True
         Arm.buildControl(self)
-        Paw.build_control(self)
+        Paw.buildControl(self)
 
     def buildIk(self):
         Arm.buildIk(self)
-        Paw.build_ik(self)
+        Paw.buildIk(self)
 
     def alignControl(self):
         Arm.alignControl(self)
@@ -763,11 +763,11 @@ class HipPaw(Hip, Paw):
     def buildControl(self):
         self.hasPivot = True
         Hip.buildControl(self)
-        Paw.build_control(self)
+        Paw.buildControl(self)
 
     def buildIk(self):
         Hip.buildIk(self)
-        Paw.build_ik(self)
+        Paw.buildIk(self)
 
     def alignControl(self):
         Hip.alignControl(self)
@@ -782,11 +782,11 @@ class QuadPaw(Quad, Paw):
     def buildControl(self):
         self.hasPivot = True
         Quad.buildControl(self)
-        Paw.build_control(self)
+        Paw.buildControl(self)
 
     def buildIk(self):
         Quad.buildIk(self)
-        Paw.build_ik(self)
+        Paw.buildIk(self)
 
     def alignControl(self):
         Quad.alignControl(self)
@@ -799,10 +799,10 @@ core.Red9_Meta.registerMClassNodeMapping(nodeTypes=['ikHandle',
                                                     "clamp"])
 if __name__ == '__main__':
     pm.newFile(f=1)
-    mainSystem = core.SubSystem(side="C", part="Core")
+    #mainSystem = core.SubSystem(side="C", part="Core")
     ikSystem = ArmHand(side="C", part="Core")
-    mainSystem.addMetaSubSystem(ikSystem, "IK")
+    #mainSystem.addMetaSubSystem(ikSystem, "IK")
     # ikSystem.ikControlToWorld = True
     ikSystem.testBuild()
-    ikSystem.convertSystemToSubSystem(ikSystem.systemType)
+    # ikSystem.convertSystemToSubSystem(ikSystem.systemType)
     # TODO: Double transform node for the mainSystem
