@@ -1,7 +1,7 @@
-'''
+"""
 @package PKD_Tools.libFile
 @brief Common OS methods encapsulated in a user friendly method.
-'''
+"""
 
 import inspect
 import os
