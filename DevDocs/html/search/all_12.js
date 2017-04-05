@@ -2,7 +2,7 @@ var searchData=
 [
   ['safepath',['safePath',['../namespace_p_k_d___tools_1_1lib_file.html#a291a20f0decd4306fcc6da78f4d44a70',1,'PKD_Tools::libFile']]],
   ['save_5fdata',['save_data',['../class_p_k_d___tools_1_1lib_weights_1_1_weights.html#a33533319062acb468711288dd7febb0d',1,'PKD_Tools::libWeights::Weights']]],
-  ['save_5ftest_5fjoint',['save_test_joint',['../namespace_p_k_d___tools_1_1_rigging_1_1utils.html#a52cf4a306db21da350e3799860120a97',1,'PKD_Tools::Rigging::utils']]],
+  ['savetestjoint',['saveTestJoint',['../namespace_p_k_d___tools_1_1_rigging_1_1utils.html#aae010eb4467b5f9aded2c694986cd4fc',1,'PKD_Tools::Rigging::utils']]],
   ['scene_5fcheck_5fbutton',['scene_check_button',['../class_p_k_d___tools_1_1lib_g_u_i_1_1_obj_manager_g_u_i.html#a3cd6d6ee8b65e96e5d43f74147801d88',1,'PKD_Tools::libGUI::ObjManagerGUI']]],
   ['search_5fpattern_5fin_5ffolder',['search_pattern_in_folder',['../namespace_p_k_d___tools_1_1lib_file.html#abc3a9320c7110f2860ae1c10e8ff4ebe',1,'PKD_Tools::libFile']]],
   ['select_5fvertices',['select_vertices',['../namespace_p_k_d___tools_1_1lib_utilities.html#ad65c7677649bc2ccbf66ed4e5c080cd0',1,'PKD_Tools::libUtilities']]],
@@ -16,7 +16,7 @@ var searchData=
   ['setup_5fcleanse_5fscene',['setup_cleanse_scene',['../class_p_k_d___tools_1_1lib_geo_1_1_obj_manager.html#a292679bb95c188523cdd8f34efc61cb7',1,'PKD_Tools::libGeo::ObjManager']]],
   ['setwindowicon',['setWindowIcon',['../class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window.html#ad81240f8555b9402b0116092215347d9',1,'PKD_Tools::libPySide::QMainWindow']]],
   ['show',['show',['../class_p_k_d___tools_1_1lib_py_side_1_1_q_main_window.html#a5a036de745ab97e016865b4af1e303bd',1,'PKD_Tools.libPySide.QMainWindow.show()'],['../class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window.html#a2094109c9183af650f7a5d88bd7edcd9',1,'PKD_Tools.libPySide.QDockableWindow.show()']]],
-  ['side',['side',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_meta_enhanced.html#a0a9a83a142d965704299f5d41767d872',1,'PKD_Tools::Rigging::core::MetaEnhanced']]],
+  ['side',['side',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_meta_rig.html#a13131a5310ddd42972b901d5bd482163',1,'PKD_Tools::Rigging::core::MetaRig']]],
   ['simplespine',['SimpleSpine',['../class_p_k_d___tools_1_1_rigging_1_1spine_1_1_simple_spine.html',1,'PKD_Tools::Rigging::spine']]],
   ['skinctrlcurve',['skinCtrlCurve',['../class_p_k_d___tools_1_1_rigging_1_1spine_1_1_sub_control_spine.html#a3bb2cc62fbdae73a27cb3747ef67d7c5',1,'PKD_Tools::Rigging::spine::SubControlSpine']]],
   ['skingeo',['skinGeo',['../namespace_p_k_d___tools_1_1lib_utilities.html#afd73dc8f6e88bfb355f8386a051aca8c',1,'PKD_Tools::libUtilities']]],
@@ -38,7 +38,6 @@ var searchData=
   ['strip_5finteger_5fin_5fstring',['strip_integer_in_string',['../namespace_p_k_d___tools_1_1lib_utilities.html#aa3967878d84c2213579ac0d173bf5251',1,'PKD_Tools::libUtilities']]],
   ['subcontrolspine',['SubControlSpine',['../class_p_k_d___tools_1_1_rigging_1_1spine_1_1_sub_control_spine.html',1,'PKD_Tools::Rigging::spine']]],
   ['subctrls',['SubCtrls',['../class_p_k_d___tools_1_1_rigging_1_1spine_1_1_sub_control_spine.html#a60bd58122b71f24e88a45e879e4bf4c3',1,'PKD_Tools.Rigging.spine.SubControlSpine.SubCtrls()'],['../class_p_k_d___tools_1_1_rigging_1_1spine_1_1_sub_control_spine.html#af3569fe3ddfd052f904890d4f2fe668a',1,'PKD_Tools.Rigging.spine.SubControlSpine.SubCtrls(self)'],['../class_p_k_d___tools_1_1_rigging_1_1spine_1_1_sub_control_spine.html#a2d75c5893a9725cad74b6089f7c85dfe',1,'PKD_Tools.Rigging.spine.SubControlSpine.SubCtrls(self, ctrlList)']]],
-  ['subsystem',['SubSystem',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_sub_system.html',1,'PKD_Tools::Rigging::core']]],
   ['suite',['suite',['../class_p_k_d___tools_1_1lib_unit_tests_1_1_batch_test.html#af129a644a9933612557c9f702c9fd2fc',1,'PKD_Tools::libUnitTests::BatchTest']]],
   ['systemtype',['systemType',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_meta_rig.html#af4f28eb1e52f20776dd532338c66ad89',1,'PKD_Tools::Rigging::core::MetaRig']]]
 ];

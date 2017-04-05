@@ -9,9 +9,9 @@ var searchData=
   ['import_5fdata',['import_data',['../class_p_k_d___tools_1_1lib_weights_1_1_weights.html#a7c02013e4975c6cbbd6bcfa018e78a97',1,'PKD_Tools::libWeights::Weights']]],
   ['infogrp',['infoGrp',['../class_p_k_d___tools_1_1_rigging_1_1spine_1_1_ik_spine.html#a4bb960d5f10601c1e947b62fe0ccc84e',1,'PKD_Tools::Rigging::spine::IkSpine']]],
   ['init_5ffloat_5fstate',['init_float_state',['../class_p_k_d___tools_1_1lib_g_u_i_1_1_tangent_swapper.html#aacbd42d85c55a8ab9172bbe649e35d62',1,'PKD_Tools.libGUI.TangentSwapper.init_float_state()'],['../class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window.html#aae83a251625ba7fc2dd10434f975819a',1,'PKD_Tools.libPySide.QDockableWindow.init_float_state()']]],
-  ['iscartoony',['isCartoony',['../class_p_k_d___tools_1_1_rigging_1_1parts_1_1_rig.html#a7722f86941ff3c31a3907933e0c59205',1,'PKD_Tools::Rigging::parts::Rig']]],
+  ['iscartoony',['isCartoony',['../class_p_k_d___tools_1_1_rigging_1_1parts_1_1_rig.html#a7722f86941ff3c31a3907933e0c59205',1,'PKD_Tools.Rigging.parts.Rig.isCartoony()'],['../namespace_p_k_d___tools_1_1_rigging_1_1parts.html#a27a2682d32519ca192f4dad1ec26c0db',1,'PKD_Tools.Rigging.parts.isCartoony()']]],
   ['iscollapsable',['isCollapsable',['../class_p_k_d___tools_1_1lib_py_side_1_1_q_group_box.html#a602666f58e307a12585443619d13ce98',1,'PKD_Tools::libPySide::QGroupBox']]],
   ['iscollapsed',['isCollapsed',['../class_p_k_d___tools_1_1lib_py_side_1_1_q_group_box.html#a6fd46ed9a818645a61d0a4fdc629d6c8',1,'PKD_Tools::libPySide::QGroupBox']]],
-  ['isstretchable',['isStretchable',['../class_p_k_d___tools_1_1_rigging_1_1parts_1_1_rig.html#ab801a676d6ecd7a75520e8de06fdbfca',1,'PKD_Tools.Rigging.parts.Rig.isStretchable()'],['../namespace_p_k_d___tools_1_1_rigging_1_1parts.html#a56d8d46d46d868274b25202bfd2cc869',1,'PKD_Tools.Rigging.parts.isStretchable()']]],
+  ['isstretchable',['isStretchable',['../class_p_k_d___tools_1_1_rigging_1_1parts_1_1_rig.html#ab801a676d6ecd7a75520e8de06fdbfca',1,'PKD_Tools::Rigging::parts::Rig']]],
   ['issubcomponent',['isSubComponent',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_meta_rig.html#a3ec24c665ae7752ecb9fba01ee5b84dc',1,'PKD_Tools::Rigging::core::MetaRig']]]
 ];

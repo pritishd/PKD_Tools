@@ -8,12 +8,13 @@ var searchData=
   ['adddivattr',['addDivAttr',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_ctrl.html#aee9bfa90da81ab3371c894e82342fa81',1,'PKD_Tools.Rigging.core.Ctrl.addDivAttr()'],['../namespace_p_k_d___tools_1_1lib_utilities.html#a9cc7f15a5bdc78015b9b52684e2ecc50',1,'PKD_Tools.libUtilities.addDivAttr()']]],
   ['addfloatattr',['addFloatAttr',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_ctrl.html#a4c82ee83d245ffade89526259d0d1474',1,'PKD_Tools::Rigging::core::Ctrl']]],
   ['addgimbalmode',['addGimbalMode',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_ctrl.html#a982cf904a75d0dffc7b37f10ac727f3a',1,'PKD_Tools::Rigging::core::Ctrl']]],
-  ['addmetasubsystem',['addMetaSubSystem',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_sub_system.html#a6eba40633070ba65ad26fff09b0e2bc0',1,'PKD_Tools::Rigging::core::SubSystem']]],
+  ['addmetasubsystem',['addMetaSubSystem',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_meta_rig.html#a548dfa9548a9db405fc061a5115e21b8',1,'PKD_Tools::Rigging::core::MetaRig']]],
   ['addparent',['addParent',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_movable_system.html#abc1ed63524bfb4fefbe16c96b9cdd1d5',1,'PKD_Tools::Rigging::core::MovableSystem']]],
   ['addparentmaster',['addParentMaster',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_ctrl.html#aff01d7ae4783df2060e0cfcefc551ef3',1,'PKD_Tools::Rigging::core::Ctrl']]],
   ['addpivot',['addPivot',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_ctrl.html#a41de18a2f87a4316bbe906d544d82379',1,'PKD_Tools::Rigging::core::Ctrl']]],
   ['addrigctrl',['addRigCtrl',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_meta_rig.html#a77acc9d00b72732c2cb7072482cbd77e',1,'PKD_Tools::Rigging::core::MetaRig']]],
   ['addspacelocator',['addSpaceLocator',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_ctrl.html#a854b852ced6be8390b2b8d00539983aa',1,'PKD_Tools::Rigging::core::Ctrl']]],
+  ['addsquash',['addSquash',['../class_p_k_d___tools_1_1_rigging_1_1parts_1_1_rig.html#a5ace9c305fa51e419e6811066974cc87',1,'PKD_Tools::Rigging::parts::Rig']]],
   ['addstrattr',['addStrAttr',['../namespace_p_k_d___tools_1_1lib_utilities.html#a970cf61a4364ae52441604a40cb76921',1,'PKD_Tools::libUtilities']]],
   ['addstretch',['addStretch',['../class_p_k_d___tools_1_1_rigging_1_1parts_1_1_rig.html#a227f8a6645b8828e82c832ab0bd40d80',1,'PKD_Tools.Rigging.parts.Rig.addStretch()'],['../class_p_k_d___tools_1_1_rigging_1_1spine_1_1_ik_spine.html#a43e6e75e814aecf6245211ef0085a856',1,'PKD_Tools.Rigging.spine.IkSpine.addStretch()']]],
   ['addsupportnode',['addSupportNode',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_meta_rig.html#a4b3646795e3bb166269a9f91e825eda9',1,'PKD_Tools::Rigging::core::MetaRig']]],
@@ -30,6 +31,5 @@ var searchData=
   ['armhand',['ArmHand',['../class_p_k_d___tools_1_1_rigging_1_1limb_1_1_arm_hand.html',1,'PKD_Tools::Rigging::limb']]],
   ['armhoof',['ArmHoof',['../class_p_k_d___tools_1_1_rigging_1_1limb_1_1_arm_hoof.html',1,'PKD_Tools::Rigging::limb']]],
   ['armpaw',['ArmPaw',['../class_p_k_d___tools_1_1_rigging_1_1limb_1_1_arm_paw.html',1,'PKD_Tools::Rigging::limb']]],
-  ['average',['average',['../namespace_p_k_d___tools_1_1lib_vector.html#a5459791d5da43f18ffc3e9ba12e70522',1,'PKD_Tools::libVector']]],
-  ['axis',['axis',['../namespace_p_k_d___tools_1_1_rigging_1_1parts.html#a6e7574e2979ee5fc03611854012db64d',1,'PKD_Tools::Rigging::parts']]]
+  ['average',['average',['../namespace_p_k_d___tools_1_1lib_vector.html#a5459791d5da43f18ffc3e9ba12e70522',1,'PKD_Tools::libVector']]]
 ];

@@ -24,12 +24,12 @@ var searchData=
   ['infopath',['infoPath',['../class_p_k_d___tools_1_1lib_g_u_i_1_1_manager_g_u_i.html#a05ffca108302eebe2857908df86c7e73',1,'PKD_Tools.libGUI.ManagerGUI.infoPath()'],['../class_p_k_d___tools_1_1lib_g_u_i_1_1_obj_manager_g_u_i.html#a41921e0b5181ad23b1d1dbed7b919fa4',1,'PKD_Tools.libGUI.ObjManagerGUI.infoPath()']]],
   ['init_5ffloat_5fstate',['init_float_state',['../class_p_k_d___tools_1_1lib_g_u_i_1_1_tangent_swapper.html#aacbd42d85c55a8ab9172bbe649e35d62',1,'PKD_Tools.libGUI.TangentSwapper.init_float_state()'],['../class_p_k_d___tools_1_1lib_py_side_1_1_q_dockable_window.html#aae83a251625ba7fc2dd10434f975819a',1,'PKD_Tools.libPySide.QDockableWindow.init_float_state()']]],
   ['inversemultiplydivide',['inverseMultiplyDivide',['../namespace_p_k_d___tools_1_1lib_utilities.html#a8cd0e88b3195607c64496779a10a4654',1,'PKD_Tools::libUtilities']]],
-  ['iscartoony',['isCartoony',['../class_p_k_d___tools_1_1_rigging_1_1parts_1_1_rig.html#a7722f86941ff3c31a3907933e0c59205',1,'PKD_Tools::Rigging::parts::Rig']]],
+  ['iscartoony',['isCartoony',['../class_p_k_d___tools_1_1_rigging_1_1parts_1_1_rig.html#a7722f86941ff3c31a3907933e0c59205',1,'PKD_Tools.Rigging.parts.Rig.isCartoony()'],['../namespace_p_k_d___tools_1_1_rigging_1_1parts.html#a27a2682d32519ca192f4dad1ec26c0db',1,'PKD_Tools.Rigging.parts.isCartoony()']]],
   ['ischecked',['isChecked',['../class_p_k_d___tools_1_1lib_py_side_1_1_checkable_tab_widget.html#aedcd957dcdd2c5abb6b5996390424d58',1,'PKD_Tools::libPySide::CheckableTabWidget']]],
   ['iscollapsable',['isCollapsable',['../class_p_k_d___tools_1_1lib_py_side_1_1_q_group_box.html#a602666f58e307a12585443619d13ce98',1,'PKD_Tools::libPySide::QGroupBox']]],
   ['iscollapsed',['isCollapsed',['../class_p_k_d___tools_1_1lib_py_side_1_1_q_group_box.html#a6fd46ed9a818645a61d0a4fdc629d6c8',1,'PKD_Tools::libPySide::QGroupBox']]],
   ['isdeformable',['isDeformable',['../class_p_k_d___tools_1_1_rigging_1_1parts_1_1_rig.html#a640d9ba996113a4c45ef712190d0f498',1,'PKD_Tools::Rigging::parts::Rig']]],
   ['isdir',['isdir',['../namespace_p_k_d___tools_1_1lib_file.html#a684be8e223b9251c84ff34465333538a',1,'PKD_Tools::libFile']]],
-  ['isstretchable',['isStretchable',['../class_p_k_d___tools_1_1_rigging_1_1parts_1_1_rig.html#ab801a676d6ecd7a75520e8de06fdbfca',1,'PKD_Tools.Rigging.parts.Rig.isStretchable()'],['../namespace_p_k_d___tools_1_1_rigging_1_1parts.html#a56d8d46d46d868274b25202bfd2cc869',1,'PKD_Tools.Rigging.parts.isStretchable()']]],
+  ['isstretchable',['isStretchable',['../class_p_k_d___tools_1_1_rigging_1_1parts_1_1_rig.html#ab801a676d6ecd7a75520e8de06fdbfca',1,'PKD_Tools::Rigging::parts::Rig']]],
   ['issubcomponent',['isSubComponent',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_meta_rig.html#a3ec24c665ae7752ecb9fba01ee5b84dc',1,'PKD_Tools::Rigging::core::MetaRig']]]
 ];

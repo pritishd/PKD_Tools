@@ -14,6 +14,7 @@ var searchData=
   ['toon',['toon',['../namespace_p_k_d___tools_1_1_rigging_1_1core.html#a7633183c29472a4ae419e1f48e059a33',1,'PKD_Tools::Rigging::core']]],
   ['transfer_5fshape',['transfer_shape',['../namespace_p_k_d___tools_1_1lib_utilities.html#a2a73a21911bb11ffeb7f4b02aa90353b',1,'PKD_Tools::libUtilities']]],
   ['transferpropertiestochild',['transferPropertiesToChild',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_meta_rig.html#ad140d760f6c23672ea929d6a52b6edd7',1,'PKD_Tools::Rigging::core::MetaRig']]],
+  ['transsubsystem',['TransSubSystem',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_trans_sub_system.html',1,'PKD_Tools::Rigging::core']]],
   ['truename',['trueName',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_meta_rig.html#ae74036f7e0e6dbb7996ca9a612c670ba',1,'PKD_Tools::Rigging::core::MetaRig']]],
   ['twist',['twist',['../class_p_k_d___tools_1_1_rigging_1_1limb_1_1_limb_ik.html#aa2989b5266d7f7bb3367678516208ebf',1,'PKD_Tools.Rigging.limb.LimbIk.twist()'],['../class_p_k_d___tools_1_1_rigging_1_1limb_1_1_limb_ik.html#ae02c368f0a8ba6d0f174c081813be80d',1,'PKD_Tools.Rigging.limb.LimbIk.twist(self)'],['../class_p_k_d___tools_1_1_rigging_1_1limb_1_1_limb_ik.html#a99707f295a284b612e980163201b5167',1,'PKD_Tools.Rigging.limb.LimbIk.twist(self, data)']]],
   ['twistmap',['twistMap',['../class_p_k_d___tools_1_1_rigging_1_1spine_1_1_complex_spine.html#adbace9f78eeedca3f5328a57bbd7a6b1',1,'PKD_Tools::Rigging::spine::ComplexSpine']]]

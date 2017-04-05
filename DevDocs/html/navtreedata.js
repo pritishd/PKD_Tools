@@ -26,8 +26,8 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "annotated.html",
-"class_p_k_d___tools_1_1_rigging_1_1parts_1_1_generic.html#a9392c1ac9d9c55fb58e6316b10e85c8e",
-"class_p_k_d___tools_1_1lib_weights_1_1_cluster_weights.html"
+"class_p_k_d___tools_1_1_rigging_1_1parts_1_1_generic.html#a7eacd720cfaef3bcd7e9695738c61077",
+"class_p_k_d___tools_1_1lib_vector_1_1vector.html#ae2953dea8830993c741a1c08d6bbd3bd"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

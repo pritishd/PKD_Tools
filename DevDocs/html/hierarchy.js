@@ -6,7 +6,7 @@ var hierarchy =
           [ "PKD_Tools.Rigging.core.Ctrl", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_ctrl.html", null ],
           [ "PKD_Tools.Rigging.core.Joint", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_joint.html", null ],
           [ "PKD_Tools.Rigging.core.SpaceLocator", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_space_locator.html", null ],
-          [ "PKD_Tools.Rigging.core.SubSystem", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_sub_system.html", [
+          [ "PKD_Tools.Rigging.core.TransSubSystem", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_trans_sub_system.html", [
             [ "PKD_Tools.Rigging.parts.Rig", "class_p_k_d___tools_1_1_rigging_1_1parts_1_1_rig.html", [
               [ "PKD_Tools.Rigging.parts.Blender", "class_p_k_d___tools_1_1_rigging_1_1parts_1_1_blender.html", null ],
               [ "PKD_Tools.Rigging.parts.Generic", "class_p_k_d___tools_1_1_rigging_1_1parts_1_1_generic.html", [
@@ -49,7 +49,8 @@ var hierarchy =
         ] ],
         [ "PKD_Tools.Rigging.core.Network", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_network.html", [
           [ "PKD_Tools.Rigging.core.CartoonySystem", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_cartoony_system.html", null ],
-          [ "PKD_Tools.Rigging.core.JointSystem", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_joint_system.html", null ]
+          [ "PKD_Tools.Rigging.core.JointSystem", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_joint_system.html", null ],
+          [ "PKD_Tools.Rigging.core.NetSubSystem", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_net_sub_system.html", null ]
         ] ]
       ] ]
     ] ],
