@@ -1,4 +1,8 @@
-__author__ = 'admin'
+"""
+@package PKD_Tools.Rigging.utils
+@brief Basic rigging based utilty functions
+"""
+
 import pymel.core as pm
 from pymel.internal.plogging import pymelLogger as pyLog
 
@@ -11,13 +15,13 @@ from PKD_Tools import libFile, libUtilities, libMath
 CTRLS_INFO_INFO = libFile.join(libFile.current_working_directory(), "Rigging/Data/Ctrl.json")
 
 
-def name_me(partSfx, partName, endSuffix):
+def nameMe(partSfx, partName, endSuffix):
     """Set the name convention of all nodes eg L_Main_Ctrl"""
     if partSfx and partName and endSuffix:
         return "%s_%s_%s" % (partSfx, partName, endSuffix)
 
 
-def export_ctrl_shapes():
+def exportCrlShapes():
     """Export curve data from the existing curve to a json file"""
     curvesData = {}
     for top in pm.ls(assemblies=True, ud=True):
@@ -32,7 +36,7 @@ def export_ctrl_shapes():
     pyLog.info("Curve information written to: %s" % CTRLS_INFO_INFO)
 
 
-def build_ctrl_shape(type=""):
+def buildCtrlShape(type=""):
     """Create a curve from the json file"""
     curvesData = libFile.load_json(CTRLS_INFO_INFO)
 
@@ -48,17 +52,17 @@ def build_ctrl_shape(type=""):
         pyLog.error("%s not found in exported curve information file" % type)
 
 
-def build_all_ctrls_shapes():
+def buildAllCtrlsShapes():
     """Build all curves from the json file"""
     curvesData = libFile.load_json(CTRLS_INFO_INFO)
     for crv in curvesData.keys():
-        build_ctrl_shape(crv)
+        buildCtrlShape(crv)
 
 
 TEST_JOINTS_INFO = libFile.join(libFile.current_working_directory(), "Rigging/Data/Joints.json")
 
 
-def save_test_joint(parentJoint, systemType):
+def saveTestJoint(parentJoint, systemType):
     """
     @param parentJoint: the parent joint
     @param systemType: The test joint associated with the class
@@ -95,7 +99,7 @@ def save_test_joint(parentJoint, systemType):
     libFile.write_json(TEST_JOINTS_INFO, joint_info)
 
 
-def create_test_joint(systemType):
+def createTestJoint(systemType):
     """
     @param systemType: The test joint associated with the class
     joint -e -zso -oj yzx -sao zup joint1;
@@ -112,11 +116,12 @@ def create_test_joint(systemType):
     return joints
 
 
-def orient_joint(target):
+def orientJoint(target):
+    """Convenience function to orient the joint"""
     pm.joint(target, zso=1, ch=1, e=1, oj='yxz', secondaryAxisOrient='yup')
 
 
-def create_curve(positions=[], degree=2):
+def createCurve(positions=[], degree=2):
     """
     @param positions: Point positions
     @param degree: The degree of the curve
@@ -140,9 +145,9 @@ def recalculatePosition(currentPositions, newNumberPositions, degree=2):
     @return:
     """
     if len(currentPositions) < 4:
-        crv = create_curve(currentPositions, 1)
+        crv = createCurve(currentPositions, 1)
     else:
-        crv = create_curve(currentPositions, degree)
+        crv = createCurve(currentPositions, degree)
 
     newPositions = []
 
@@ -168,7 +173,7 @@ def recalculatePosition(currentPositions, newNumberPositions, degree=2):
 if __name__ == '__main__':
     pass
     pm.newFile(f=1)
-    build_all_ctrls_shapes()
+    buildAllCtrlsShapes()
     # current_joint_data = libFile.load_json(TEST_JOINTS_INFO)
     # print libFile.load_json(TEST_JOINTS_INFO).keys()
     # create_test_joint('Generic')
