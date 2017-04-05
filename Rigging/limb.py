@@ -2,13 +2,14 @@
 @package PKD_Tools.Rigging.limb
 @brief This package creates various limb system. There are essentially three types of limb system
 
-<i>Arm: A 2 joint solver</i>
+<i>Arm: A 2 joint solver</i><br>
 <i>Hip: A 3 joint solver where the last two joints is a typical ik solver and first joint is single joint solver where it
 follows the Ik</i>
+<i>Quad: A 4 joint spring solver with access the special attributes to the solver</i>
 
+Using these 3 system you can further add appendage such as Hand, Hoof, Foot or Paw
 """
 
-__author__ = 'pritish.dogra'
 from PKD_Tools.Rigging import core
 from PKD_Tools.Rigging import parts
 from PKD_Tools.Rigging import utils
@@ -38,7 +39,7 @@ def _build_ik_(metaClass, solver, handleSuffix, startJointNumber, endJointNumber
     @param endJointNumber:
     @return:
     """
-    name = utils.name_me(metaClass.side, metaClass.part, handleSuffix)
+    name = utils.nameMe(metaClass.side, metaClass.part, handleSuffix)
     startJoint = metaClass.jointSystem.joints[startJointNumber].shortName()
     endJoint = metaClass.jointSystem.joints[endJointNumber].shortName()
     ikHandle = pm.ikHandle(name=name, sj=startJoint, ee=endJoint, sol=solver, sticky="sticky")[0]

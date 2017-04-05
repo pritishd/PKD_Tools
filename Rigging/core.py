@@ -12,7 +12,7 @@ However using these do come at the cost of speed however in the long run it will
 
 The PKD tools also officially compatible with the ZV Parent Master tool which is a very refined and production tested constraint management system.
 
-Just a small note with regards tto naming convention, while other aspects of the PKD_Tools tries to keep to the Pep8 convention however in the rigging
+Just a small note with regards to naming convention, while other aspects of the PKD_Tools tries to keep to the Pep8 convention however in the rigging
 part of the tool we use camelCase for all variable, properties and function to conform to naming standards in maya, Red9 and pymel
 """
 
@@ -122,7 +122,7 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
             kwargs["endSuffix"] = kwargs.get("endSuffix", "Grp")
             kwargs["nodeType"] = kwargs.get("nodeType", "transform")
             # Build the fullname
-            full_name = utils.name_me(kwargs["side"], kwargs["part"], kwargs["endSuffix"])
+            full_name = utils.nameMe(kwargs["side"], kwargs["part"], kwargs["endSuffix"])
             # Build the red 9 meta rig with our name
             super(MetaRig, self).__init__(name=full_name, **kwargs)
             self.part = kwargs["part"]
@@ -303,7 +303,7 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
         part = self.part
         if self.isSubComponent:
             part = "{0}_{1}".format(self.part, self.systemType)
-        return utils.name_me(side, part, self.rigType)
+        return utils.nameMe(side, part, self.rigType)
 
     @property
     def side(self):
@@ -801,7 +801,7 @@ class Ctrl(MovableSystem):
             self.xtra = MovableSystem(part=self.part, side=self.side, endSuffix="Xtra")
         # Create the Parent
         self.prnt = MovableSystem(part=self.part, side=self.side, endSuffix="Prnt")
-        tempCtrlShape = utils.build_ctrl_shape(self.ctrlShape)
+        tempCtrlShape = utils.buildCtrlShape(self.ctrlShape)
         libUtilities.transfer_shape(tempCtrlShape, self.mNode)
         libUtilities.fix_shape_name(self.pynode)
         pm.delete(tempCtrlShape)
@@ -847,12 +847,12 @@ class Ctrl(MovableSystem):
 
     def addGimbalMode(self):
         """Add a extra gimbal controller under the main ctrl."""
-        self.gimbal = MovableSystem(name=utils.name_me(self.side, self.part, "Gimbal"), nodeType="transform")
+        self.gimbal = MovableSystem(name=utils.nameMe(self.side, self.part, "Gimbal"), nodeType="transform")
         self.gimbal.part = self.part
         self.gimbal.rigType = "gimbalHelper"
         self.gimbal.pynode.setParent(self.mNode)
         # Set the shape
-        tempCtrlShape = utils.build_ctrl_shape("Spike")
+        tempCtrlShape = utils.buildCtrlShape("Spike")
         libUtilities.transfer_shape(tempCtrlShape, self.gimbal.pynode)
         libUtilities.fix_shape_name(self.gimbal.pynode)
         pm.delete(tempCtrlShape)
@@ -874,12 +874,12 @@ class Ctrl(MovableSystem):
     def addPivot(self):
         """Add animatable pivot to a control. Most useful in a @ref limb.Foot setup"""
         # @cond DOXYGEN_SHOULD_SKIP_THIS
-        self.pivot = MovableSystem(name=utils.name_me(self.side, self.part, "Pivot"), nodeType="transform")
+        self.pivot = MovableSystem(name=utils.nameMe(self.side, self.part, "Pivot"), nodeType="transform")
         self.pivot.part = self.part
         self.pivot.rigType = "pivot"
         self.pivot.pynode.setParent(self.mNode)
         # Set the shape
-        tempCtrlShape = utils.build_ctrl_shape("Locator")
+        tempCtrlShape = utils.buildCtrlShape("Locator")
         libUtilities.transfer_shape(tempCtrlShape, self.pivot.pynode)
         libUtilities.fix_shape_name(self.pivot.pynode)
         pm.delete(tempCtrlShape)

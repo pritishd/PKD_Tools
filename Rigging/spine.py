@@ -1,4 +1,7 @@
-__author__ = 'admin'
+"""
+@package PKD_Tools.Rigging.spine
+@brief Module which creates the three spine setup
+"""
 
 from PKD_Tools.Rigging import core
 from PKD_Tools.Rigging import utils
@@ -31,8 +34,8 @@ class IkSpine(parts.Ik):
     def buildSolver(self):
         jntSystem = self.ikJointSystem
         # Build the main single degree curve
-        baseCurve = utils.create_curve(jntSystem.positions, degree=1)
-        baseCurve.rename(utils.name_me(self.side, self.part, "CtrlCurve"))
+        baseCurve = utils.createCurve(jntSystem.positions, degree=1)
+        baseCurve.rename(utils.nameMe(self.side, self.part, "CtrlCurve"))
         self.controlCurve = core.MovableSystem(baseCurve.name())
         self.controlCurve.part = self.part
         self.transferPropertiesToChild(self.controlCurve, "CtrlCurve")
@@ -42,7 +45,7 @@ class IkSpine(parts.Ik):
         ikCurve, fitNode = pm.fitBspline(baseCurve,
                                          ch=1,
                                          tol=0.01,
-                                         n=utils.name_me(self.side, self.part, "BaseCurve"))
+                                         n=utils.nameMe(self.side, self.part, "BaseCurve"))
         self.ikCurve = core.MovableSystem(ikCurve.name())
         self.ikCurve.part = self.part
         self.transferPropertiesToChild(self.ikCurve, "BaseCurve")
@@ -53,7 +56,7 @@ class IkSpine(parts.Ik):
         fitNodeMeta.resetName()
 
         # Build the spline IK
-        name = utils.name_me(self.side, self.part, "IkHandle")
+        name = utils.nameMe(self.side, self.part, "IkHandle")
         startJoint = jntSystem.joints[0].shortName()
         endJoint = jntSystem.joints[-1].shortName()
         ikHandle = pm.ikHandle(name=name,
@@ -274,7 +277,7 @@ class SubControlSpine(IkSpine):
         currentName = self.controlCurve.shortName()
         self.ikDriveCurve.rename("SpineDriver")
         # Blendshape
-        blendShape = pm.blendShape(name=utils.name_me(self.side, self.part, "BlendShape"))[0]
+        blendShape = pm.blendShape(name=utils.nameMe(self.side, self.part, "BlendShape"))[0]
         blendShape.setWeight(0, 1)
         # Rename the control back
         self.ikDriveCurve.rename(currentName)

@@ -1,4 +1,9 @@
-# Generic, IK, IK/FK, Eye, Hand
+"""
+@package PKD_Tools.Rigging.parts
+@brief Basic parts API eg Generic, IK, IK/FK, Eye, Hand
+"""
+
+#
 from pymel import core as pm
 
 from PKD_Tools import libUtilities
@@ -73,12 +78,12 @@ class Rig(core.TransSubSystem):
         while not joints:
             # Try to build for current class
             try:
-                joints = utils.create_test_joint(currentClass.__name__)
+                joints = utils.createTestJoint(currentClass.__name__)
             except:
                 # look in the parent class
                 if currentClass == object:
                     print originalClass.__name__
-                    joints = utils.create_test_joint(originalClass.__name__)
+                    joints = utils.createTestJoint(originalClass.__name__)
                 else:
                     currentClass = currentClass.__bases__[0]
 
