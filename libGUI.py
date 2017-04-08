@@ -314,7 +314,7 @@ class ObjManagerGUI(ManagerGUI):
                 warnWindow.exec_()
                 return
 
-            errorInfo = libGeo.find_heirachy_errors(topNode)
+            errorInfo = libGeo.find_hierarchy_errors(topNode)
 
             if errorInfo["Namespace Transform"]:
                 warnWindow.setText("Namespace transform found")

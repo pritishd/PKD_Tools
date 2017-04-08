@@ -32,8 +32,8 @@ def multiple_top_nodes_exists():
     return len(topNodes) > 1
 
 
-def find_hierachy_errors(topNode):
-    """ Return a dictanary of lists with common hierachy errors
+def find_hierarchy_errors(topNode):
+    """ Return a dictanary of lists with common hierarchy errors
     @param topNode (pynode, string) The top node of a group
     @return A dictionary of errors
     """
@@ -85,18 +85,18 @@ def fix_duplicates_shapes(duplicateShapes=None):
 
 
 class ObjManager(object):
-    """Class to manage obj import/export. This class also maintains hierachy and pivot information. However the hierachy must be
-    clean of any common issues such as duplicate transform name.
+    """Class to manage obj import/export. This class also maintains hierarchy and pivot information. However the 
+    hierarchy must be clean of any common issues such as duplicate transform name.
     @attention The obj plugin is loaded by default for safety whenever this class is initialised"""
 
     def __init__(self):
         """@property new_scene
-        @brief Is the obj hierachy being imported into a new scene. Useful if you want to start from scratch
+        @brief Is the obj hierarchy being imported into a new scene. Useful if you want to start from scratch
         @property cleansing_mode
         @brief In cleansing the mode the original geometery is deleted as soon as it is exported. This way any
         shader information is not lost
-        @property hierachy_file_info
-        @brief The file which contains all the hierachy information such as structure and pivots
+        @property hierarchy_file_info
+        @brief The file which contains all the hierarchy information such as structure and pivots
         @property geo_file_info
         @brief The file which contains information about all geo that was exported and it's current path
         @property progress_tracker
@@ -115,27 +115,26 @@ class ObjManager(object):
         self.current_mode = ""
 
     def write_hierarchy_data(self):
-        """Write the current scale and rotate pivots of all the transform in the hierachy to a json file"""
-        # Get hierachy data
-
-        hierachy = []
+        """Write the current scale and rotate pivots of all the transform in the hierarchy to a json file"""
+        # Get hierarchy data
+        hierarchy = []
         pivots = {}
         for transform in pm.listRelatives(self.top_node, type="transform", ad=1, ni=True) + [pm.PyNode(self.top_node)]:
-            # Get the long name to build a proper hierachy
-            hierachy.append(transform.longName())
+            # Get the long name to build a proper hierarchy
+            hierarchy.append(transform.longName())
             pivots[transform.name()] = {
                 "RotatePivot": list(transform.getRotatePivot()),
                 "ScalePivot": list(transform.getScalePivot())
             }
 
-        # Sort the hierachy by string size
-        hierachy.sort(key=len)
-        info = {"hierachy": hierachy, "pivots": pivots}
-        self.hierachy_file_info = info
+        # Sort the hierarchy by string size
+        hierarchy.sort(key=len)
+        info = {"hierarchy": hierarchy, "pivots": pivots}
+        self.hierarchy_file_info = info
 
     def export_hierarchy_obj(self):
-        """Export the individual meshes in the hierachy"""
-        fileInfo = {}
+        """Export the individual meshes in the hierarchy"""
+        file_info = {}
         # Reverse the geo list so that the deepest geo is deleted first in case there is a geo inside geo
         geo_list = self.geo_list
         geo_list.reverse()
@@ -152,8 +151,8 @@ class ObjManager(object):
                       force=1,
                       options="groups=0;ptgroups=0;materials=0;smoothing=0;normals=0",
                       es=1)
-            fileInfo[self.current_target] = path
-            pyLog.info("Exporting\n%s" % fileInfo[self.current_target])
+            file_info[self.current_target] = path
+            pyLog.info("Exporting\n%s" % file_info[self.current_target])
             if not self.new_scene and self.cleansing_mode:
                 pm.delete(self.current_target)
                 pm.refresh()
@@ -163,13 +162,13 @@ class ObjManager(object):
             self.update_progress()
 
         # Write the geo file_info
-        self.geo_file_info = fileInfo
+        self.geo_file_info = file_info
 
-    def import_hierachy_geo(self):
+    def import_hierarchy_geo(self):
         """Import all the obj objects"""
-        fileInfo = self.geo_file_info
-        for self.current_target in fileInfo.keys():
-            cmds.file(fileInfo[self.current_target],
+        file_info = self.geo_file_info
+        for self.current_target in file_info.keys():
+            cmds.file(file_info[self.current_target],
                       rpr="PKD_Temp",
                       i=1,
                       type="OBJ",
@@ -181,28 +180,26 @@ class ObjManager(object):
             if not self.cleansing_mode:
                 if pm.objExists(self.current_target):
                     pm.delete(self.current_target)
-            pyLog.info("Importing\n%s" % fileInfo[self.current_target])
+            pyLog.info("Importing\n%s" % file_info[self.current_target])
             if self.cleansing_mode:
-                os.remove(fileInfo[self.current_target])
+                os.remove(file_info[self.current_target])
             for top in pm.ls(assemblies=True, ud=True):
                 if top.getShape():
                     if top.getShape().type() == "mesh" and top.name() == "PKD_Temp_Mesh":
-                        # pm.parent(top, self.top_node)
                         top.rename(self.current_target)
                         pm.select(self.current_target)
-                        mel.eval("polySoftEdge -a 180 -ch 1 %s" % self.current_target)
                         mel.eval("polySetToFaceNormal")
                         mel.eval("polySoftEdge -a 180 -ch 1 %s" % self.current_target)
                         pm.delete(self.current_target, ch=1)
                         pm.refresh()
             self.update_progress()
 
-    def rebuild_hierachy(self):
-        """ Rebuild the hierachy by reading the hierachy info file"""
-        read_info = self.hierachy_file_info
+    def rebuild_hierarchy(self):
+        """ Rebuild the hierarchy by reading the hierarchy info file"""
+        read_info = self.hierarchy_file_info
 
-        # Rebuild the hierachy
-        for transform in read_info["hierachy"]:
+        # Rebuild the hierarchy
+        for transform in read_info["hierarchy"]:
             # Split the names
             splitNames = transform.split("|")
 
@@ -224,7 +221,7 @@ class ObjManager(object):
                 # Set the parent name
                 target.setParent(parent)
 
-            # Set the hierachy
+            # Set the hierarchy
             pm.setAttr(target.scalePivot, read_info["pivots"][target.name()]["ScalePivot"])
             pm.setAttr(target.rotatePivot, read_info["pivots"][target.name()]["RotatePivot"])
 
@@ -248,19 +245,19 @@ class ObjManager(object):
         topNode.translate.unlock()
 
     def export_all(self):
-        """Export All Geo and hierachy info"""
+        """Export All Geo and hierarchy info"""
         libUtilities.freeze_transform(self.top_node)
         self.current_mode = "Export"
         self.write_hierarchy_data()
         self.export_hierarchy_obj()
 
     def import_all(self):
-        """Import All Geo and hierachy info"""
+        """Import All Geo and hierarchy info"""
         self.current_mode = "Import"
-        self.import_hierachy_geo()
+        self.import_hierarchy_geo()
         pm.select(cl=1)
         mel.eval("FrameAll;")
-        self.rebuild_hierachy()
+        self.rebuild_hierarchy()
         return self._geo_list_
 
     def update_progress(self):
@@ -269,7 +266,6 @@ class ObjManager(object):
             # self.progress_tracker.set_current_status()
             self.progress_tracker.currentTarget = self.current_target
             self.progress_tracker.update()
-
 
     # @cond DOXYGEN_SHOULD_SKIP_THIS
 
@@ -311,8 +307,8 @@ class ObjManager(object):
 
     @property
     def datapath(self):
-        """File path to the json file which contains the hierachy info."""
-        return libFile.linux_path(libFile.join(self.export_dir, "hierachy_info.json"))
+        """File path to the json file which contains the hierarchy info."""
+        return libFile.linux_path(libFile.join(self.export_dir, "hierarchy_info.json"))
 
     @property
     def geoListPath(self):
@@ -333,17 +329,17 @@ class ObjManager(object):
         libFile.write_json(self.geoListPath, path_info)
 
     @property
-    def hierachy_file_info(self):
-        """Read the hierachy info from a json file"""
+    def hierarchy_file_info(self):
+        """Read the hierarchy info from a json file"""
         if not libFile.exists(self.datapath):
             raise RuntimeError("No geo has been exported to this path")
         return libFile.load_json(self.datapath)
 
-    @hierachy_file_info.setter
-    def hierachy_file_info(self, hierachy_info):
-        """Write the hierachy info into a json file"""
-        libFile.write_json(self.datapath, hierachy_info)
-    # @endcond
+    @hierarchy_file_info.setter
+    def hierarchy_file_info(self, hierarchy_info):
+        """Write the hierarchy info into a json file"""
+        libFile.write_json(self.datapath, hierarchy_info)
+        # @endcond
 
 
 def convert_joint_to_cluster(targetGeo, skipList=[]):
@@ -502,7 +498,6 @@ def createFollicle(position, geo=None):
         transform_node.worldMatrix >> vector_product.matrix
         transform_node.rotatePivot >> vector_product.input1
 
-
         # connect the correct position to a closest point on surface node created
         if geo.getShape().type() == "nurbsSurface":
             closest_position = pm.createNode("closestPointOnSurface", n=(transform_node + "_CPOS"))
@@ -530,7 +525,6 @@ def createFollicle(position, geo=None):
 
         follicle.parameterU.set(closest_position.parameterU.get())
         follicle.parameterV.set(closest_position.parameterV.get())
-
 
         # Delete nodes
         pm.delete(transform_node)
