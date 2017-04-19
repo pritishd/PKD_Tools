@@ -13,7 +13,7 @@ However using these do come at the cost of speed however in the long run it will
 The PKD tools also officially compatible with the ZV Parent Master tool which is a very refined and production tested constraint management system.
 
 Just a small note with regards to naming convention, while other aspects of the PKD_Tools tries to keep to the Pep8 convention however in the rigging
-part of the tool we use camelCase for all variable, properties and function to conform to naming standards in maya, Red9 and pymel
+part of the tool we use camelCase for all variable, properties and function to conform to naming standards in maya, pyside, Red9 and pymel
 """
 
 # TODO: Try to create more meta subsystem eg for the spine, so that it is easier to navigate eg subCtrlSystem or hipSystem
