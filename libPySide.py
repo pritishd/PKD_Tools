@@ -4,7 +4,10 @@
   to bring about consistency
  @details This is following documentation on best practice for Pyside in maya
  
- http://knowledge.autodesk.com/search-result/caas/CloudHelp/cloudhelp/2015/ENU/Maya-SDK/files/GUID-66ADA1FF-3E0F-469C-84C7-74CEB36D42EC-htm.html"""
+ http://knowledge.autodesk.com/search-result/caas/CloudHelp/cloudhelp/2015/ENU/Maya-SDK/files/GUID-66ADA1FF-3E0F-469C-84C7-74CEB36D42EC-htm.html
+ 
+ Here we break from the pep 8 convention as pyside follows a camel case convention
+ """
 
 from shiboken import wrapInstance
 
@@ -14,10 +17,14 @@ import maya.OpenMayaUI as OpenMayaUI
 from maya import cmds
 from pymel.internal.plogging import pymelLogger as pyLog
 
-import libFile
+try:
+    import libFile
+except:
+    from PKD_Tools import libFile
 
 AppIcon = libFile.join(libFile.current_working_directory(), r"Icons/WinIcon.png")
 AppLabel = libFile.join(libFile.current_working_directory(), r"Icons/WinLabel.png")
+
 
 # This is a function that is run from your class object to get a handle
 # to the main Maya window, it uses a combination of the Maya API as well as the SIP module
@@ -27,6 +34,7 @@ def getMayaMainWindow():
     accessMainWindow = OpenMayaUI.MQtUtil.mainWindow()
     return wrapInstance(long(accessMainWindow), QtGui.QMainWindow)
 
+
 class QMessageBox(QtGui.QMessageBox):
     """ Setup up of convenience message boxes"""
 
@@ -35,7 +43,6 @@ class QMessageBox(QtGui.QMessageBox):
         icon = QtGui.QIcon(AppIcon)
         self.setWindowIcon(icon)
         self.setSizeGripEnabled(True)
-
 
     def event(self, e):
         """Make it a resizable window. Used most in the context of detailed box"""
@@ -60,6 +67,7 @@ class QMessageBox(QtGui.QMessageBox):
 
 class QCriticalBox(QMessageBox):
     """ A message box with a critical icon"""
+
     def __init__(self):
         super(QCriticalBox, self).__init__()
         self.setIcon(QtGui.QMessageBox.Icon.Critical)
@@ -67,6 +75,7 @@ class QCriticalBox(QMessageBox):
 
 class QWarningBox(QMessageBox):
     """ A message box with a warning icon"""
+
     def __init__(self):
         super(QWarningBox, self).__init__()
         self.setIcon(QtGui.QMessageBox.Icon.Warning)
@@ -74,6 +83,7 @@ class QWarningBox(QMessageBox):
 
 class QQuestionBox(QMessageBox):
     """ A message box with a question icon"""
+
     def __init__(self):
         super(QQuestionBox, self).__init__()
         self.setIcon(QtGui.QMessageBox.Icon.Question)
@@ -84,24 +94,32 @@ class QGroupBox(QtGui.QGroupBox):
 
     def __init__(self, *args, **kwargs):
         super(QGroupBox, self).__init__(*args, **kwargs)
+        # Get the text label
+        self.titleText = self.title()
+
         # Add a new layout
         self.form = QtGui.QFormLayout()
         self.setLayout(self.form)
 
         self.form.setRowWrapPolicy(QtGui.QFormLayout.DontWrapRows)
-        # self.form.setFieldGrowthPolicy(QtGui.QFormLayout.FieldsStayAtSizeHint)
         self.form.setFormAlignment(QtCore.Qt.AlignTop)
         self.form.setLabelAlignment(QtCore.Qt.AlignLeft)
         self.isCollapsed = False
-        self.isCollapsable = False
+        self._isCollapsable = False
+
+        # UP Down Arrow Helper
+        self.downArrowChar = u"\u25BC"
+        self.upArrowChar = u"\u25B2"
 
     def mouseDoubleClickEvent(self, *args, **kwargs):
         """Event which toggles the collapse state"""
-        if self.isCollapsable:
+        if self._isCollapsable:
             if self.isCollapsed:
                 self.setFixedHeight(self.minimumSizeHint().height())
+                self.setTitle(u'{0} {1}'.format(self.titleText, self.upArrowChar))
             else:
                 self.setFixedHeight(17)
+                self.setTitle(u'{0} {1}'.format(self.titleText, self.downArrowChar))
 
             self.isCollapsed = not (self.isCollapsed)
 
@@ -112,6 +130,18 @@ class QGroupBox(QtGui.QGroupBox):
         """Force the collapse state"""
         self.isCollapsed = True
         self.setFixedHeight(17)
+
+    @property
+    def isCollapsable(self):
+        """Return collapsible property"""
+        return self._isCollapsable
+
+    @isCollapsable.setter
+    def isCollapsable(self, boolVal):
+        """Set collapsible property. If it is set to true add the special character"""
+        self._isCollapsable = boolVal
+        if boolVal:
+            self.setTitle(self.titleText + self.upArrowChar)
 
     # Create a collapse signal
     toggleCollapse = QtCore.Signal()
@@ -167,14 +197,14 @@ class QMainWindow(QtGui.QMainWindow):
         '''Setup the window. Add more custom gui object in subclasses'''
         # C:/Users/admin/Documents/maya/scripts/AdvancedSkeleton4Files/icons/AS4.png
         #  Add the basic column layout
-        self.main_layout = QtGui.QVBoxLayout()
+        self.mainLayout = QtGui.QVBoxLayout()
         centralWidget = QtGui.QFrame()
         centralWidget.setFrameStyle(QtGui.QFrame.Box | QtGui.QFrame.Sunken)
-        centralWidget.setLayout(self.main_layout)
+        centralWidget.setLayout(self.mainLayout)
         centralWidget.setSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Minimum)
 
         # Set up the mainFrame of the window
-        self.main_layout.setAlignment(QtCore.Qt.AlignLeft)
+        self.mainLayout.setAlignment(QtCore.Qt.AlignLeft)
 
         # Add the central widget
         self.setCentralWidget(centralWidget)
@@ -215,7 +245,7 @@ class QMainWindow(QtGui.QMainWindow):
             except:
                 pyLog.warning('Failed to close an instance of this GUI:%s' % str(self))
 
-    def resize_window(self, *args, **kwargs):
+    def resizeWindow(self, *args, **kwargs):
         # Method to resize whenever a widget is hidden
         for i in range(0, 10):
             QtGui.QApplication.processEvents()
@@ -246,7 +276,7 @@ class QDockableWindow(QMainWindow):
         # Add Image
         companyLabel = QtGui.QPixmap(AppLabel)
         companyFrame.setPixmap(companyLabel)
-        self.main_layout.addWidget(companyFrame)
+        self.mainLayout.addWidget(companyFrame)
 
     def show(self, *args, **kwargs):
         """Create Dockable UI"""
@@ -265,7 +295,7 @@ class QDockableWindow(QMainWindow):
                                                    area='right',
                                                    floating=floatingState,
                                                    content=self.objectName(),
-                                                   floatChangeCommand=self._auto_resize_
+                                                   floatChangeCommand=self._autoResize_
                                                    )
         except Exception, e:
             pyLog.info(str(e))
@@ -273,7 +303,7 @@ class QDockableWindow(QMainWindow):
 
         super(QDockableWindow, self).show()
 
-    def _auto_resize_(self):
+    def _autoResize_(self):
         sizeHint = self.sizeHint()
         # pyLog.info("Recommend Size:%s" % sizeHint)
         # pyLog.info("Current Central Size:%s" % self.centralWidget().size())
@@ -332,7 +362,7 @@ class TestGUI(QDockableWindow):
 
             # Add the buttons to our layout
             self.row_Hbox.setLayout(self.layout)
-            self.main_layout.addWidget(self.row_Hbox)
+            self.mainLayout.addWidget(self.row_Hbox)
 
     def on_button_event(self):
 
@@ -420,7 +450,7 @@ class CheckableTabTest(QMainWindow):
             tabs.addTab(widget, d)
         # tabs.setTabPosition(QtGui.QTabWidget.West)
         tabs.show()
-        self.main_layout.addWidget(tabs)
+        self.mainLayout.addWidget(tabs)
         tabs.stateChanged.connect(self.myFunction)
 
     def myFunction(self, index, checkState, title):
@@ -442,7 +472,7 @@ class VerticalTabTest(QMainWindow):
             tabs.addTab(widget, d)
         tabs.setTabPosition(QtGui.QTabWidget.West)
         tabs.show()
-        self.main_layout.addWidget(tabs)
+        self.mainLayout.addWidget(tabs)
 
 
 # @endcond DOXYGEN_SHOULD_SKIP_THIS
@@ -485,9 +515,50 @@ def vertical_divider():
     divider.setFrameShadow(QtGui.QFrame.Sunken)
     return divider
 
+# @cond DOXYGEN_SHOULD_SKIP_THIS
+class searchAbleTextWin(QMainWindow):
+    """An example of how to setup a searchable list with QLineEdit"""
+    def _setup_(self):
+        super(searchAbleTextWin, self)._setup_()
+        self.setWindowTitle("Searchable List")
+        self.myList = QtGui.QListWidget()
+        self.myList.addItems(["Alaska", "Germany", "Germfigher", "Germ02", "Oasis"])
+        self.myList.setCurrentRow(1)
+        self.quickSearchText = QLineEdit()
+        self.mainLayout.addWidget(self.quickSearchText)
+        self.mainLayout.addWidget(self.myList)
+
+        #
+        mainGroupBox = QGroupBox("Details")
+        self.detailedText = QtGui.QLabel()
+        self.detailedText.setWordWrap(True)
+        self.detailedText.setText(self.myList.currentItem().text())
+        self.detailedText2 = QtGui.QLabel()
+        self.detailedText2.setWordWrap(True)
+        self.detailedText2.setText(self.myList.currentItem().text())
+
+        mainGroupBox.form.addWidget(self.detailedText)
+        mainGroupBox.form.addWidget(self.detailedText2)
+        mainGroupBox.isCollapsable = True
+
+        mainGroupBox.toggleCollapse.connect(self.resizeWindow)
+        self.mainLayout.addWidget(mainGroupBox)
+
+        self.myList.currentRowChanged.connect(self.updateDetails)
+        self.quickSearchText.textChanged.connect(self.filterSearch)
+
+    def updateDetails(self):
+        self.detailedText.setText(self.myList.currentItem().text())
+        self.detailedText2.setText(self.myList.currentItem().text())
+
+    def filterSearch(self):
+        item = self.myList.findItems(self.quickSearchText.text(), QtCore.Qt.MatchStartsWith)
+        if item:
+            self.myList.setCurrentItem(item[0])
+# @endcond DOXYGEN_SHOULD_SKIP_THIS
 
 if __name__ == '__main__':
-    win = CheckableTabTest()
+    win = searchAbleTextWin()
     win.show()
 
     # input = QInputDialog()

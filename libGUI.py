@@ -1,6 +1,8 @@
 """
 @package PKD_Tools.libGUI
- This package contains all the GUI
+ This package contains all the GUI that is used in the PKD_Tools
+ 
+Here we break from the pep 8 convention as pyside follows a camel case convention
  """
 
 from functools import partial
@@ -40,8 +42,8 @@ class TangentSwapper(libPySide.QDockableWindow):
             push_button = libPySide.QtGui.QPushButton(tangent.capitalize(), self)
             push_button.clicked.connect(partial(libUtilities.change_tangents, tangent))
             push_button.setFixedWidth(230)
-            self.main_layout.addWidget(push_button)
-        self.main_layout.addStretch(False)
+            self.mainLayout.addWidget(push_button)
+        self.mainLayout.addStretch(False)
 
 
 class ManagerGUI(libPySide.QDockableWindow):
@@ -76,11 +78,11 @@ class ManagerGUI(libPySide.QDockableWindow):
         self.io_button_layout.addWidget(self.export_button)
         self.io_button_layout.addWidget(self.import_button)
 
-        self.main_layout.addLayout(text_button_layout)
-        self.main_layout.addWidget(libPySide.horizontal_divider())
-        self.main_layout.addLayout(self.io_button_layout)
+        self.mainLayout.addLayout(text_button_layout)
+        self.mainLayout.addWidget(libPySide.horizontal_divider())
+        self.mainLayout.addLayout(self.io_button_layout)
 
-        self.main_layout.addStretch(False)
+        self.mainLayout.addStretch(False)
 
     def _connect_signals_(self):
         self.folder_button.clicked.connect(self._get_folder_)
@@ -276,9 +278,9 @@ class ObjManagerGUI(ManagerGUI):
         super(ObjManagerGUI, self)._setup_()
         # Add the heirachy checker
 
-        self.main_layout.insertWidget(1, libPySide.horizontal_divider())
+        self.mainLayout.insertWidget(1, libPySide.horizontal_divider())
         self.scene_check_button = libPySide.QtGui.QPushButton("Check Scene")
-        self.main_layout.insertWidget(1, self.scene_check_button)
+        self.mainLayout.insertWidget(1, self.scene_check_button)
 
         # Add Cleanse button
         self.cleanse_button = libPySide.QtGui.QPushButton("Cleanse")
