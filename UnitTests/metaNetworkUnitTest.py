@@ -48,12 +48,12 @@ class Droid(object):
 
     def create_simple_ctrl_meta_network(self):
         pm.newFile(f=1)
-        subSystem = core.SubSystem(side="C", part="Core")
+        subSystem = core.TransSubSystem(side="C", part="Core")
         self.mRig = Red9_Meta.MetaRig(name='CharacterRig', nodeType="transform")
         self.mRig.connectChild(subSystem, 'Arm')
         subSystem.setParent(self.mRig)
 
-        fkSystem = core.SubSystem(side="C", part="Core")
+        fkSystem = core.TransSubSystem(side="C", part="Core")
         subSystem.addMetaSubSystem(fkSystem,"FK")
         self.myCtrl = core.Ctrl(side="C", part="Core")
         self.myCtrl.build()

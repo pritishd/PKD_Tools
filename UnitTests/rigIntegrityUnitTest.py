@@ -39,7 +39,7 @@ class limbDroid(object):
 
     def create_simple_ik(self):
         pm.newFile(f=1)
-        mainSystem = core.SubSystem(side="C", part="Core")
+        mainSystem = core.TransSubSystem(side="C", part="Core")
         self.ikSystem = limb.LimbIk(side="C", part="Core")
         mainSystem.addMetaSubSystem(self.ikSystem, "IK")
         # ikSystem.ikControlToWorld = True
