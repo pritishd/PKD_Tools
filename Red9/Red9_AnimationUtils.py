@@ -3017,7 +3017,7 @@ preCopyAttrs=%s : filterSettings=%s : matchMethod=%s : prioritySnapOnly=%s : sna
         #Build up the node pairs to process
         nodeList = r9Core.processMatchedNodes(nodes, filterSettings, matchMethod=matchMethod)
         if nodeList.MatchedPairs:
-            nodeList.MatchedPairs.reverse()  # reverse order so we're dealing with children before their parents
+            nodeList.MatchedPairs.inverse()  # reverse order so we're dealing with children before their parents
             #if prioritySnap then we snap align ONLY those nodes that
             #are in the filterSettings priority list. VAST speed increase
             #by doing this. If the list is empty we revert to turning the flag off

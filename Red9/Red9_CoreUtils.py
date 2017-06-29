@@ -1436,8 +1436,8 @@ def matchNodeLists(nodeListA, nodeListB, matchMethod='stripPrefix'):
     if matchMethod == 'index':
         matchedData = zip(nodeListA,nodeListB)
     elif matchMethod == 'indexReversed':
-        nodeListA.reverse()
-        nodeListB.reverse()
+        nodeListA.inverse()
+        nodeListB.inverse()
         matchedData = zip(nodeListA,nodeListB)
     else:
         for nodeA in nodeListA:

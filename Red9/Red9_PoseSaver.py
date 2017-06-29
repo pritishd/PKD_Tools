@@ -643,7 +643,7 @@ class DataMap(object):
                 if self.prioritySnapOnly:
                     #we've already filtered the hierarchy, may as well just filter the results for speed
                     self.nodesToLoad=r9Core.prioritizeNodeList(self.nodesToLoad, self.settings.filterPriority, regex=True, prioritysOnly=True)
-                    self.nodesToLoad.reverse()
+                    self.nodesToLoad.inverse()
                 
                 # nodes now matched, apply the data in the dataMap
                 self._applyData()
@@ -897,7 +897,7 @@ class PoseData(DataMap):
                 if self.prioritySnapOnly:
                     #we've already filtered the hierarchy, may as well just filter the results for speed
                     self.nodesToLoad=r9Core.prioritizeNodeList(self.nodesToLoad, self.settings.filterPriority, regex=True, prioritysOnly=True)
-                    self.nodesToLoad.reverse()
+                    self.nodesToLoad.inverse()
                     
                 #setup the PosePointCloud -------------------------------------------------
                 reference=objs[0]
@@ -1051,7 +1051,7 @@ class PosePointCloud(object):
             self.meshes=mRig.renderMeshes
         
         if self.inputNodes:
-            self.inputNodes.reverse()  # for the snapping operations
+            self.inputNodes.inverse()  # for the snapping operations
         return self.inputNodes
                       
     def getPPCNodes(self):
