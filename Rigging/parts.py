@@ -51,7 +51,10 @@ class Rig(core.TransSubSystem):
         libUtilities.snap(cube, targetJoint)
         libUtilities.skinGeo(cube, [targetJoint])
 
-    def createCtrlObj(self, part, shape="", createXtra=True, addGimbal=True):
+    def createCtrlObj(self, part, **kwargs):
+        shape = kwargs.get("shape")
+        createXtra = kwargs.get("createXtra", True)
+        addGimbal = kwargs.get("addGimbal", True)
         ctrl = core.Ctrl(part=part, side=self.side)
         if not shape:
             shape = self.mainCtrlShape
@@ -68,42 +71,55 @@ class Rig(core.TransSubSystem):
         ctrl.setParent(self)
         return ctrl
 
-    def testBuild(self):
-        # Build the help joints
-        self.jointSystem = core.JointSystem(side=self.side, part="%sJoints" % self.part)
-        # Build the joints
-        joints = None
-        currentClass = self.__class__
-        originalClass = self.__class__
-        while not joints:
-            # Try to build for current class
-            try:
-                joints = utils.createTestJoint(currentClass.__name__)
-            except:
-                # look in the parent class
-                if currentClass == object:
-                    print originalClass.__name__
-                    joints = utils.createTestJoint(originalClass.__name__)
-                else:
-                    currentClass = currentClass.__bases__[0]
+    def testBuild(self, **kwargs):
 
-        # Setup the joint system
-        self.jointSystem.joints = joints
-        self.jointSystem.convertJointsToMetaJoints()
-        self.jointSystem.setRotateOrder(self.rotateOrder)
-        # Build the Part
+        jointSystem = kwargs.get("jointSystem")
+        buildProxy = kwargs.get("buildProxy", True)
+        buildMaster = kwargs.get("buildMaster", True)
+
+        if not jointSystem:
+            # Build the help joints
+            jointSystem = core.JointSystem(side=self.side, part="%sJoints" % self.part)
+            self.jointSystem = jointSystem
+            pm.refresh()
+
+            # Build the joints
+            joints = None
+            currentClass = self.__class__
+            originalClass = self.__class__
+            while not joints:
+                # Try to build for current class
+                try:
+                    joints = utils.createTestJoint(currentClass.__name__)
+                except:
+                    # look in the parent class
+                    if currentClass == object:
+                        print originalClass.__name__
+                        joints = utils.createTestJoint(originalClass.__name__)
+                    else:
+                        currentClass = currentClass.__bases__[0]
+
+            # Setup the joint system
+            self.jointSystem.joints = joints
+            self.jointSystem.convertJointsToMetaJoints()
+            self.jointSystem.setRotateOrder(self.rotateOrder)
+        else:
+            self.jointSystem = jointSystem
+            # Build the Part
         self.build()
 
-        # build proxy
-        self.buildProxy()
+        if buildProxy:
+            # build proxy
+            self.buildProxy()
 
-        # Build Master Control
-        pm.select(cl=1)
-        masterControl = self.createCtrlObj("master", shape="Square", createXtra=False)
-        masterControl.prnt.pynode.setParent(world=True)
+        if buildMaster:
+            # Build Master Control
+            pm.select(cl=1)
+            masterControl = self.createCtrlObj("master", shape="Square", createXtra=False)
+            masterControl.prnt.pynode.setParent(world=True)
 
-        self.addConstraint(masterControl.pynode)
-        self.addConstraint(masterControl.pynode, "scale")
+            self.addConstraint(masterControl.pynode)
+            self.addConstraint(masterControl.pynode, "scale")
 
     def buildProxy(self):
         # Build the proxy cube
@@ -111,7 +127,9 @@ class Rig(core.TransSubSystem):
             self.createProxyCube(self.jointSystem.joints[i].pynode, self.jointSystem.joints[i + 1].pynode)
 
     def cleanUp(self):
-        pass
+        if not self.jointSystem.joints[0].pynode.getParent():
+            # Setup the parent of joint
+            self.jointSystem.joints[0].pynode.setParent(self.pynode)
 
     def build(self):
         pass
@@ -134,7 +152,7 @@ class Rig(core.TransSubSystem):
         self.addMetaSubSystem(mainCartoonySystem, "Cartoony")
 
         axis = self.mainCtrls[0].primaryAxis.upper()
-        for i in range(len(self.jointSystem)-int(bool(self.evaluateLastJoint))):
+        for i in range(len(self.jointSystem) - int(bool(self.evaluateLastJoint))):
             cartoonySystem = core.CartoonySystem(side=self.side, part="{0}Toon".format(self.mainCtrls[i].part))
             mainCartoonySystem.addMetaSubSystem(cartoonySystem, "Cartoony{0}".format(self.mainCtrls[i].part))
             cartoonySystem.build()
@@ -178,9 +196,7 @@ class Rig(core.TransSubSystem):
 
     @property
     def evaluateLastJoint(self):
-        if self._evaluateLastJoint:
-            return None
-        else:
+        if not self._evaluateLastJoint:
             return -1
 
     @evaluateLastJoint.setter
@@ -189,6 +205,14 @@ class Rig(core.TransSubSystem):
             raise TypeError("Value must be a boolean")
         else:
             self._evaluateLastJoint = boolData
+
+    @property
+    def mainCtrls(self):
+        return self.getChildren(asMeta=self.returnNodesAsMeta)
+
+    @mainCtrls.setter
+    def mainCtrls(self, ctrlList):
+        raise RuntimeError("Cannot be set at this {0} object level".format(self.__class__.__name__))
 
 
 class Ik(Rig):
@@ -220,7 +244,7 @@ class Generic(Rig):
         # Iterate through all the joints
         for position, joint in enumerate(self.jointSystem.joints[0:self.evaluateLastJoint]):
             # Create and snap the control
-            ctrlMeta = self.createCtrlObj(joint.part, self.mainCtrlShape)
+            ctrlMeta = self.createCtrlObj(joint.part)
             ctrlMeta.snap(joint.pynode)
             ctrls.append(ctrlMeta)
             if position and not self.isDeformable:
@@ -241,7 +265,7 @@ class Generic(Rig):
         # Build the help joint system
         self.offsetJointSystem = self.jointSystem.replicate(side=self.side,
                                                             part=self.part,
-                                                            endPosition=-1-int(bool(self.evaluateLastJoint)),
+                                                            endPosition=-1 - int(bool(self.evaluateLastJoint)),
                                                             supportType="OffsetJoints")
 
         # snap each offset joint to the same position as the next joint
@@ -259,8 +283,7 @@ class Generic(Rig):
 
     def cleanUp(self):
         # Setup the parent of tjoint
-        if not self.jointSystem.joints[0].pynode.getParent():
-            self.jointSystem.setParent(self)
+        super(Generic, self).cleanUp()
 
         # parent the main ctrols
         if self.mainCtrls and self.isDeformable:
@@ -279,13 +302,13 @@ class Generic(Rig):
 
     @property
     def mainCtrls(self):
-        return self.getChildren(asMeta=self.returnNodesAsMeta, walk=True, cAttrs=["SUP_MainCtrls"])
+        return self.getChildren(asMeta=self.returnNodesAsMeta, walk=True, cAttrs=["MainCtrls"])
 
     @mainCtrls.setter
     def mainCtrls(self, ctrlList):
         if not ctrlList:
             raise RuntimeError("Please input a list of meta Ctrls")
-        self.connectChildren(ctrlList, "SUP_MainCtrls", allowIncest=True, cleanCurrent=True)
+        self.connectChildren(ctrlList, "MainCtrls", allowIncest=True, cleanCurrent=True)
 
     @property
     def offsetJointSystem(self):
@@ -301,12 +324,18 @@ class FK(Generic):
         super(FK, self).__init__(*args, **kwargs)
 
     def build(self):
-        # A system where the translation are locked. Elbow axis can be locked locked
+        # A system where the translation are locked. Elbow axis can be locke
         super(FK, self).build()
         # Lock the elbow
         if self.mainCtrls:
-            for attr in self.primaryAxis[1:]:
-                self.mainCtrls[-2].pynode.attr("rotate{0}".format(attr.upper())).lock()
+            elbowPosition = -(2 + int(self.evaluateLastJoint is None))
+            for i in range(len(self.mainCtrls) - 1, -1, -1):
+                libUtilities.lock_translate(self.mainCtrls[i].pynode)
+                libUtilities.lock_scale(self.mainCtrls[i].pynode)
+                if i == elbowPosition:
+                    for attr in self.primaryAxis[:-1]:
+                        attrName = "rotate{0}".format(attr.upper())
+                        self.mainCtrls[elbowPosition].pynode.attr(attrName).lock()
         else:
             raise RuntimeError("Main controls are empty")
 
@@ -323,18 +352,155 @@ class Quad(FK):
 
 class Blender(Rig):
     # Class which blends two system
-    pass
+    def __init__(self, *args, **kwargs):
+        super(Blender, self).__init__(*args, **kwargs)
+        self.mainCtrlShape = "Square"
+        self.addAttr("subSystems", "")
+        self._subSystemA = None
+        self._subSystemB = None
+        self._blendAttr = None
+
+    def buildBlendCtrl(self):
+        # Build Blendcontrol
+        self.blender = self.createCtrlObj(self.part, createXtra=False, addGimbal=False)
+
+        # Create reverse node
+        self.inverse = core.MetaRig(side=self.side, part=self.part, endSuffix="Inverse", nodeType="reverse")
+        libUtilities.lock_default_attribute(self.blender.pynode)
+
+        # Attribute based on the system type
+        libUtilities.addFloatAttr(self.blender.pynode, self.subSystems)
+
+        # Connect the inverse node
+        self.blendAttr >> self.inverse.pynode.inputX
+
+        # Add the constraint blend type attr
+        libUtilities.addDivAttr(self.blender.pynode, "Interpolation", "interpType")
+        self.blender.addAttr("type", attrType='enum', enumName="Average:Shortest:Longest:")
+
+        interpADL = core.MetaRig(side=self.side, part=self.part, endSuffix="InterpADL", nodeType="addDoubleLinear")
+
+        interpADL.pynode.input2.set(1)
+        self.blender.pynode.attr("type") >> interpADL.pynode.input1
+
+        self.blender.addSupportNode(interpADL, "InterpADL")
+        # mm.eval('setAttr -lock true "%s.Interp"' % ctrl)
+        # mm.eval('addAttr -ln "Type"  -at "enum" -en "Average:Shortest:Longest:"  %s;' % ctrl)
+        # mm.eval('setAttr -e-keyable true %s.Type;' % ctrl)
+        # addNode = mc.createNode("addDoubleLinear", n=ctrl.replace("Ctrl", "add"))
+        # mc.setAttr(addNode + ".input2", 1)
+        # mc.connectAttr(ctrl + ".Type", addNode + ".input1")
+        # for con in const: mc.connectAttr(addNode + ".output", con + ".interpType")
+
+    def blendJoints(self):
+        # Replicate the joint based off A
+        self.jointSystem = self.subSystemA.jointSystem.replicate(part=self.part, side=self.side, endSuffix=self.rigType)
+
+        # Constraints System
+        for i in range(len(self.jointSystem) - 1):
+            # Joint Aliases
+            joint = self.jointSystem.joints[i]
+            jointA = self.subSystemA.jointSystem.joints[i]
+            jointB = self.subSystemB.jointSystem.joints[i]
+
+            # Hide the SubJoints
+            jointA.v = 0
+            jointB.v = 0
+
+            # Constraints the nodes
+            joint.addConstraint(jointA)
+            joint.addConstraint(jointB)
+
+            # Reverse node in first
+            self.inverse.pynode.outputX >> joint.parentConstraint.pynode.w0
+
+            # Connect the interpType
+            self.interpAttr >> joint.parentConstraint.pynode.interpType
+
+            # Direct connection in second
+            self.blendAttr >> joint.parentConstraint.pynode.w1
+            if self.subSystemA.isDeformable:
+                joint.addConstraint(jointA, conType="scale")
+                joint.addConstraint(jointB, conType="scale")
+                self.inverse.pynode.outputX >> joint.scaleConstraint.pynode.w0
+                self.blendAttr >> joint.scaleConstraint.pynode.w1
+
+    def blendVisibility(self):
+        pass
+
+    def build(self):
+        self.buildBlendCtrl()
+        self.blendJoints()
+        self.blendVisibility()
+
+        # Set the visibility set driven key
+        blendAttrName = self.blendAttr.name()
+        attrValues = [0, .5, 1]
+        subSysAVis = [1, 1, 0]
+        subSysBVis = [0, 1, 1]
+        for ctrl in self.subSystemA.mainCtrls:
+            ctrlShapeName = ctrl.pynode.getShape().v.name()
+            libUtilities.set_driven_key({blendAttrName: attrValues}, {ctrlShapeName: subSysAVis}, "step")
+
+        for ctrl in self.subSystemB.mainCtrls:
+            ctrlShapeName = ctrl.pynode.getShape().v.name()
+            libUtilities.set_driven_key({blendAttrName: attrValues}, {ctrlShapeName: subSysBVis}, "step")
+
+    @property
+    def blendAttr(self):
+        if not self._blendAttr:
+            self._blendAttr = self.blender.pynode.attr(self.subSystems)
+        return self._blendAttr
+
+    @property
+    def subSystemA(self):
+        if not self._subSystemA:
+            subSystemA = self.subSystems.split("_")[0]
+            self._subSystemA = self.getMetaSubSystem(subSystemA)
+        return self._subSystemA
+
+    @property
+    def subSystemB(self):
+        if not self._subSystemB:
+            subSystemB = self.subSystems.split("_")[1]
+            self._subSystemB = self.getMetaSubSystem(subSystemB)
+        return self._subSystemB
+
+    @property
+    def blender(self):
+        return self.getRigCtrl("Blender")
+
+    @blender.setter
+    def blender(self, data):
+        # TODO: Pass the slot number before and axis data
+        self.addRigCtrl(data, ctrType="Blender", mirrorData=self.mirrorData)
+
+    @property
+    def inverse(self):
+        return self.blender.getSupportNode("Reverse")
+
+    @inverse.setter
+    def inverse(self, data):
+        self.blender.addSupportNode(data, "Reverse")
+
+    @property
+    def interpAttr(self):
+        return self.blender.getSupportNode("InterpADL").pynode.output
+
+    def testBuild(self, **kwargs):
+        pass
 
 
 if __name__ == '__main__':
     pm.newFile(f=1)
-    mainSystem = core.TransSubSystem(side="C", part="Core")
+    mainSystem = Blender(side="C", part="Core")
+    mainSystem.subSystems = "FK_IK"
     fkSystem = FK(side="C", part="Core")
     fkSystem.isCartoony = True
-    mainSystem.addMetaSubSystem(fkSystem, "FK")
+    # mainSystem.addMetaSubSystem(fkSystem, "FK")
     # ikSystem.ikControlToWorld = Tru
     fkSystem.evaluateLastJoint = True
     fkSystem.testBuild()
     fkSystem.convertSystemToSubSystem(fkSystem.systemType)
-    fkSystem.buildSquashStretch()
+    # fkSystem.buildSquashStretch()
     print "Done"
