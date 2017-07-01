@@ -79,25 +79,25 @@ def reverse_attribute(attribute, name=""):
 #             return dfr
 
 
-def addAttr(target, attrName="", attrMax=1, attrMin=0, SV=0, sn="", df=0):
+def addFloatAttr(target, attrName="", attrMax=1, attrMin=0, softValue=0, shortName="", defaultValue=0):
     """
     Add a float attr to tranform node
-    @param target: Tranform node
+    @param target: Transform node
     @param attrName: The name shown in the channelbox
     @param attrMax: The maximum value of the float attribute. Default is 1
     @param attrMin: The minumum value of the float attribute. Default is 0
-    @param SV: Does the attribute has a SoftValue
-    @param sn: The shortname of the atrtribute
-    @param df: The default value of the attribute. Default is 0 however could be set to something else
-    @return:
+    @param softValue: Does the attribute has a SoftValue
+    @param shortName: The shortname of the atrtribute
+    @param defaultValue: The default value of the attribute. Default is 0 however could be set to something else
     """
-    if not sn:
-        sn = attrName
-    if SV:
-        pm.addAttr(target, ln=sn, nn=attrName, at="double", hsn=1, hsx=1, smn=attrMin, smx=attrMax, dv=df)
+    if not shortName:
+        shortName = attrName
+    if softValue:
+        pm.addAttr(target, ln=shortName, nn=attrName, at="double", hsn=1, hsx=1, smn=attrMin, smx=attrMax,
+                   dv=defaultValue)
     else:
-        pm.addAttr(target, ln=sn, nn=attrName, at="double", min=attrMin, max=attrMax, dv=df)
-    pm.setAttr(target + "." + sn, e=1, k=1)
+        pm.addAttr(target, ln=shortName, nn=attrName, at="double", min=attrMin, max=attrMax, dv=defaultValue)
+    pm.setAttr(target + "." + shortName, e=1, k=1)
 
 
 def addDivAttr(target, label, ln):
@@ -109,7 +109,7 @@ def addDivAttr(target, label, ln):
     @return:
     """
     pm.addAttr(target, ln=ln, en="%s:" % label, at="enum", nn="________")
-    pm.setAttr(target + "." + ln, lock=1, cb=1)
+    pm.setAttr("{0}.{1}".format(target, ln), lock=True, cb=True)
 
 
 def addBoolAttr(target, label, sn=""):
@@ -157,7 +157,7 @@ def lockAttr(target, attributes, lock=True):
             pm.setAttr(target + "." + attributes[i], l=0)
 
 
-def colorCurve(target, col):
+def color_curve(target, col):
     """
     Override Color for shape object
     @param target: The target curve object
@@ -169,18 +169,17 @@ def colorCurve(target, col):
         pm.setAttr(shape + ".overrideColor", col)
 
 
-def parZero(target, sfx="Prnt"):
+def parZero(target, suffix="Prnt"):
     """
-    Zero out a translation on dag by positioning the a new group in the same place as the target and then parenting the target to the new group
-    @param target:
-    @param sfx:
-    @return:
+    Zero out a translation on dag by positioning the a new group in the same place as the target
+    and then parenting the target to the new group
+    @param target: the target transform node
+    @param suffix: The new suffix to be added
+    @return:The new parent node
     """
-    ## 
-    ##
-    ## 
-    group = pm.group(n=target + "_" + sfx, em=1)
-    parentObject = pm.listRelatives(target, p=1)
+    target = force_pynode(target)
+    group = pm.group(n="{0}_{1}".format(target.name(),suffix) , empty=True)
+    parentObject = pm.listRelatives(target, paarent=True)
     snap(group, target)
     if parentObject:
         pm.parent(group, parentObject[0])
@@ -254,10 +253,11 @@ def set_persp():
     mel.eval("ActivateViewport20")
 
 
-def setDrivenKey(driverInfo, drivenInfo):
+def set_driven_key(driverInfo, drivenInfo, tangent="linear"):
     """Automate the set driven key through the use of set driven key
-    @param driverInfo list of values of the driver attribute. The key should be the target attribute
-    @param drivenInfo list of values of the driven attribute. The key should be the target attribute
+    @param driverInfo (dict) list of values of the driver attribute. The key should be the target attribute
+    @param drivenInfo (dict) list of values of the driven attribute. The key should be the target attribute
+    @param tangent (str) The type of tangent to be used for the set driven key. Default is linear
 
     @code
     import libUtilities
@@ -278,11 +278,15 @@ def setDrivenKey(driverInfo, drivenInfo):
     currentDriverValue = cmds.getAttr(driver)
     currentDrivenValue = cmds.getAttr(driven)
 
-    cmds.setDrivenKeyframe(driven, itt="linear", ott="linear", cd=driver)
+    inTangents = outTangent = tangent
+    if tangent == "step":
+        inTangents = "clamped"
+
+    cmds.setDrivenKeyframe(driven, itt=inTangents, ott=outTangent, cd=driver)
     for driveAttr, drivenAttr in zip(driverInfo[driver], drivenInfo[driven]):
         cmds.setAttr(driver, driveAttr)
         cmds.setAttr(driven, drivenAttr)
-        cmds.setDrivenKeyframe(driven, itt="linear", ott="linear", cd=driver)
+        cmds.setDrivenKeyframe(driven, itt=inTangents, ott="linear", cd=driver)
 
     cmds.setAttr(driver, currentDriverValue)
     cmds.setAttr(driven, currentDrivenValue)
@@ -298,7 +302,7 @@ def select_vertices(targetGeo, vertices):
         pm.select("%s.vtx[%i]" % (targetGeo, index), add=1)
 
 
-def skinObjects(targets, jointInfluences):
+def skin_objects(targets, jointInfluences):
     """
     Skin a list of geo to the specified joints
     @param targets (string/pynode list) the geometeries which are going to be skinned
@@ -542,6 +546,7 @@ def print_attention(iteration=1):
     base = "## ## "
     for i in range(iteration):
         base = + base
+    return base
 
 
 def pyList(listItems):
