@@ -8,11 +8,11 @@ from pymel import core as pm
 
 from PKD_Tools import libUtilities
 from PKD_Tools.Red9 import Red9_CoreUtils
-from PKD_Tools.Rigging import core
 from PKD_Tools.Rigging import utils
+from PKD_Tools.Rigging import core
 
 if __name__ == '__main__':
-    for module in core, utils, libUtilities:
+    for module in libUtilities, utils, core:
         reload(module)
 
 
