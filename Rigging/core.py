@@ -152,7 +152,6 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
             super(MetaRig, self).__init__(*args, **kwargs)
 
         # For some reason we run lockState twice to register it
-        # @cond DOXYGEN_SHOULD_SKIP_THIS
         self.lockState = False
         self.lockState = False
 
