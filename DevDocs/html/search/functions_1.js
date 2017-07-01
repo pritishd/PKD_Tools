@@ -1,12 +1,11 @@
 var searchData=
 [
   ['add_5fnodes_5fto_5fnamespace',['add_nodes_to_namespace',['../namespace_p_k_d___tools_1_1lib_utilities.html#a3b482ae969a00eb76c18cce8943e1737',1,'PKD_Tools::libUtilities']]],
-  ['addattr',['addAttr',['../namespace_p_k_d___tools_1_1lib_utilities.html#a3341d8a80b8e91ac5b15ffc146a5070c',1,'PKD_Tools::libUtilities']]],
   ['addboolattr',['addBoolAttr',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_ctrl.html#a349416afd58107b9dafbc81b1500b2ba',1,'PKD_Tools.Rigging.core.Ctrl.addBoolAttr()'],['../namespace_p_k_d___tools_1_1lib_utilities.html#ab0a69bece77d42332ef239788a8565ff',1,'PKD_Tools.libUtilities.addBoolAttr()']]],
   ['addchild',['addChild',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_ctrl.html#ab4d8357f1cd869ace054a21fb7e64749',1,'PKD_Tools::Rigging::core::Ctrl']]],
   ['addconstraint',['addConstraint',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_movable_system.html#a4c9f211f434586d9ef4b10dad9671cf0',1,'PKD_Tools::Rigging::core::MovableSystem']]],
   ['adddivattr',['addDivAttr',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_ctrl.html#aee9bfa90da81ab3371c894e82342fa81',1,'PKD_Tools.Rigging.core.Ctrl.addDivAttr()'],['../namespace_p_k_d___tools_1_1lib_utilities.html#a9cc7f15a5bdc78015b9b52684e2ecc50',1,'PKD_Tools.libUtilities.addDivAttr()']]],
-  ['addfloatattr',['addFloatAttr',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_ctrl.html#a4c82ee83d245ffade89526259d0d1474',1,'PKD_Tools::Rigging::core::Ctrl']]],
+  ['addfloatattr',['addFloatAttr',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_ctrl.html#a4c82ee83d245ffade89526259d0d1474',1,'PKD_Tools.Rigging.core.Ctrl.addFloatAttr()'],['../namespace_p_k_d___tools_1_1lib_utilities.html#aa6e9d65c37dde2f654f187b1ee40da29',1,'PKD_Tools.libUtilities.addFloatAttr()']]],
   ['addgimbalmode',['addGimbalMode',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_ctrl.html#a982cf904a75d0dffc7b37f10ac727f3a',1,'PKD_Tools::Rigging::core::Ctrl']]],
   ['addmetasubsystem',['addMetaSubSystem',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_meta_rig.html#a548dfa9548a9db405fc061a5115e21b8',1,'PKD_Tools::Rigging::core::MetaRig']]],
   ['addparent',['addParent',['../class_p_k_d___tools_1_1_rigging_1_1core_1_1_movable_system.html#abc1ed63524bfb4fefbe16c96b9cdd1d5',1,'PKD_Tools::Rigging::core::MovableSystem']]],

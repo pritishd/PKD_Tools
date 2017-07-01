@@ -2,6 +2,7 @@ var hierarchy =
 [
     [ "MetaRig", null, [
       [ "PKD_Tools.Rigging.core.MetaRig", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_meta_rig.html", [
+        [ "PKD_Tools.Rigging.core.ConstraintSystem", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_constraint_system.html", null ],
         [ "PKD_Tools.Rigging.core.MovableSystem", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_movable_system.html", [
           [ "PKD_Tools.Rigging.core.Ctrl", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_ctrl.html", null ],
           [ "PKD_Tools.Rigging.core.Joint", "class_p_k_d___tools_1_1_rigging_1_1core_1_1_joint.html", null ],
