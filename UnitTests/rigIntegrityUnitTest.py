@@ -207,5 +207,5 @@ class BatchTest(libUnitTests.BatchTest):
 
 
 unit = BatchTest()
-unit.test_limb_creation()
+#unit.test_limb_creation()
 unit.test_spine_creation()
