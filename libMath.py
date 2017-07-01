@@ -65,10 +65,10 @@ def spread(start, end, count, mode=3):
     """
     Yield a sequence of evenly-spaced numbers between start and end.
 
-    @param start number: The start of the sequence
-    @param end number : The last frame in the sequence
-    @param count int : How many section to divide into
-    @param mode int : Whether the ends are included or not
+    @param start: (int) The start of the sequence
+    @param end: (int) The last frame in the sequence
+    @param count: (int) How many section to divide into
+    @param mode: (int) Whether the ends are included or not
     @return generator which is spread across
 
     Taken from
