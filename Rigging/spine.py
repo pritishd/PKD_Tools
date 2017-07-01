@@ -9,6 +9,7 @@ from PKD_Tools.Rigging import parts
 from PKD_Tools import libUtilities, libVector, libMath
 import pymel.core as pm
 
+
 # TODO: SubCtrl needs have their system so that we can navigate
 
 class IkSpine(parts.Ik):
@@ -59,6 +60,7 @@ class IkSpine(parts.Ik):
         name = utils.nameMe(self.side, self.part, "IkHandle")
         startJoint = jntSystem.joints[0].shortName()
         endJoint = jntSystem.joints[-1].shortName()
+        # noinspection PyArgumentList
         ikHandle = pm.ikHandle(name=name,
                                sj=startJoint,
                                ee=endJoint,
@@ -131,14 +133,6 @@ class IkSpine(parts.Ik):
                 ctrl.setParent(self.ctrlGrp)
 
     @property
-    def ctrlGrp(self):
-        return self.getSupportNode("CtrlGrp")
-
-    @ctrlGrp.setter
-    def ctrlGrp(self, data):
-        self.addSupportNode(data, "CtrlGrp")
-
-    @property
     def infoGrp(self):
         return self.getSupportNode("InfoGrp")
 
@@ -190,7 +184,7 @@ class SimpleSpine(IkSpine):
     def buildControl(self):
         super(SimpleSpine, self).buildControl()
         ctrls = []
-        for joint, pos in zip(self.jointSystem.joint_data,
+        for joint, pos in zip(self.jointSystem.jointData,
                               range(len(self.jointSystem))):
             # Create the control
             spineCtrl = self.createCtrlObj(joint["Name"])
@@ -225,13 +219,6 @@ class SimpleSpine(IkSpine):
             # OrientConstraint the Joint
             pm.orientConstraint(self.mainCtrls[pos].parentDriver.pynode, self.jointSystem.joints[pos].pynode, mo=True,
                                 skip=skipAxis)
-
-    # def test_build(self):
-    #     super(SimpleSpine, self).test_build()
-    #     # Make a fake parenting chain
-    #     for i in range(len(self.JointSystem)):
-    #         if i:
-    #             self.MainCtrls[i].addConstraint(self.MainCtrls[i - 1].pynode)
 
 
 class SubControlSpine(IkSpine):
@@ -494,7 +481,7 @@ class SubControlSpine(IkSpine):
             joint = self.jointSystem.joints[i].pynode
             npc.inPosition.set(libUtilities.get_world_space_pos(joint))
             # Create a new control object
-            subCtrl = self.createCtrlObj(SubPart, "Ball", False)
+            subCtrl = self.createCtrlObj(SubPart, shape="Ball", createXtra=False, addGimbal=False)
             subCtrls.append(subCtrl)
             # Add a ctrl locator
             subCtrl.addSpaceLocator(parent=True)
@@ -699,6 +686,7 @@ class HumanSpine(SubControlSpine):
         # Make it in a read only attibute
         return 3
 
+
 class ComplexSpine(SubControlSpine):
     def __init__(self, *args, **kwargs):
         super(ComplexSpine, self).__init__(*args, **kwargs)
@@ -846,12 +834,10 @@ if __name__ == '__main__':
     mainSystem = core.TransSubSystem(side="C", part="Core")
     ikSystem = HumanSpine(side="L", part="Core")
     ikSystem.ikControlToWorld = False
-    #ikSystem.numHighLevelCtrls = 5
+    # ikSystem.numHighLevelCtrls = 5
     ikSystem.fallOffMethod = "Distance"
     # ikSystem.devSpine = True
     ikSystem.testBuild()
 
     mainSystem.addMetaSubSystem(ikSystem, "FK")
     ikSystem.convertSystemToSubSystem(ikSystem.systemType)
-
-
