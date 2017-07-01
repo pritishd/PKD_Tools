@@ -10,17 +10,16 @@ follows the Ik</i>
 Using these 3 system you can further add appendage such as Hand, Hoof, Foot or Paw
 """
 
+from PKD_Tools.Rigging import utils
 from PKD_Tools.Rigging import core
 from PKD_Tools.Rigging import parts
-from PKD_Tools.Rigging import utils
 from PKD_Tools import libUtilities
 from PKD_Tools import libVector
 import pymel.core as pm
 
 if __name__ == '__main__':
-    for module in parts, utils, libUtilities:
-        reload(module)
-
+    for mod in core, parts:
+        reload(mod)
 
 SOLVERS = {
     "Single": "ikSCsolver",
@@ -44,12 +43,12 @@ def _build_ik_(metaClass, solver, handleSuffix, startJointNumber, endJointNumber
     endJoint = metaClass.jointSystem.joints[endJointNumber].shortName()
     ikHandle = pm.ikHandle(name=name, sj=startJoint, ee=endJoint, sol=solver, sticky="sticky")[0]
     ikHandleMeta = core.MovableSystem(ikHandle.name())
-    metaClass.transferPropertiesToChild(ikHandleMeta, "ikHandle")
+    metaClass.transferPropertiesToChild(ikHandleMeta, handleSuffix[0].lower() + handleSuffix[1:])
     ikHandleMeta.v = False
     # IK Handle needs to be in it's own group in case the polevector is not set. Otherwise if you reparent it
     # the polevector value changes in relation to the parent space
     # Create the parent meta
-    ikHandleMeta.part = "IkHandle"
+    ikHandleMeta.part = handleSuffix
     ikHandleMeta.addParent(snap=False)
     # Set the pivot to the endJoint
     libUtilities.snap_pivot(ikHandleMeta.prnt.mNode, endJoint)
@@ -164,7 +163,7 @@ class LimbIk(parts.Ik):
         libUtilities.addDivAttr(self.mainIK.mNode, "Twist", "twistLbl")
         # Add a control attibute
         # TODO Get the name from the second part if more than two joints. Otherwise from the first joint
-        libUtilities.addAttr(self.mainIK.mNode, "Knee", sn="twist", attrMax=720, attrMin=-720)
+        libUtilities.addFloatAttr(self.mainIK.mNode, "Knee", shortName="twist", attrMax=720, attrMin=-720)
         # Connect the new attribute to the twist offset
         self.mainIK.pynode.twist >> self.twist.pynode.attr("r%s" % self.primary_axis[0])
         # Hide the PV
@@ -196,6 +195,7 @@ class LimbIk(parts.Ik):
         # TODO: Pass the slot number before and axis data
         self.addRigCtrl(data, ctrType="MainIK", mirrorData=self.mirrorData)
 
+
 class Arm(LimbIk):
     """This is base IK System. with a three joint"""
 
@@ -204,28 +204,14 @@ class Arm(LimbIk):
         self.ikSolver = SOLVERS["2Bone"]
         self.endJointNumber = 2
 
-    def testBuild(self):
-        super(Arm, self).testBuild()
+    def testBuild(self, **kwargs):
+        super(Arm, self).testBuild(**kwargs)
         self.buildPv()
-
-
-# class arm(ik2jnt):
-#     """This is IK System. with a joint"""
-#
-#     def __init__(self, *args, **kwargs):
-#         super(arm, self).__init__(*args, **kwargs)
-#         self.ikSolver = "ikRPsolver"
-#         self.endJointNumber = 2
-#
-#     def test_build(self):
-#         super(arm, self).test_build()
-#         self.build_PV()
 
 
 class Hip(Arm):
     def __init__(self, *args, **kwargs):
         super(Hip, self).__init__(*args, **kwargs)
-        # self.ikSolver = "ikRPsolver"
         self.startJointNumber = 1
         self.endJointNumber = 3
 
@@ -233,6 +219,7 @@ class Hip(Arm):
         super(Hip, self).buildIk()
         self.hipIKHandle = _build_ik_(self, SOLVERS["Single"], "ClavIkHandle", 0, 1)
 
+    # noinspection PyArgumentList
     def buildControl(self):
         super(Hip, self).buildControl()
         # Build the Hip Control
@@ -346,11 +333,12 @@ class Quad(LimbIk):
         self.mainIK.pynode.StartBias >> self.ikHandle.pynode.springAngleBias[0].springAngleBias_FloatValue
         self.mainIK.pynode.EndBias >> self.ikHandle.pynode.springAngleBias[1].springAngleBias_FloatValue
 
-    def testBuild(self):
-        super(Quad, self).testBuild()
+    def testBuild(self, **kwargs):
+        super(Quad, self).testBuild(**kwargs)
         self.buildPv()
 
 
+# noinspection PyUnresolvedReferences
 class Hand(object):
     def build_ik(self):
         self.palmIKHandle = _build_ik_(self, SOLVERS["Single"], "PalmIKHandle", self.endJointNumber,
@@ -377,7 +365,7 @@ class Hand(object):
     def palmIKHandle(self, data):
         self.addSupportNode(data, "palmIKHandle")
 
-
+    """"""
 class ArmHand(Arm, Hand):
     def buildControl(self):
         self.hasPivot = True
@@ -442,7 +430,7 @@ class Hoof(object):
         libUtilities.addDivAttr(self.mainIK.pynode, "Roll", "rollDiv")
         # Tip_Heel
         for attr in self.rollAttrs:
-            libUtilities.addAttr(self.mainIK.pynode, attr, 270, -270)
+            libUtilities.addFloatAttr(self.mainIK.pynode, attr, 270, -270)
 
             # Create the 2 rotate system
         tipToeRoll = core.MovableSystem(part=self.part, side=self.side, endSuffix="TipToeRoll")
@@ -800,10 +788,34 @@ core.Red9_Meta.registerMClassNodeMapping(nodeTypes=['ikHandle',
                                                     "clamp"])
 if __name__ == '__main__':
     pm.newFile(f=1)
-    #mainSystem = core.SubSystem(side="C", part="Core")
+    mainSystem = parts.Blender(side="C", part="Core")
+
     ikSystem = ArmHand(side="C", part="Core")
-    #mainSystem.addMetaSubSystem(ikSystem, "IK")
+    system = "IK"
+    mainSystem.addMetaSubSystem(ikSystem, system)
     # ikSystem.ikControlToWorld = True
-    ikSystem.testBuild()
+    ikSystem.testBuild(buildProxy=False, buildMaster=False)
+    ikSystem.convertSystemToSubSystem(system)
+    pm.refresh()
+
+    fkSystem = parts.FK(side="C", part="Core")
+    mainSystem.addMetaSubSystem(fkSystem, "FK")
+    fkJointSystem = ikSystem.jointSystem.replicate(part=mainSystem.part, side=mainSystem.side)
+    fkJointSystem.part = ikSystem.jointSystem.part
+    fkJointSystem.rigType = ikSystem.jointSystem.rigType
+    fkSystem.evaluateLastJoint = False
+    fkSystem.testBuild(jointSystem=fkJointSystem, buildProxy=False, buildMaster=False)
+    fkSystem.convertSystemToSubSystem(fkSystem.systemType)
+    mainSystem.subSystems = "IK_FK"
+    pm.refresh()
+    mainSystem.build()
+    # fkSystem = parts.FK(side="C", part="Core")
+    # mainSystem.addMetaSubSystem(fkSystem, "FK")
+    # core.JointSystem.replicate()
+    # fkJointSystem = ikSystem.jointSystem.replicate()
+    # fkSystem.testBuild(fkJointSystem)part
+    # fkSystem.convertSystemToSubSystem(fkSystem.systemType)
+
     # ikSystem.convertSystemToSubSystem(ikSystem.systemType)
     # TODO: Double transform node for the mainSystem
+    # mainSystem.blender.pynode.attr(mainSystem.subSystems)
