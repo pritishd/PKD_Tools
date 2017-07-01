@@ -124,8 +124,8 @@ def orientJoint(target):
 def createCurve(positions=[], degree=2):
     """
     @param positions: Point positions
-    @param degree: The degree of the curve
-    @return: The curve
+    @param degree: The degree of the curve that should be
+    @return: The curve pynode
     """
     if len(positions) < degree:
         # Force the degree to least number of points required
@@ -139,9 +139,9 @@ def createCurve(positions=[], degree=2):
 def recalculatePosition(currentPositions, newNumberPositions, degree=2):
     """
     For a given set of position create a curve and return fewer/more a set of position that follow on that arc.
-    @param currentPositions:
-    @param newNumberPositions:
-    @param degree:
+    @param currentPositions: Current list of cv position
+    @param newNumberPositions: How many CV points do me require
+    @param degree: What degree should be on the created curve
     @return:
     """
     if len(currentPositions) < 4:
