@@ -19,6 +19,7 @@ part of the tool we use camelCase for all variable, properties and function to c
 # TODO: Try to create more meta subsystem eg for the spine, so that it is easier to navigate eg subCtrlSystem or hipSystem
 # TODO: Implement using format instead of % operate for string
 
+import traceback
 from collections import OrderedDict
 import pymel.core as pm
 from PKD_Tools import libUtilities
@@ -75,6 +76,8 @@ class MetaEnhanced(object):
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     _pynode_ = None
     debugMode = False
+    haltProcess = False
+
     # @endcond
 
     # noinspection PyPropertyAccess,PyUnreachableCode
@@ -85,14 +88,26 @@ class MetaEnhanced(object):
          @brief Return the pynode that is associated for the node
          @property primaryAxis
          @brief Return the rotate order as string instead of numeric value
+         @property debugMode
+         @brief At various point in the code we want to give helpful statement to the developer. This will enable those
          """
         raise RuntimeError("This function cannot be used")
-        self.pynode = self.primaryAxis = None
+        self.pynode = self.primaryAxis = self.debugMode = None
 
     # noinspection PyUnresolvedReferences
     def resetName(self):
         """Reset the name of the node to how should be named. Hopefully this strips away all numeric suffix"""
         self.pynode.rename(self.trueName)
+
+    @staticmethod
+    def breakpoint(message=""):
+        """Stop any process to debug an issue
+        @param message: Message to to be displayed if any
+        """
+        if message:
+            print message
+        traceback.print_stack()
+        raise RuntimeError("Stopping to debug an issue")
 
     @property
     def pynode(self):
@@ -100,7 +115,6 @@ class MetaEnhanced(object):
         if self._pynode_ is None:
             self._pynode_ = pm.PyNode(self.mNode)
         return self._pynode_
-
 
     @property
     def primaryAxis(self):
@@ -225,10 +239,18 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
         Convert this system to a sub component.
         @param component (string) Type of subcomponent
         """
+        if component is None:
+            raise RuntimeError('Component type is set to "None". This is a big problem')
+
         # Add a new attr
         if not hasattr(self, "systemType"):
-            self.addAttr("systemType", component)
+            try:
+                self.addAttr("systemType", component)
+            except:
+                traceback.print_stack()
+                raise RuntimeError('Unable to add "systemType" to node: {0}'.format(self.mNode))
         else:
+            # noinspection PyAttributeOutsideInit
             self.systemType = component
 
         hasConverted = True
@@ -357,7 +379,7 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
     def side(self):
         """Return the current mirror side as string"""
         return self.pynode.mirrorSide.get(asString=True)[0]
-    # @endcond
+        # @endcond
 
 
 class ConstraintSystem(MetaRig):
@@ -391,7 +413,8 @@ class ConstraintSystem(MetaRig):
             # noinspection PyAttributeOutsideInit
             self._weightAliasInfo = weightAliasInfo.items()
 
-    # @endcond
+            # @endcond
+
 
 class MovableSystem(MetaRig):
     """
@@ -814,7 +837,7 @@ class JointSystem(Network):
         else:
             libUtilities.pyLog.error("No joint data found")
         return positionList
-    # @endcond
+        # @endcond
 
 
 class SpaceLocator(MovableSystem):
