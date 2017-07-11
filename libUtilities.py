@@ -545,7 +545,7 @@ def print_attention(iteration=1):
     """
     base = "## ## "
     for i in range(iteration):
-        base = + base
+        base += base
     return base
 
 
@@ -722,7 +722,7 @@ def lock_default_attribute(transform):
     """
     node = force_pynode(transform)
     for attr in _default_attibute_list_():
-        node.attr(attr).set(lock=True, keyable=False, channelBox=False)
+        node.attr(attr)
 
 
 def lock_translate(transform):
@@ -731,7 +731,7 @@ def lock_translate(transform):
     """
     node = force_pynode(transform)
     for attr in _translate_attribute_list_():
-        node.attr(attr).set(lock=True, keyable=False, channelBox=False)
+        node.attr(attr)
 
 
 def lock_rotate(transform):
@@ -740,7 +740,7 @@ def lock_rotate(transform):
     """
     node = force_pynode(transform)
     for attr in _rotate_attribute_list_():
-        node.attr(attr).set(lock=True, keyable=False, channelBox=False)
+        node.attr(attr)
 
 
 def lock_scale(transform):
@@ -749,12 +749,19 @@ def lock_scale(transform):
     """
     node = force_pynode(transform)
     for attr in _scale_attribute_list_():
-        node.attr(attr).set(lock=True, keyable=False, channelBox=False)
+        node.attr(attr)
 
+def lock_attr(attr):
+    """
+    Convience function to lock and hide a attr
+    @param attr: The pynode attr
+    """
+    attr.set(lock=True, keyable=False, channelBox=False)
 
 def _default_attibute_list_():
     """"Return the list of default maya attributes"""
-    return _translate_attribute_list_() + _rotate_attribute_list_() + _scale_attribute_list_() + _visibility_attribute_list_()
+    return _translate_attribute_list_() + _rotate_attribute_list_() + _scale_attribute_list_() + \
+           _visibility_attribute_list_()
 
 
 def _translate_attribute_list_():
