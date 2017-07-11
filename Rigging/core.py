@@ -421,6 +421,10 @@ class MovableSystem(MetaRig):
     This is a system which can be moved. Usually a joint or transform node
     """
 
+    def __init__(self, *args, **kwargs):
+        super(MovableSystem, self).__init__(*args, **kwargs)
+        libUtilities.lock_attr(self.pynode.v)
+
     # noinspection PyPropertyAccess
     def _doxygenHelper(self):
         """
@@ -453,7 +457,7 @@ class MovableSystem(MetaRig):
         """
         targetNode = forcePyNode(targetSystem)
         # Does it has parent. Then we we reparent that
-        if hasattr(self, "SUP_prnt"):
+        if hasattr(self, "SUP_Prnt"):
             self.prnt.pynode.setParent(targetNode)
         elif self.pynode.type() in ["transform", "joint"]:
             self.pynode.setParent(targetNode)
