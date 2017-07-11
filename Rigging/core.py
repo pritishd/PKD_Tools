@@ -453,7 +453,7 @@ class MovableSystem(MetaRig):
         """
         targetNode = forcePyNode(targetSystem)
         # Does it has parent. Then we we reparent that
-        if self.prnt:
+        if hasattr(self, "SUP_prnt"):
             self.prnt.pynode.setParent(targetNode)
         elif self.pynode.type() in ["transform", "joint"]:
             self.pynode.setParent(targetNode)
@@ -575,7 +575,7 @@ class MovableSystem(MetaRig):
         @param data (metaRig) The parent meta class
         """
         self.addSupportNode(data, "Prnt")
-    # @endcond
+        # @endcond
 
 
 class TransSubSystem(MovableSystem):
@@ -858,6 +858,7 @@ class SpaceLocator(MovableSystem):
             libUtilities.fix_shape_name(self.pynode)
             # Delete the temp loc
             pm.delete(tempLoc)
+
     # @endcond
 
     def clusterCV(self, cv):
