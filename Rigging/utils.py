@@ -142,7 +142,7 @@ def recalculatePosition(currentPositions, newNumberPositions, degree=2):
     @param currentPositions: Current list of cv position
     @param newNumberPositions: How many CV points do me require
     @param degree: What degree should be on the created curve
-    @return:
+    @return: list of new cv positions
     """
     if len(currentPositions) < 4:
         crv = createCurve(currentPositions, 1)
