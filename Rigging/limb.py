@@ -17,9 +17,9 @@ from PKD_Tools import libUtilities
 from PKD_Tools import libVector
 import pymel.core as pm
 
-if __name__ == '__main__':
-    for mod in core, parts:
-        reload(mod)
+# if __name__ == '__main__':
+#     for mod in core, parts:
+#         reload(mod)
 
 SOLVERS = {
     "Single": "ikSCsolver",
@@ -52,7 +52,6 @@ def _build_ik_(metaClass, solver, handleSuffix, startJointNumber, endJointNumber
     ikHandleMeta.addParent(snap=False)
     # Set the pivot to the endJoint
     libUtilities.snap_pivot(ikHandleMeta.prnt.mNode, endJoint)
-
     return ikHandleMeta
 
 
