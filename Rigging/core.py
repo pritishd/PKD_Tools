@@ -533,6 +533,7 @@ class MovableSystem(MetaRig):
         @param rotate (bool) Whether to match rotation
         """
         # Check that we are only applying to joint/transform
+        target = forcePyNode(target)
         if all(pm.objectType(node) in ["transform", "joint"] for node in [self.pynode, target]):
             if self.prnt:
                 libUtilities.snap(self.prnt.pynode, target, rotate=rotate)
@@ -637,36 +638,9 @@ class Joint(MovableSystem):
             if inverseTarget != targetNode.scale:
                 targetNode.scale >> self.pynode.inverseScale
 
-
-class JointSystem(Network):
-    """Network class which deals with a collection of joint.
-
-    TODO: it might be more useful to make the JointSystem aware to ignore the last joint instead of making the other systems
-    take care of that. Perhaps they can pass on this information to the joint system so that it prunes the last joint information
-    when something queries it. It need be it can always be switched to
-   """
-
-    # @cond DOXYGEN_SHOULD_SKIP_THIS
-    def __init__(self, *args, **kwargs):
-        """
-        Joint system initializer
-        @param args Any arguements to be passed to the parent
-        @param kwargs Any keyword arguements to be passed to the parent
-
-        """
-        super(JointSystem, self).__init__(*args, **kwargs)
-        self.jointData = None
-
-    def __len__(self):
-        return len(self.joints)
-
-    def __bindData__(self, *args, **kwgs):
-        """Here we are adding a joint attribute which contains the necessary information to construct a joint chain"""
-        super(JointSystem, self).__bindData__()
-        # ensure these are added by default
-        self.addAttr("jointData", "")
-
-    # @endcond
+class JointCollection(Network):
+    """A template class which deals with a collection of joint. This can deal with actual physical joints or locators
+    which are proxies for joints"""
 
     # noinspection PyPropertyAccess
     def _doxygenHelper(self):
@@ -686,6 +660,60 @@ class JointSystem(Network):
         @brief Return the positions of the joints in world space
         """
         self.positions = self.joints = self.jointList = self.jointData = None
+
+
+    # @cond DOXYGEN_SHOULD_SKIP_THIS
+    def __init__(self, *args, **kwargs):
+        """
+        Joint system initializer
+        @param args Any arguements to be passed to the parent
+        @param kwargs Any keyword arguements to be passed to the parent
+
+        """
+        super(JointCollection, self).__init__(*args, **kwargs)
+        self.jointData = None
+
+    def __len__(self):
+        return len(self.joints)
+
+    def __bindData__(self, *args, **kwgs):
+        """Here we are adding a joint attribute which contains the necessary information to construct a joint chain"""
+        super(JointCollection, self).__bindData__()
+        # ensure these are added by default
+        self.addAttr("jointData", "")
+
+    @property
+    def joints(self):
+        return self.getChildren(asMeta=self.returnNodesAsMeta, walk=True, cAttrs=["SUP_Joints"])
+
+    @joints.setter
+    def joints(self, jointList):
+        jointList = [joint.shortName() for joint in jointList]
+        self.connectChildren(jointList, "SUP_Joints", allowIncest=True, cleanCurrent=True)
+
+    @property
+    def jointList(self):
+        return [joint.shortName() for joint in self.joints]
+
+    @property
+    def positions(self):
+        positionList = []
+        if self.jointData:
+            positionList = [joint["Position"] for joint in self.jointData]
+        else:
+            libUtilities.pyLog.error("No joint data found")
+        return positionList
+
+    # @endcond
+
+
+class JointSystem(JointCollection):
+    """JointCollection class which deals with a collection of joint.
+
+    TODO: it might be more useful to make the JointSystem aware to ignore the last joint instead of making the other systems
+    take care of that. Perhaps they can pass on this information to the joint system so that it prunes the last joint information
+    when something queries it. It need be it can always be switched to
+   """
 
     def build(self):
         """Build the joints based on data from the @ref jointData joint data"""
@@ -817,32 +845,6 @@ class JointSystem(Network):
             return replicateJointSystem
         else:
             libUtilities.pyLog.error("Unable to replicate as there is no existing joint data")
-
-    # @cond DOXYGEN_SHOULD_SKIP_THIS
-    @property
-    def joints(self):
-        return self.getChildren(asMeta=self.returnNodesAsMeta, walk=True, cAttrs=["SUP_Joints"])
-
-    @joints.setter
-    def joints(self, jointList):
-        jointList = [joint.shortName() for joint in jointList]
-        self.connectChildren(jointList, "SUP_Joints", allowIncest=True, cleanCurrent=True)
-
-    @property
-    def jointList(self):
-        return [joint.shortName() for joint in self.joints]
-
-    @property
-    def positions(self):
-        positionList = []
-        if self.jointData:
-            for joint in self.jointData:
-                positionList.append(joint["Position"])
-        else:
-            libUtilities.pyLog.error("No joint data found")
-        return positionList
-        # @endcond
-
 
 class SpaceLocator(MovableSystem):
     """
