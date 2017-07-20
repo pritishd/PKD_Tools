@@ -12,22 +12,24 @@ from PKD_Tools.Rigging import utils
 from PKD_Tools.Rigging import core
 
 if __name__ == '__main__':
-    for module in libUtilities, utils, core:
-        reload(module)
+    for mod in libUtilities, utils, core:
+        reload(mod)
 
 
 class Rig(core.TransSubSystem):
-    """This is base System. Transform is the main"""
+    """This is a basic rig system. In order to build a rig component you must provide a valid JointSystem. Once a valid
+    joint system is provided it will know what to do with that, eg if you provide a three joints to @ref limb.Arm it
+    would generate a basic 2 bone IK system"""
 
     def __init__(self, *args, **kwargs):
         super(Rig, self).__init__(*args, **kwargs)
-        self.isStretchable = False
-        self.isCartoony = False
-        self.mainCtrlShape = "Box"
+        self.isStretchable = kwargs.get("stretch", False)
+        self.isCartoony = kwargs.get("cartoony", False)
+        self.mainCtrlShape = kwargs.get("mainCtrlShape", "Box")
         self.rotateOrder = "yzx"
         self.mirrorData = {'side': self.mirrorSide, 'slot': 1}
-        self.hasParentMaster = False
-        self.hasPivot = False
+        self.hasParentMaster = kwargs.get("parentMaster", False)
+        self.hasPivot = kwargs.get("pivot", False)
         self._evaluateLastJoint = True
 
     def createProxyCube(self, targetJoint, childJoint):
@@ -319,35 +321,53 @@ class Generic(Rig):
         self.addSupportNode(data, "OffsetJointSystem")
 
 
-class FK(Generic):
+class Fk(Generic):
     def __init__(self, *args, **kwargs):
-        super(FK, self).__init__(*args, **kwargs)
+        super(Fk, self).__init__(*args, **kwargs)
+        self.lockCtrlPositions = [-(self.elbowPosition + int(self.evaluateLastJoint is None))]
 
     def build(self):
-        # A system where the translation are locked. Elbow axis can be locke
-        super(FK, self).build()
-        # Lock the elbow
+        # A system where the translation and scale are locked. Elbow axis can be locked
+        super(Fk, self).build()
         if self.mainCtrls:
-            elbowPosition = -(2 + int(self.evaluateLastJoint is None))
-            for i in range(len(self.mainCtrls) - 1, -1, -1):
+
+            if self.debugMode:
+                print libUtilities.print_attention()
+                print "Elbow position is: {0}".format(elbowPosition)
+                print libUtilities.print_attention()
+
+            for i in range(len(self.mainCtrls)):
                 libUtilities.lock_translate(self.mainCtrls[i].pynode)
                 libUtilities.lock_scale(self.mainCtrls[i].pynode)
-                if i == elbowPosition:
-                    for attr in self.primaryAxis[:-1]:
-                        attrName = "rotate{0}".format(attr.upper())
-                        self.mainCtrls[elbowPosition].pynode.attr(attrName).lock()
+
+            # Lock the elbow
+            for position in self.lockCtrlPositions:
+                for attr in self.primaryAxis[:-1]:
+                    attrName = "rotate{0}".format(attr.upper())
+                    self.mainCtrls[position].pynode.attr(attrName).set(lock=True, keyable=False, channelBox=False)
         else:
             raise RuntimeError("Main controls are empty")
 
+    @property
+    def elbowPosition(self):
+        return 2
 
-class Hand(FK):
-    # Where the hand is free
-    pass
-
-
-class Quad(FK):
+class Quad(Fk):
     # Class where all the rotation from the solver to the locked
-    pass
+    @property
+    def elbowPosition(self):
+       return 3
+
+
+class Foot(Fk):
+    def _init_(self, *args,**kwargs):
+        super(Foot, self)._init_(*args,**kwargs)
+        self.lockCtrlPositions.append(-2)
+
+class QuadFoot(Quad):
+    def _init_(self, *args, **kwargs):
+        super(Fk, self)._init_(*args,**kwargs)
+        self.lockCtrlPositions.append(-2)
 
 
 class Blender(Rig):
@@ -495,12 +515,12 @@ if __name__ == '__main__':
     pm.newFile(f=1)
     mainSystem = Blender(side="C", part="Core")
     mainSystem.subSystems = "FK_IK"
-    fkSystem = FK(side="C", part="Core")
+    fkSystem = Fk(side="C", part="Core")
     fkSystem.isCartoony = True
     # mainSystem.addMetaSubSystem(fkSystem, "FK")
     # ikSystem.ikControlToWorld = Tru
     fkSystem.evaluateLastJoint = True
     fkSystem.testBuild()
-    fkSystem.convertSystemToSubSystem(fkSystem.systemType)
+    fkSystem.convertSystemToSubSystem("FK")
     # fkSystem.buildSquashStretch()
     print "Done"
