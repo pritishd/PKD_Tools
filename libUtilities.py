@@ -66,17 +66,15 @@ def reverse_attribute(attribute, name=""):
         reverse.rename(name)
     return reverse
 
-
-#
-# def create_wrap(source, target):
-#     ## 
-#     ## Create  Wrap Deformer and return the deformer name
-#     ## 
-#     pm.select(source, target)
-#     mel.eval('CreateWrap;')
-#     for dfr in pm.listHistory(source, pdo=1):
-#         if dfr.type() == "wrap":
-#             return dfr
+def unique_name(name):
+    """
+    Return a name of a node that is totally unique in the scene. This ignores hierarchy
+    @param name: the string which contains the candidate name
+    @return: The unique name
+    """
+    name = pm.createNode("multiplyDivide", name=name).name()
+    pm.delete(name)
+    return name
 
 
 def addFloatAttr(target, attrName="", attrMax=1, attrMin=0, softValue=0, shortName="", defaultValue=0):
