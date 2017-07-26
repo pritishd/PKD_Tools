@@ -133,7 +133,7 @@ class BatchTest(object):
 
     def run_test(self, title=None):
         """
-        The process which excecutes all the tests
+        The process which executes all the tests
         @param title: Give a particular title for the set of of unit test
         """
         # Run Console Test
