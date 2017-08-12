@@ -516,10 +516,10 @@ def vertical_divider():
     return divider
 
 # @cond DOXYGEN_SHOULD_SKIP_THIS
-class searchAbleTextWin(QMainWindow):
+class SearchAbleTextWin(QMainWindow):
     """An example of how to setup a searchable list with QLineEdit"""
     def _setup_(self):
-        super(searchAbleTextWin, self)._setup_()
+        super(SearchAbleTextWin, self)._setup_()
         self.setWindowTitle("Searchable List")
         self.myList = QtGui.QListWidget()
         self.myList.addItems(["Alaska", "Germany", "Germfigher", "Germ02", "Oasis"])
@@ -558,7 +558,7 @@ class searchAbleTextWin(QMainWindow):
 # @endcond DOXYGEN_SHOULD_SKIP_THIS
 
 if __name__ == '__main__':
-    win = searchAbleTextWin()
+    win = SearchAbleTextWin()
     win.show()
 
     # input = QInputDialog()
