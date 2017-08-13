@@ -398,6 +398,7 @@ class HipHand(Hip, Hand):
         Hand.build_ik(self)
 
 
+# noinspection PyUnresolvedReferences,PyArgumentList,PyStatementEffect
 class Hoof(object):
     """This is the IK hoof System."""
 
@@ -557,6 +558,7 @@ class QuadHoof(Quad, Hoof):
         Hoof.align_control(self)
 
 
+# noinspection PyUnresolvedReferences,PyArgumentList,PyStatementEffect,PyTypeChecker
 class Foot(Hoof):
     """This is the classic IK foot System."""
 
@@ -635,7 +637,7 @@ class ArmFoot(Arm, Foot):
         Arm.alignControl(self)
         Foot.align_control(self)
 
-
+# noinspection PyUnresolvedReferences,PyArgumentList,PyStatementEffect,PyTypeChecker
 class HipFoot(Hip, Foot):
     def __init__(self, *args, **kwargs):
         Hip.__init__(self, *args, **kwargs)
@@ -673,7 +675,7 @@ class QuadFoot(Quad, Foot):
         Quad.alignControl(self)
         Foot.align_control(self)
 
-
+# noinspection PyUnresolvedReferences,PyArgumentList,PyStatementEffect,PyTypeChecker
 class Paw(Foot):
     def __init__(self, *args, **kwargs):
         super(Paw, self).__init__(*args, **kwargs)
