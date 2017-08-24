@@ -1,8 +1,8 @@
-'''
+"""
 @package PKD_Tools.libUtilities
 @brief Miscellenous package with useful commands that is imported by other packages.
 @details As the package gets more complex, we will refactor common methods into specialised packages
-'''
+"""
 
 import pymel.core as pm
 from maya import cmds, mel
@@ -65,6 +65,7 @@ def reverse_attribute(attribute, name=""):
     if name:
         reverse.rename(name)
     return reverse
+
 
 def unique_name(name):
     """
@@ -176,7 +177,7 @@ def parZero(target, suffix="Prnt"):
     @return:The new parent node
     """
     target = force_pynode(target)
-    group = pm.group(n="{0}_{1}".format(target.name(),suffix) , empty=True)
+    group = pm.group(n="{0}_{1}".format(target.name(), suffix), empty=True)
     parentObject = pm.listRelatives(target, paarent=True)
     snap(group, target)
     if parentObject:
@@ -755,6 +756,7 @@ def lock_attr(attr):
     @param attr: The pynode attr
     """
     attr.set(lock=True, keyable=False, channelBox=False)
+
 
 def _default_attibute_list_():
     """"Return the list of default maya attributes"""
