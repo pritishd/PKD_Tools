@@ -89,21 +89,49 @@ class QQuestionBox(QMessageBox):
         self.setIcon(QtGui.QMessageBox.Icon.Question)
 
 
+class QFormLayout(QtGui.QFormLayout):
+    """An overloaded layout where you ensure that the set the text padding"""
+    padding = 23
+
+    # noinspection PyTypeChecker
+    def addRow(self, *args, **kwargs):
+        """Overload the add row to autofill """
+        if args:
+            args_list = list(args)
+            text_alias = args_list[0]
+            if isinstance(text_alias, basestring):
+                args_list[0] = self._pad_text(text_alias)
+                args = tuple(args_list)
+            elif isinstance(text_alias, QtGui.QLabel):
+                text_alias = QtGui.QLabel()
+                text_alias.setText(self._pad_text(text_alias.text()))
+        super(QFormLayout, self).addRow(*args, **kwargs)
+
+    # noinspection PyMethodMayBeStatic
+    def _pad_text(self, text):
+        return '{text: <{self.padding}}'.format(**locals())
+
 class QGroupBox(QtGui.QGroupBox):
     """ A collapsable group box widget with form layout as the default layout"""
 
     def __init__(self, *args, **kwargs):
+        padding = kwargs.get("padding", 20)
+        if kwargs.has_key("padding"):
+            del kwargs["padding"]
         super(QGroupBox, self).__init__(*args, **kwargs)
         # Get the text label
         self.titleText = self.title()
 
         # Add a new layout
-        self.form = QtGui.QFormLayout()
+        self.form = QFormLayout()
+        self.form.padding = padding
         self.setLayout(self.form)
 
         self.form.setRowWrapPolicy(QtGui.QFormLayout.DontWrapRows)
         self.form.setFormAlignment(QtCore.Qt.AlignTop)
-        self.form.setLabelAlignment(QtCore.Qt.AlignLeft)
+        self.form.setLabelAlignment(QtCore.Qt.AlignLeading |
+                                    QtCore.Qt.AlignLeft |
+                                    QtCore.Qt.AlignVCenter)
         self.isCollapsed = False
         self._isCollapsable = False
 
@@ -150,8 +178,12 @@ class QGroupBox(QtGui.QGroupBox):
 class QLineEdit(QtGui.QLineEdit):
     """Qline widget which make sure that your cursor always go to the end of the current text"""
 
-    def mousePressEvent(self, e):
-        super(QLineEdit, self).mousePressEvent(e)
+    def mousePressEvent(self, event):
+        """
+        Ensure cursor is always at the end of the line when it is selected
+        @param event: The event we are capture
+        """
+        super(QLineEdit, self).mousePressEvent(event)
         self.setCursorPosition(len(self.text()))
 
 
@@ -245,8 +277,8 @@ class QMainWindow(QtGui.QMainWindow):
             except:
                 pyLog.warning('Failed to close an instance of this GUI:%s' % str(self))
 
-    def resizeWindow(self, *args, **kwargs):
-        # Method to resize whenever a widget is hidden
+    def resizeWindow(self):
+        """Method to resize whenever a widget is hidden"""
         for i in range(0, 10):
             QtGui.QApplication.processEvents()
 
@@ -515,6 +547,7 @@ def vertical_divider():
     divider.setFrameShadow(QtGui.QFrame.Sunken)
     return divider
 
+
 # @cond DOXYGEN_SHOULD_SKIP_THIS
 class SearchAbleTextWin(QMainWindow):
     """An example of how to setup a searchable list with QLineEdit"""
@@ -556,6 +589,7 @@ class SearchAbleTextWin(QMainWindow):
         if item:
             self.myList.setCurrentItem(item[0])
 # @endcond DOXYGEN_SHOULD_SKIP_THIS
+
 
 if __name__ == '__main__':
     win = SearchAbleTextWin()
