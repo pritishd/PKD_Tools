@@ -3,27 +3,18 @@
  This package contains all the GUI that is used in the PKD_Tools
  
 Here we break from the pep 8 convention as pyside follows a camel case convention
- """
-
+"""
 from functools import partial
-
 import pymel.core as pm
+from PKD_Tools import libPySide
+from PKD_Tools import libUtilities
+from PKD_Tools import libJoint
+from PKD_Tools import libFile
+from PKD_Tools import libWeights
+from PKD_Tools import libGeo
 
-if __name__ == '__main__':
-    localPath = r"C:\Users\Pritish\Documents\maya\scripts\PKD_Tools"
-    import sys
-
-    if localPath not in sys.path:
-        sys.path.append(localPath)
-
-import libPySide
-import libUtilities
-import libFile
-import libWeights
-import libGeo
-
-for module in libWeights, libUtilities, libPySide, libFile, libGeo:
-    reload(module)
+for mod in [libWeights, libUtilities, libJoint, libPySide, libFile, libGeo]:
+    reload(mod)
 
 
 class TangentSwapper(libPySide.QDockableWindow):
@@ -187,6 +178,7 @@ class SkinManagerGUI(ManagerGUI):
     gui.show()
     @endcode
     """
+
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     def __init__(self):
         super(SkinManagerGUI, self).__init__()
@@ -211,6 +203,7 @@ class ClusterManagerGUI(ManagerGUI):
     gui.show()
     @endcode
     """
+
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     def __init__(self):
         super(ClusterManagerGUI, self).__init__()
@@ -241,6 +234,7 @@ class BlendshapeManagerGUI(ManagerGUI):
     gui.show()
     @endcode
     """
+
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     def __init__(self):
         super(BlendshapeManagerGUI, self).__init__()
@@ -266,7 +260,6 @@ class ObjManagerGUI(ManagerGUI):
     gui.show()
     @endcode
     """
-
 
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     def __init__(self):
@@ -476,8 +469,184 @@ def confirm_box(title, message, detailedMessage=""):
         return False
 
 
+# @cond DOXYGEN_SHOULD_SKIP_THIS
+class JointOrientWidget(libPySide.QtGui.QWidget):
+    """A widget which  help orients joints"""
+
+    def __init__(self, *args, **kwargs):
+        self.padding = kwargs.get("padding", 20)
+        del kwargs["padding"]
+        super(JointOrientWidget, self).__init__(*args, **kwargs)
+        # Exposed variables
+        self.current_rotate_order = None
+        self.gimbal_data = {"twist": "y", "bend": "x", "roll": "z", 'gimbal': 'roll'}
+        self.joint = None
+        self.details = False
+        self._setup_()
+
+    def _setup_(self):
+        self.stack_layout = libPySide.QtGui.QVBoxLayout()
+        self.stack_layout.padding = self.padding
+        self.setLayout(self.stack_layout)
+
+        direction_group = libPySide.QGroupBox("Direction", padding=self.padding)
+        self.stack_layout.addWidget(direction_group)
+
+        # Up list
+        self.up_combo = libPySide.QtGui.QComboBox()
+        self.up_combo.addItems(["y", "z", "x"])
+        direction_group.form.addRow("Up", self.up_combo)
+
+        # Forward list
+        self.forward_combo = libPySide.QtGui.QComboBox()
+        self.forward_combo.addItems(["z", "y", "x"])
+        direction_group.form.addRow("Forward", self.forward_combo)
+
+        self.flip_group = libPySide.QGroupBox("Flip", padding=self.padding)
+        self.stack_layout.addWidget(self.flip_group)
+
+        # Flip Up
+        self.flip_up_check = libPySide.QtGui.QCheckBox()
+        self.flip_group.form.addRow("Up", self.flip_up_check)
+
+        # Flip Forward
+        self.flip_forward_check = libPySide.QtGui.QCheckBox()
+        self.flip_group.form.addRow("Forward", self.flip_forward_check)
+
+        # Button
+        self.orient_button = libPySide.QtGui.QPushButton("Orient")
+        self.orient_button.clicked.connect(self.orient)
+        self.stack_layout.addWidget(self.orient_button)
+
+        bend_group = libPySide.QGroupBox("Bend", padding=self.padding)
+        self.bend_list = libPySide.QtGui.QComboBox()
+        self.bend_list.addItems(["x", "z"])
+        bend_group.form.addRow("Direction", self.bend_list)
+
+        self.bend_button = libPySide.QtGui.QPushButton("Zero Out Bend")
+        bend_group.form.addRow(self.bend_button)
+        self.bend_button.clicked.connect(self.zero_out_bend)
+        self.stack_layout.addWidget(bend_group)
+
+        gimbal_group = libPySide.QGroupBox("Gimbal Axis", padding=self.padding)
+        self.gimbal_list = libPySide.QtGui.QComboBox()
+        self.gimbal_list.addItems(["z", "y"])
+        gimbal_group.form.addRow("Current", self.gimbal_list)
+
+        self.gimbal_button = libPySide.QtGui.QPushButton("Set")
+        gimbal_group.form.addRow(self.gimbal_button)
+        self.gimbal_button.clicked.connect(self.change_gimbal)
+        self.stack_layout.addWidget(gimbal_group)
+
+    def set_bend_axis(self):
+        for i, axis in enumerate(self.current_rotate_order[:-1]):
+            self.bend_list.setItemText(i, axis)
+
+    def set_gimbal_axis(self):
+        self.gimbal_list.setItemText(0, self.gimbal_data["roll"])
+        self.gimbal_list.setItemText(1, self.gimbal_data["twist"])
+
+    def set_ui_from_gimbal_data(self):
+        def set_combo_box(combo_box, search):
+            index = combo_box.findText(search, libPySide.QtCore.Qt.MatchFixedString)
+            if index >= 0:
+                combo_box.setCurrentIndex(index)
+
+        gimbal_data = self.gimbal_data.copy()
+        current_gimbal = gimbal_data["gimbal"]
+        gimbal_data["gimbal"] = "roll"
+        self.rotate_order = libJoint.get_rotate_order(gimbal_data)
+        set_combo_box(self.up_combo, gimbal_data['twist'])
+        set_combo_box(self.forward_combo, gimbal_data['up'])
+        self.set_bend_axis()
+        set_combo_box(self.bend_list, gimbal_data['bend'])
+        self.set_gimbal_axis()
+        set_combo_box(self.bend_list, gimbal_data[current_gimbal])
+
+
+    def orient(self):
+        """Orient the joint based on the widget values. Raises a error if incorrect combo is found"""
+        up = self.up_combo.currentText()
+        forward = self.forward_combo.currentText()
+        if up == forward:
+            sameComboMsg = libPySide.QCriticalBox()
+            sameComboMsg.setText("<b><i>Up</i></b> axis and <b><i>Forward</i><b> axis are the same <br>"
+                                 "Please ensure that up and forward axis are different")
+            sameComboMsg.setWindowTitle("Chosen axis error")
+            sameComboMsg.exec_()
+            pm.error("Same axis selected")
+        joint = self.joint
+        flip_forward = self.flip_forward_check.isChecked()
+        flip_up = self.flip_up_check.isChecked()
+        details = self.details
+        self.current_rotate_order = libJoint.orient_joint(**locals())
+        if self.details:
+            print "Current rotate order: {}\n".format(self.current_rotate_order)
+        self.update_gimbal_axis()
+        self.set_bend_axis()
+
+
+    def update_gimbal_axis(self):
+        new_gimbal_data = libJoint.get_gimbal_data(self.current_rotate_order)
+        self.gimbal_data.update(new_gimbal_data)
+        self.gimbal_data["gimbal"] = "roll"
+        self.set_gimbal_axis()
+
+
+    def zero_out_bend(self):
+        """Zero out the bend axis"""
+        joint_list = None
+        if self.joint:
+            joint_list = libJoint.get_joint_children(self.joint)
+        axis = self.bend_list.currentText()
+        rotate_order = self.current_rotate_order
+        if self.details:
+            print "Current rotate order: {}".format(rotate_order)
+        self.current_rotate_order = libJoint.zero_out_bend(**locals()) or rotate_order
+        if self.details:
+            print "Current rotate order: {}".format(self.current_rotate_order)
+        if self.joint and self.current_rotate_order:
+            libUtilities.force_pynode(self.joint).rotateOrder.set(self.current_rotate_order)
+        if rotate_order != self.current_rotate_order:
+            # Update the gimbal data
+            self.update_gimbal_axis()
+
+    def change_gimbal(self):
+        current_index = self.gimbal_list.currentIndex()
+        if current_index:
+            self.gimbal_data["gimbal"] = "twist"
+        else:
+            self.gimbal_data["gimbal"] = "roll"
+        rotate_order = libJoint.get_rotate_order(self.gimbal_data)
+        all_joints = [self.joint] + libJoint.get_joint_children(self.joint)
+        libJoint.set_rotate_order(rotate_order, all_joints)
+
+class JointOrientWindow(libPySide.QMainWindow):
+    """Test Joint win"""
+
+    def __init__(self):
+        super(JointOrientWindow, self).__init__()
+        self.setWindowTitle("Joint Orient")
+
+    def _setup_(self):
+        super(JointOrientWindow, self)._setup_()
+        self.joint_widget = JointOrientWidget(padding=40)
+        # TEMP
+        self.joint_widget.details = True
+        self.joint_widget.joint = pm.selected()[0]
+        self.mainLayout.addWidget(self.joint_widget)
+        # pm.select(cl=True)
+# @endcond
+
 if __name__ == '__main__':
-    win = ObjManagerGUI()
+    localPath = r"C:\Users\Pritish\Documents\maya\scripts\PKD_Tools"
+    import sys
+
+    if localPath not in sys.path:
+        sys.path.append(localPath)
+
+    win = JointOrientWindow()
+
     win.show()
 
     # ProgressGroupBox = libPySide.QGroupBox()
