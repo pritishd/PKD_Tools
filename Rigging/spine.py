@@ -50,7 +50,7 @@ class IkSpine(parts.Ik):
         self.ikCurve = core.MovableSystem(ikCurve.name())
         self.ikCurve.part = self.part
         self.transferPropertiesToChild(self.ikCurve, "BaseCurve")
-        fitNodeMeta = core.MovableSystem(fitNode.name())
+        fitNodeMeta = core.MetaRig(fitNode.name())
         fitNodeMeta.part = self.part
         self.ikCurve.addSupportNode(fitNodeMeta, "BaseDriver")
         self.ikCurve.transferPropertiesToChild(fitNodeMeta, "FitNode")
@@ -91,6 +91,7 @@ class IkSpine(parts.Ik):
                 joint.setParent(helpJoint)
 
     def addStretch(self):
+        """TODO: Add stretch"""
         pass
 
     def build(self):
@@ -276,6 +277,8 @@ class SubControlSpine(IkSpine):
     def skinCtrlCurve(self):
         crvSkinJnts = []
         # Iterate through main controls
+        if not self.mainCtrls:
+            self.breakpoint("No Main controls found")
         for ctrl in self.mainCtrls:
             # Create Joint and snap and parent to the control
             curveJoint = core.Joint(side=ctrl.side, part=ctrl.part, endSuffix="CurveJoint")
@@ -298,7 +301,7 @@ class SubControlSpine(IkSpine):
         # Help Joint system
         self.driveJointSystem = core.JointSystem(side=self.side, part="%sHelpJoints" % self.part)
         self.driveJointSystem.rigType = "Help"
-        self.driveJointSystem.joints = joints
+        self.driveJointSystem.joints = crvSkinJnts
         self.driveJointSystem.rebuild_joint_data()
 
     def _calcPositionFallOff_(self, center, overRideJoints=None):
@@ -832,12 +835,14 @@ if __name__ == '__main__':
     pm.newFile(f=1)
 
     mainSystem = core.TransSubSystem(side="C", part="Core")
-    ikSystem = HumanSpine(side="L", part="Core")
+    ikSystem = ComplexSpine(side="L", part="Core")
     ikSystem.ikControlToWorld = False
-    # ikSystem.numHighLevelCtrls = 5
+    ikSystem.numHighLevelCtrls = 4
     ikSystem.fallOffMethod = "Distance"
     # ikSystem.devSpine = True
+    ikSystem.isStretchable = True
     ikSystem.testBuild()
+    ikSystem.addStretch()
 
     mainSystem.addMetaSubSystem(ikSystem, "FK")
-    ikSystem.convertSystemToSubSystem(ikSystem.systemType)
+    #ikSystem.convertSystemToSubSystem(ikSystem.systemType)
