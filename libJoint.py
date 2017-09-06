@@ -207,3 +207,10 @@ def get_rotate_order(gimbal_data):
         return '{}{}{}'.format(gimbal_data["bend"], gimbal_data["roll"], gimbal_data["twist"])
     elif gimbal_data["gimbal"] == "twist":
         return '{}{}{}'.format(gimbal_data["bend"], gimbal_data["twist"], gimbal_data["roll"])
+
+
+def default_gimbal_data():
+    """
+    @return: (dict) Gimbal settings data for joint created at origin
+    """
+    return {"twist": "y", "bend": "x", "roll": "z", 'gimbal': 'roll'}
