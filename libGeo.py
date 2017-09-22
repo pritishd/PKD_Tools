@@ -342,15 +342,18 @@ class ObjManager(object):
         # @endcond
 
 
-def convert_joint_to_cluster(targetGeo, skipList=[]):
+def convert_joint_to_cluster(targetGeo, skipList=None, info=False):
     """
     Convert a skin cluster to a cluster based setup on a target geometery
+    @param skipList: The joints which need to be skipped
     @param targetGeo (string/pynode) The geometry which has the skin cluster
     @param skipList (list): Any joints which should not processed such as a base joint
     @return A dictionary of cluster with the name of the joints as keys
 
     """
-    # Convert to PyNode
+    if skipList is None:
+        skipList = []
+        # Convert to PyNode
     targetGeo = libUtilities.force_pynode(targetGeo)
     skin = libUtilities.get_target_defomer(targetGeo, "skinCluster")
 
@@ -371,32 +374,63 @@ def convert_joint_to_cluster(targetGeo, skipList=[]):
             raise RuntimeError("Current Joint Has No Vertices:%s" % jnt)
         pm.select(vertZip)
 
-        # Iterate through selection and decompress vertic group  into individual index
+        # Iterate through selection and decompress vertix group into individual index
         vertices = libUtilities.indexize_vertice_group(pm.selected())
+
+        joint_position = pm.xform(jnt, q=1, ws=1, rp=1)
         # Select Vertices
-        libUtilities.select_vertices(targetGeo, vertices)
-        # Make a cluster
-        cltr, cTransform = pm.cluster(rel=1)
-        jntPos = pm.xform(jnt, q=1, ws=1, rp=1)
-        pm.setAttr(cTransform.scalePivot, jntPos)
-        pm.setAttr(cTransform.rotatePivot, jntPos)
+        if info:
+            clusterInfo[jnt.name()] = {"vertices": libUtilities.stringList(vertices),
+                                       "weight": weightList,
+                                       "position": joint_position}
+        else:
+            libUtilities.select_vertices(targetGeo, vertices)
+            # Make a cluster
+            cltr, cTransform = weighted_cluster(targetGeo, vertices, weightList, joint_position)
 
-        # Set the weight
-        for index, weight in zip(vertices, weightList):
-            cltr.weightList[0].weights[index].set(weight)
-
-        # Add to dictionary
-        clusterInfo[jnt.name()] = {"cluster": cltr, "clusterHandle": cTransform}
+            # Add to dictionary
+            clusterInfo[jnt.name()] = {"cluster": cltr, "clusterHandle": cTransform}
 
         # Update Progress
-        currentJnt = currentJnt + 1.0
+        currentJnt += 1.0
         currentProgress = (currentJnt / totalJnts) * 100
         pm.progressWindow(edit=True, progress=currentProgress, status=('Progress: ' + str(int(currentProgress)) + '%'))
         pm.refresh()
-        pyLog.info("Converted: " + jnt.name())
+        if info:
+            pyLog.info("Info gathered: " + jnt.name())
+        else:
+            pyLog.info("Converted: " + jnt.name())
 
     pm.progressWindow(endProgress=1)
     return clusterInfo
+
+
+def weighted_cluster(target_geo, vertices, weight_list, joint_position):
+    """
+    Created a relative weighted cluster
+    @param target_geo: The geo which will get the cluster
+    @param vertices: The vertices which form the cluster
+    @param weight_list: The weight map for the cluster
+    @return: The created transform and cluster node
+    """
+    libUtilities.select_vertices(target_geo, vertices)
+    # Make a cluster
+    cltr, cTransform = pm.cluster(rel=1)
+    pm.setAttr(cTransform.scalePivot, joint_position)
+    pm.setAttr(cTransform.rotatePivot, joint_position)
+
+    # Set the weight
+    for index, weight in zip(vertices, weight_list):
+        cltr.weightList[0].weights[index].set(weight)
+
+    # Add to dictionary
+    clusterInfo[jnt.name()] = {"cluster": cltr, "clusterHandle": cTransform}
+
+    # Set the weight
+    for index, weight in zip(vertices, weight_list):
+        cltr.weightList[0].weights[index].set(weight)
+
+    return cltr, cTransform
 
 
 def create_wrap(*args, **kwargs):
@@ -540,6 +574,7 @@ def createStickyControl(position, geo, name):
     @param name (string) The name given to this geometery
     @return: A ctrl object setup
     """
+
     # Create space locator
 
     class ctrl():
