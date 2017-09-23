@@ -293,7 +293,8 @@ class SkinWeights(Weights):
         libUtilities.melEval('doNormalizeWeightsArgList 1 {"4"}')
 
     def copy_weights(self, newTarget):
-        '''@brief Additional function to copy weights from the source geometry to a new one.@details This new geometry will be skinned with the same influence joints.
+        '''@brief Additional function to copy weights from the source geometry to a new one.
+        @details This new geometry will be skinned with the same influence joints.
         @code
         test = libWeights.SkinWeights()
         #Set the target geometry
