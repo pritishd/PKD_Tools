@@ -12,8 +12,8 @@ import zlib
 def encode(text, key):
     """
     Encode the string based on a user defined key
-    @param text (string): The text that is being encode 
-    @param key (string): Special code that is used to help encode the text. This should match whe we decode
+    @param text: (string) The text that is being encode
+    @param key: (string) Special code that is used to help encode the text. This should match whe we decode
     @return: The encoded text
     """
     text = '{}{}'.format(text, struct.pack('i', zlib.crc32(text)))
@@ -29,8 +29,8 @@ def encode(text, key):
 def decode(encodedText, key):
     """
     Deccode a encoded string based on a user defined key
-    @param encodedText (string): The text we need to decode
-    @param key (string): The text that used to code the string
+    @param encodedText: (string) The text we need to decode
+    @param key: (string) The text that used to code the string
     @return (string): The decoded text
     """
     dec = []
