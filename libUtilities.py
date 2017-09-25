@@ -178,7 +178,7 @@ def parZero(target, suffix="Prnt"):
     """
     target = force_pynode(target)
     group = pm.group(n="{0}_{1}".format(target.name(), suffix), empty=True)
-    parentObject = pm.listRelatives(target, paarent=True)
+    parentObject = pm.listRelatives(target, parent=True)
     snap(group, target)
     if parentObject:
         pm.parent(group, parentObject[0])
@@ -400,19 +400,21 @@ def strip_integer_in_string(name):
     return name[0:i]
 
 
-def transfer_shape(source, target, snapToTarget=True):
+def transfer_shape(source, target, snap_to_target=True):
     """
     Reparent a shape node from one parent to another
     @param source: The source dag which contains the shape
     @param target: The source dag which will have the new shape the shape
-    @param snapToTarget: Should be we reparent with world space or object space
+    @param snap_to_target: Should be we reparent with world space or object space
     @return:
     """
     source = force_pynode(source)
     target = force_pynode(target)
-    if snapToTarget:
+    if snap_to_target:
         snap(source, target)
         pm.makeIdentity(source, apply=1)
+        pm.cluster(source)
+        pm.delete(source, ch=1)
     oldShape = source.getShape()
     pm.parent(oldShape, target, shape=1, relative=1)
     return oldShape
@@ -611,16 +613,30 @@ def title(item):
     return " ".join(wordList)
 
 
-def mel2pyStr(text):
+def mel2pyStr(text, namespace):
     """
     Convert a mel command to pymel command and print the result
     @param text: The mel command
+    @param namespace: The module name
     """
     if not text.endswith(";"):
         pyLog.warning('Please end the mel code with ";"')
     else:
         import pymel.tools.mel2py as py2mel
-        print py2mel.mel2pyStr(text, pymelNamespace="pm")
+        print py2mel.mel2pyStr(text, pymelNamespace=namespace)
+
+
+def mel2pm(text):
+    """Convert a mel command to pymel command and print the result
+      @param text: The mel command"""
+    mel2pyStr(text, "pm")
+
+
+def mel2cmds(text):
+    """Convert a mel command to pymel command and print the result
+      @param text: The mel command"""
+    print "from maya import cmds"
+    mel2pyStr(text, "cmds")
 
 
 def change_tangents(tangent):
@@ -681,7 +697,7 @@ def unlock_default_attribute(node):
 def freeze_transform(transform):
     """Freeze the default attributes of transform node even if the some of the attributes are locked. After freezing the
     status reset the transform status
-    @param transform: The tranform node that is being evaluated
+    @param transform: The transform node that is being evaluated
     """
     # Get the current lock status of the default attributes
     defaultLockStatus = get_default_lock_status(transform)
@@ -708,11 +724,11 @@ def freeze_transform(transform):
     set_lock_status(transform, defaultLockStatus)
 
 
-def freeze_rotation(transform):
+def freeze_rotation(target):
     """Freeze the rotation attribute of a transform node
-    @param transform: The tranform node that is being evaluated
+    @param target: The transform node or list of target that is being evaluated
     """
-    pm.makeIdentity(transform, n=0, s=0, r=1, t=0, apply=True)
+    pm.makeIdentity(target, n=0, s=0, r=1, t=0, apply=True)
 
 
 def lock_default_attribute(transform):
@@ -749,6 +765,7 @@ def lock_scale(transform):
     node = force_pynode(transform)
     for attr in _scale_attribute_list_():
         node.attr(attr)
+
 
 def lock_attr(attr):
     """
@@ -843,9 +860,9 @@ def add_nodes_to_namespace(namespace, nodes):
 def cheap_point_constraint(source, target, maintainOffset=False):
     """
     An much lighter alternative to a point constraint which uses locatorShape.worldPosition[0] attribute.
-    @param source (locator): The a pynode locator
-    @param target (transform): The target pynode transform node
-    @param maintainOffset (bool): Should an offset be maintained
+    @param source: (locator)The a pynode locator
+    @param target: (transform) The target pynode transform node
+    @param maintainOffset: (bool) Should an offset be maintained
     @return: return the plus minus node if there is maintain offset
     """
     if not source.listRelatives(type="locator"):
