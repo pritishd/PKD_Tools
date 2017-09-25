@@ -345,9 +345,10 @@ class ObjManager(object):
 def convert_joint_to_cluster(targetGeo, skipList=None, info=False):
     """
     Convert a skin cluster to a cluster based setup on a target geometery
+    @param info: Whether to just query the data for in case we are building it later
     @param skipList: The joints which need to be skipped
-    @param targetGeo (string/pynode) The geometry which has the skin cluster
-    @param skipList (list): Any joints which should not processed such as a base joint
+    @param targetGeo: (string/pynode) The geometry which has the skin cluster
+    @param skipList: (list) Any joints which should not processed such as a base joint
     @return A dictionary of cluster with the name of the joints as keys
 
     """
@@ -355,8 +356,8 @@ def convert_joint_to_cluster(targetGeo, skipList=None, info=False):
         skipList = []
         # Convert to PyNode
     targetGeo = libUtilities.force_pynode(targetGeo)
-    skin = libUtilities.get_target_defomer(targetGeo, "skinCluster")
-
+    skin_name = libUtilities.get_target_defomer(targetGeo, "skinCluster")
+    skin = libUtilities.force_pynode(skin_name)
     # Create the dictionary
     clusterInfo = {}
     # Progress Info
@@ -386,10 +387,10 @@ def convert_joint_to_cluster(targetGeo, skipList=None, info=False):
         else:
             libUtilities.select_vertices(targetGeo, vertices)
             # Make a cluster
-            cltr, cTransform = weighted_cluster(targetGeo, vertices, weightList, joint_position)
+            cluster_info = weighted_cluster(targetGeo, vertices, weightList, joint_position)
 
             # Add to dictionary
-            clusterInfo[jnt.name()] = {"cluster": cltr, "clusterHandle": cTransform}
+            clusterInfo[jnt.name()] = cluster_info
 
         # Update Progress
         currentJnt += 1.0
@@ -411,11 +412,12 @@ def weighted_cluster(target_geo, vertices, weight_list, joint_position):
     @param target_geo: The geo which will get the cluster
     @param vertices: The vertices which form the cluster
     @param weight_list: The weight map for the cluster
+    @param joint_position: The pivot of the cluster
     @return: The created transform and cluster node
     """
     libUtilities.select_vertices(target_geo, vertices)
     # Make a cluster
-    cltr, cTransform = pm.cluster(rel=1)
+    cltr, cTransform = pm.cluster(rel=1, foc=True)
     pm.setAttr(cTransform.scalePivot, joint_position)
     pm.setAttr(cTransform.rotatePivot, joint_position)
 
@@ -423,14 +425,11 @@ def weighted_cluster(target_geo, vertices, weight_list, joint_position):
     for index, weight in zip(vertices, weight_list):
         cltr.weightList[0].weights[index].set(weight)
 
-    # Add to dictionary
-    clusterInfo[jnt.name()] = {"cluster": cltr, "clusterHandle": cTransform}
-
     # Set the weight
     for index, weight in zip(vertices, weight_list):
         cltr.weightList[0].weights[index].set(weight)
 
-    return cltr, cTransform
+    return {"cluster": cltr, "clusterHandle": cTransform}
 
 
 def create_wrap(*args, **kwargs):
@@ -512,7 +511,7 @@ def create_wrap(*args, **kwargs):
     return pm.PyNode(wrapNode)
 
 
-def createFollicle(position, geo=None):
+def create_follicle(position, geo=None):
     """
     Create a follice for a position on a target geometery. Converted to Pymel version of the following script
     http://www.tommasosanguigni.it/blog/function-createfollicle/
@@ -520,6 +519,8 @@ def createFollicle(position, geo=None):
     @param geo (pynode) The target geo
     @return: follicle transform
     """
+    if geo is None:
+        raise RuntimeError("Please provide a geo name")
     if geo.getShape().type() not in ["nurbsSurface", "mesh"]:
         raise ValueError("Geometry must be mesh of nurbSurface")
     else:
@@ -566,41 +567,91 @@ def createFollicle(position, geo=None):
         return follicle_transform
 
 
-def createStickyControl(position, geo, name):
+# noinspection PyStatementEffect
+def create_point_on_mesh(geo, position, sticky_target):
     """
-    Temp setup to create sticky control at position for given geometery
+    Create point on mesh setup
+    @param position:
+    @param geo:
+    @parem sticky:
+    @return:
+    """
+
+    pom = pm.createNode("closestPointOnMesh")
+    pom.inPosition.set(position)
+
+    geo.worldMatrix[0] >> pom.inputMatrix
+    geo.worldMesh[0] >> pom.inMesh
+
+    pom.position >> sticky_target.translate
+
+    index = pom.closestVertexIndex.get()
+
+    locator = pm.spaceLocator()
+    libUtilities.snap(locator, geo.vtx[index], rotate=False)
+    libUtilities.freeze_transform(locator)
+    pm.pointOnPolyConstraint(geo.vtx[index], locator, maintainOffset=True)
+
+    pm.delete(pom)
+    constraint = pm.listRelatives(locator, type="constraint")[0]
+    mel.eval('source channelBoxCommand;')
+    for attr in ["rx", "rz", "ry"]:
+        mel.eval('CBdeleteConnection "{0}.{1}";'.format(locator, attr))
+        locator.attr(attr).set(0)
+    return {"constraint": constraint, "locator": locator}
+
+
+def create_sticky_control(geo, position, name, setup_type="pointOnMesh"):
+    """
+    Temp setup to create sticky control at position for given geometry
+    @param setup_type:
     @param position (vector) The position in worldspace where this will created
-    @param geo (pynode) The target geomentery
-    @param name (string) The name given to this geometery
-    @return: A ctrl object setup
+    @param geo (pynode) The target geometry
+    @param name (string) The prefix identifier given to this setup
+    @return: A dict of control object and object which is constraining.
     """
 
     # Create space locator
+    geo = libUtilities.force_pynode(geo)
 
-    class ctrl():
-        def __init__(self, name):
-            self.ctrl = pm.spaceLocator(name=name)
+    class ctrl(object):
+        """
+        Create con
+        """
+
+        def __init__(self, loc_name):
+            self.ctrl = pm.createNode("transform", name=loc_name)
             self.xtra = libUtilities.parZero(self.ctrl, "Xtra")
-            self.prnt = libUtilities.parZero(self.xtra, "Prnt")
-            self.prnt.rename(name + "_Prnt")
-            self.ctrl.rename(name + "_Ctrl")
+            self.prnt = libUtilities.parZero(self.xtra)
+            self.prnt.rename("{}_Prnt".format(loc_name))
+            self.ctrl.rename("{}_Ctrl".format(loc_name))
 
     # Create the ctrl obj
-    newLoc = ctrl(name)
-    newLoc.prnt.translate.set(position)
-    # Create the follice and point contraint
-    follicle = createFollicle(position, geo)
-    follicle.rename(name + "_fol")
-    pm.pointConstraint(follicle, newLoc.prnt)
+    new_ctrl = ctrl(name)
+    info = {"ctrl": new_ctrl}
+    if setup_type == "follicle":
+        new_ctrl.prnt.translate.set(position)
+        # Create the follice and point constraint
+        follicle = create_follicle(position, geo)
+        follicle.rename("{}_fol".format(name))
+        pm.pointConstraint(follicle, new_ctrl.prnt)
+        # Create a translate cycle
+        info["sticky_source"] = follicle
+        md = pm.createNode("multiplyDivide", name=name + "_MD")
+        md.input2.set([-1, -1, -1])
 
-    # Create a translate cycle
-    md = pm.createNode("multiplyDivide", name=name + "_MD")
-    md.input2.set([-1, -1, -1])
+        new_ctrl.ctrl.translate >> md.input1
+        md.output >> new_ctrl.xtra.translate
 
-    newLoc.ctrl.translate >> md.input1
-    md.output >> newLoc.xtra.translate
+        info["multiplyDivide"] = md
+    else:
+        new_info = create_point_on_mesh(geo, position, new_ctrl.prnt)
+        info.update(new_info)
+        libUtilities.cheap_point_constraint(new_info["locator"], new_ctrl.prnt)
+        new_info["locator"].rename("{}_loc".format(name))
+        new_info["constraint"].rename("{}_popCon".format(name))
 
-    return newLoc, follicle
+    return info
 
 
 if __name__ == '__main__':
