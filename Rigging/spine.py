@@ -222,6 +222,7 @@ class SimpleSpine(IkSpine):
                                 skip=skipAxis)
 
 
+# noinspection PyStatementEffect
 class SubControlSpine(IkSpine):
     def __init__(self, *args, **kwargs):
         super(SubControlSpine, self).__init__(*args, **kwargs)
@@ -561,11 +562,11 @@ class SubControlSpine(IkSpine):
 
     @property
     def forwardAxis(self):
-        return str(self.primaryAxis)[0].upper()
+        return self.jointSystem.gimbalData["twist"].upper()
 
     @property
     def upAxis(self):
-        return str(self.primaryAxis)[2].upper()
+        return self.jointSystem.gimbalData["roll"].upper()
 
     @property
     def ikSkin(self):
@@ -592,6 +593,7 @@ class SubControlSpine(IkSpine):
         return list(self.ikSkin.getWeights(self.ikDriveCurve))
 
 
+# noinspection PyStatementEffect
 class HumanSpine(SubControlSpine):
     def buildControl(self):
         super(HumanSpine, self).buildControl()
@@ -835,9 +837,9 @@ if __name__ == '__main__':
     pm.newFile(f=1)
 
     mainSystem = core.TransSubSystem(side="C", part="Core")
-    ikSystem = ComplexSpine(side="L", part="Core")
-    ikSystem.ikControlToWorld = False
-    ikSystem.numHighLevelCtrls = 4
+    ikSystem = HumanSpine(side="L", part="Core")
+    ikSystem.ikControlToWorld = True
+    #ikSystem.numHighLevelCtrls = 4
     ikSystem.fallOffMethod = "Distance"
     # ikSystem.devSpine = True
     ikSystem.isStretchable = True
