@@ -1,20 +1,22 @@
-"""
-@package PKD_Tools.Rigging.core
-@brief The main core classes for the PKD rig system. All new system are created here until they can be grouped together to create new packages.
-@details The PKD rig system uses the combination of the Red9 meta rig system and Pymel API as part of the core development process
+"""@package PKD_Tools.Rigging.core @brief The main core classes for the PKD rig system. All new system are created
+here until they can be grouped together to create new packages. @details The PKD rig system uses the combination of
+the Red9 meta rig system and Pymel API as part of the core development process
 
-Red9 comes with many development API to traversing networks, getting control nodes easily and initialising objects after you open scene.
-In addition to this this makes PKD tools compatible  with the tools that comes with Red9 such as a well defined pose libary and mirroring system.
+Red9 comes with many development API to traversing networks, getting control nodes easily and initialising objects
+after you open scene. In addition to this this makes PKD tools compatible  with the tools that comes with Red9 such
+as a well defined pose libary and mirroring system.
 
-PyMel which is natively supported also comes with powerful and developer friendly API such as their easy way to make connections and OpenMaya based functionality.
+PyMel which is natively supported also comes with powerful and developer friendly API such as their easy way to make
+connections and OpenMaya based functionality.
 
 However using these do come at the cost of speed however in the long run it will payoff for easier development process
 
-The PKD tools also officially compatible with the ZV Parent Master tool which is a very refined and production tested constraint management system.
+The PKD tools also officially compatible with the ZV Parent Master tool which is a very refined and production tested
+constraint management system.
 
-Just a small note with regards to naming convention, while other aspects of the PKD_Tools tries to keep to the Pep8 convention however in the rigging
-part of the tool we use camelCase for all variable, properties and function to conform to naming standards in maya, pyside, Red9 and pymel
-"""
+Just a small note with regards to naming convention, while other aspects of the PKD_Tools tries to keep to the Pep8
+convention however in the rigging part of the tool we use camelCase for all variable, properties and function to
+conform to naming standards in maya, pyside, Red9 and pymel """
 
 # TODO: Try to create more meta subsystem eg for the spine, so that it is easier to navigate eg subCtrlSystem or hipSystem
 # TODO: Implement using format instead of % operate for string
@@ -22,12 +24,12 @@ part of the tool we use camelCase for all variable, properties and function to c
 import traceback
 from collections import OrderedDict
 import pymel.core as pm
-from PKD_Tools import libUtilities
+from PKD_Tools import libUtilities, libJoint
 from PKD_Tools.Red9 import Red9_Meta
 from PKD_Tools.Rigging import utils
 
 if __name__ == '__main__':
-    for module in Red9_Meta, utils, libUtilities:
+    for module in Red9_Meta, utils, libUtilities, libJoint:
         reload(module)
 
 
@@ -70,6 +72,7 @@ def forcePyNode(node):
     return node
 
 
+# noinspection PyUnresolvedReferences
 class MetaEnhanced(object):
     """This is a helper class which adds pynode based functionality and support. It is always used in conjunction with
     a metaRig class and never by itself"""
@@ -146,7 +149,6 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
         Both ways will pass on arguments to the Red9 `MetaRig`
         """
         # @cond DOXYGEN_SHOULD_SKIP_THIS
-
         if kwargs.has_key("side") and kwargs.has_key("part"):
             # Setup defaults
             kwargs["endSuffix"] = kwargs.get("endSuffix", "Grp")
@@ -155,6 +157,7 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
             full_name = utils.nameMe(kwargs["side"], kwargs["part"], kwargs["endSuffix"])
             # Build the red 9 meta rig with our name
             super(MetaRig, self).__init__(name=full_name, **kwargs)
+            self._build_mode = True
             self.part = kwargs["part"]
             # Setup the mirror side
             self.mirrorSide = _fullSide_(kwargs["side"])
@@ -164,6 +167,7 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
             self.mSystemRoot = False
         else:
             super(MetaRig, self).__init__(*args, **kwargs)
+            self._build_mode = False
 
         # For some reason we run lockState twice to register it
         self.lockState = False
@@ -598,7 +602,7 @@ class Network(MetaRig):
 
     def __init__(self, *args, **kwargs):
         kwargs["nodeType"] = "network"
-        kwargs["endSuffix"] = "Sys"
+        kwargs["endSuffix"] = kwargs.get("endSuffix", "Sys")
         super(Network, self).__init__(*args, **kwargs)
 
 
@@ -622,8 +626,11 @@ class Joint(MovableSystem):
         kwargs["nodeType"] = "joint"
         kwargs["endSuffix"] = kwargs.get("endSuffix", "Joint")
         super(Joint, self).__init__(*args, **kwargs)
-        self.pynode.side.set(self.pynode.mirrorSide.get())
-
+        if self._build_mode:
+            self.pynode.side.set(self.pynode.mirrorSide.get())
+            # self.pynode.drawLabel.set(True)
+            # self.pynode.otherType.set(self.part)
+            #
     def setParent(self, targetSystem):
         """
         In case the target system is a joint then ensure their inverse scale are hooked up
@@ -638,9 +645,26 @@ class Joint(MovableSystem):
             if inverseTarget != targetNode.scale:
                 targetNode.scale >> self.pynode.inverseScale
 
+
+# noinspection PyMissingOrEmptyDocstring
 class JointCollection(Network):
     """A template class which deals with a collection of joint. This can deal with actual physical joints or locators
     which are proxies for joints"""
+
+    # @cond DOXYGEN_SHOULD_SKIP_THIS
+    def __init__(self, *args, **kwargs):
+        """
+        Joint system initializer
+        @param args Any arguements to be passed to the parent
+        @param kwargs Any keyword arguements to be passed to the parent
+
+        """
+        super(JointCollection, self).__init__(*args, **kwargs)
+        if self._build_mode:
+            self.jointData = []
+
+
+    # @endcond
 
     # noinspection PyPropertyAccess
     def _doxygenHelper(self):
@@ -661,18 +685,47 @@ class JointCollection(Network):
         """
         self.positions = self.joints = self.jointList = self.jointData = None
 
+    # noinspection PyUnresolvedReferences
+    def build(self):
+        """Build the joints based on data from the @ref jointData joint data"""
+        # TODO: When building a mirrored joint. Remove the mirror key and mirror type
+        # Iterate though all the joint list
+        if self.jointData:
+            # Init the metaJoint list
+            metaJoints = []
+            for i, joint in enumerate(self.jointData):
+                # Build a joint based on the name
+                metaJoint = self.jointClass(side=self.side, part=joint["Name"])
+                # Set the position and joint orientation
+                metaJoint.pynode.setTranslation(joint["Position"], space="world")
+                if metaJoint.pynode.hasAttr("jointOrient") and joint["JointOrient"]:
+                    metaJoint.pynode.jointOrient.set(joint["JointOrient"])
+                    for attr in ["jointOrientX", "jointOrientY", "jointOrientZ"]:
+                        metaJoint.pynode.attr(attr).setKeyable(True)
+                self.set_joint_rotate_order(metaJoint)
+                metaJoints.append(metaJoint)
+                if i:
+                    metaJoint.pynode.setParent(metaJoints[i - 1].mNode)
+            # Set the meta joints as the main joints
+            self.joints = metaJoints
+        else:
+            libUtilities.pyLog.error("No Joint Data Specified")
+
+    def updatePosition(self):
+        """Update the position of the joints based on the joint data
+
+        Handles all external edits
+        """
+        for jointInfo, joint in zip(self.jointData, self.joints):
+            joint.pynode.setTranslation(jointInfo["Position"], space="world")
+
+    def set_joint_rotate_order(self, metaJoint):
+        """Orient created meta joint based on the gimbal data
+        @param metaJoint: (str) The joint being created
+        """
+        pass
 
     # @cond DOXYGEN_SHOULD_SKIP_THIS
-    def __init__(self, *args, **kwargs):
-        """
-        Joint system initializer
-        @param args Any arguements to be passed to the parent
-        @param kwargs Any keyword arguements to be passed to the parent
-
-        """
-        super(JointCollection, self).__init__(*args, **kwargs)
-        self.jointData = None
-
     def __len__(self):
         return len(self.joints)
 
@@ -680,16 +733,18 @@ class JointCollection(Network):
         """Here we are adding a joint attribute which contains the necessary information to construct a joint chain"""
         super(JointCollection, self).__bindData__()
         # ensure these are added by default
-        self.addAttr("jointData", "")
+        self.addAttr("jointData", [])
+        self.addAttr("gimbalData", libJoint.default_gimbal_data())
 
     @property
     def joints(self):
-        return self.getChildren(asMeta=self.returnNodesAsMeta, walk=True, cAttrs=["SUP_Joints"])
+        return self.getChildren(asMeta=self.returnNodesAsMeta, cAttrs=["SUP_Joints"])
 
     @joints.setter
     def joints(self, jointList):
-        jointList = [joint.shortName() for joint in jointList]
-        self.connectChildren(jointList, "SUP_Joints", allowIncest=True, cleanCurrent=True)
+        if not isinstance(jointList[0], basestring):
+            jointList = [joint.mNode for joint in jointList]
+        self.connectChildren(jointList, "SUP_Joints", cleanCurrent=True)
 
     @property
     def jointList(self):
@@ -704,39 +759,23 @@ class JointCollection(Network):
             libUtilities.pyLog.error("No joint data found")
         return positionList
 
-    # @endcond
+    @property
+    def jointClass(self):
+        return object
+        # @endcond
+
+    @property
+    def buildData(self):
+        return {"GimbalData": self.gimbalData, "JointData": self.jointData}
 
 
 class JointSystem(JointCollection):
     """JointCollection class which deals with a collection of joint.
 
-    TODO: it might be more useful to make the JointSystem aware to ignore the last joint instead of making the other systems
-    take care of that. Perhaps they can pass on this information to the joint system so that it prunes the last joint information
-    when something queries it. It need be it can always be switched to
-   """
-
-    def build(self):
-        """Build the joints based on data from the @ref jointData joint data"""
-        # TODO: When building a mirrored joint. Remove the mirror key and mirror type
-        # Iterate though all the joint list
-        if self.jointData:
-            # Init the metaJoint list
-            metaJoints = []
-            for i, joint in enumerate(self.jointData):
-                # Build a joint based on the name
-                metaJoint = Joint(side=self.side, part=joint["Name"])
-                # Set the position and joint orientation
-                metaJoint.pynode.setTranslation(joint["Position"], space="world")
-                metaJoint.pynode.jointOrient.set(joint["JointOrient"])
-                for attr in ["jointOrientX", "jointOrientY", "jointOrientZ"]:
-                    metaJoint.pynode.attr(attr).setKeyable(True)
-                metaJoints.append(metaJoint)
-                if i:
-                    metaJoint.pynode.setParent(metaJoints[i - 1].mNode)
-            # Set the meta joints as the main joints
-            self.joints = metaJoints
-        else:
-            libUtilities.pyLog.error("No Joint Data Specified")
+    TODO: it might be more useful to make the JointSystem aware to ignore the last joint instead of making the other
+    systems take care of that. Perhaps they can pass on this information to the joint system so that it prunes the last
+    joint information when something queries it. It need be it can always be switched to
+    """
 
     def convertJointsToMetaJoints(self):
         """Convert an existing joint chain into a meta joint."""
@@ -846,6 +885,19 @@ class JointSystem(JointCollection):
         else:
             libUtilities.pyLog.error("Unable to replicate as there is no existing joint data")
 
+    def set_joint_rotate_order(self, metaJoint):
+        """Orient created meta joint based on the gimbal data
+        @param metaJoint: (MetaJoint) the target joint
+        """
+        print libJoint.get_rotate_order(self.gimbalData)
+        metaJoint.rotateOrder = libJoint.get_rotate_order(self.gimbalData)
+
+    @property
+    def jointClass(self):
+        return Joint
+
+
+# noinspection PyUnresolvedReferences
 class SpaceLocator(MovableSystem):
     """
     Space locator meta. Allow to create fast cluster
@@ -858,7 +910,7 @@ class SpaceLocator(MovableSystem):
         if not self.pynode.getShape():
             # Create a new temp locator
             tempLoc = pm.spaceLocator()
-            # Tranfer the locator shape to the main node
+            # Transfer the locator shape to the main node
             libUtilities.transfer_shape(tempLoc, self.mNode)
             # Rename the shape node
             libUtilities.fix_shape_name(self.pynode)
@@ -870,7 +922,7 @@ class SpaceLocator(MovableSystem):
     def clusterCV(self, cv):
         """
         Cluster a CV without using a cluster deformer. More faster
-        @param cv (pynode/string): The cv that is being clustered
+        @param cv: (pynode/string) The cv that is being clustered
         """
         cv = forcePyNode(cv)
         self.snap(cv.name(), rotate=False)
@@ -1024,6 +1076,7 @@ class Ctrl(MovableSystem):
             else:
                 self.locator.pynode.setParent(self.pynode)
 
+    # noinspection PyStatementEffect
     def addPivot(self):
         """Add animatable pivot to a control. Most useful in a @ref limb.Foot setup"""
         # @cond DOXYGEN_SHOULD_SKIP_THIS
