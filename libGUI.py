@@ -117,9 +117,9 @@ class ManagerGUI(libPySide.QDockableWindow):
             noFileBox.setText("No exported data found")
             noFileBox.setWindowTitle("Export Data Error")
             noFileBox.setDetailedText(
-                "No %sInfo Xml file found. The path should be %s" % (self.deformer, self.infoPath))
+                "No %sInfo Json file found. The path should be %s" % (self.deformer, self.infoPath))
             noFileBox.exec_()
-            pm.error("No %sInfo Xml file found" % self.deformer)
+            pm.error("No %sInfo Json file found" % self.deformer)
 
     def _initialise_manager_class_(self):
         """initialse the weight manager class and set the info file"""

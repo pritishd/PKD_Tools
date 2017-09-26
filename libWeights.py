@@ -21,7 +21,7 @@ Current supported deformers are
 
 <h3>Weights/MultiWeights</h3>
 Deals with exporting and importing the weight of the deformer on a target geometry. By default we use Maya native <i>deformerWeights</i> command which
-exports out a XML file. However in the case of blendshapes this is not possible yet. (Maya limitation? Needs for exploration)
+exports out a json file. However in the case of blendshapes this is not possible yet. (Maya limitation? Needs for exploration)
 
 With this, we save the hassle of reading the weights and exporting them as Maya does that for us. Similarly it takes care of the same on the import side.
 
@@ -36,7 +36,7 @@ In addition to the weights file this class would also gather data which will be 
 whether it is a relative cluster, the joints used in the skinCluster etc.
 
 <h3>Weightmanager</h3>
-The WeightManager class works with multiple geometry at the same time. An xml file saves out the following information
+The WeightManager class works with multiple geometry at the same time. An json file saves out the following information
 <ol>
 <li>the list of geometeries processed</li>
 <li>Data(as explained before) about the deformers for each geometry</li>
@@ -53,30 +53,27 @@ mean you will have rewrite/extend the capability of the of relevant WeightManage
 
 import libUtilities
 import libFile
-import libXml
-reload(libUtilities)
-reload(libXml)
 from maya import cmds
 import pymel.core as pm
 
 
 class Weights(object):
     """
-    Class to export and import single XML weight maps from a geometry.
+    Class to export and import single json weight maps from a geometry.
 
     @details This class is used when there normaly just one iteration of deformer in the rig eg skinCluster, muscle , cloth etc
 
     @remarks
-    @htmlonly <li> @endhtmlonly A single xml file contains the weight map for the deformer.
-    The name of this xml file is derived from the name of the geometry.
+    @htmlonly <li> @endhtmlonly A single json file contains the weight map for the deformer.
+    The name of this json file is derived from the name of the geometry.
     """
 
     def __init__(self):
         '''
         @property import_data
-        @brief The deformer data that is read from the data xml file. This content should be same as @ref export_data
+        @brief The deformer data that is read from the data json file. This content should be same as @ref export_data
         @property export_data
-        @brief The deformer data that is written to the data xml file. This content should be same as @ref import_data
+        @brief The deformer data that is written to the data json file. This content should be same as @ref import_data
         @property target
         @brief The current geometry that is being processed.
         @property data
@@ -144,16 +141,16 @@ class Weights(object):
             cmds.select(sel)
 
     def _get_file_(self):
-        # Return the name of data xml file that is linked to the geo
+        # Return the name of data json file that is linked to the geo
         if not self._file_:
-            self._file_ = self.target + ".xml"
+            self._file_ = self.target + ".json"
         return self._file_
 
     def _set_file_(self, fileName):
-        # Check the file ends with xml file
-        if not libFile.has_extension(fileName, "xml"):
-            raise RuntimeError("Weight file must end with .xml extension")
-        # Set the name of data xml file that is linked to the geo
+        # Check the file ends with json file
+        if not libFile.has_extension(fileName, "json"):
+            raise RuntimeError("Weight file must end with .json extension")
+        # Set the name of data json file that is linked to the geo
         self._file_ = fileName
 
     def _get_folder_(self):
@@ -188,26 +185,26 @@ class Weights(object):
             self._target_deformer_ = deformer
 
     def save_data(self):
-        """Save out the deformer information to a test xml file"""
-        libXml.write_xml(self.datapath, {"DeformerInfo": self.data})
+        """Save out the deformer information to a test json file"""
+        libFile.write_json(self.datapath, {"DeformerInfo": self.data})
 
     def load_data(self):
-        """Load the data information from the test xml file"""
-        self.data = libXml.ConvertXmlToDict(self.datapath)["DeformerInfo"]
+        """Load the data information from the test json file"""
+        self.data = libFile.load_json(self.datapath)["DeformerInfo"]
 
     @property
     def datapath(self):
-        '''File path to the xml file which contains data relevant to the deformer. This property is used in testing scenarios along with @ref load_data /@ref save_data method.
+        '''File path to the json file which contains data relevant to the deformer. This property is used in testing scenarios along with @ref load_data /@ref save_data method.
         @code
         import libWeights
         test = libWeights.Weights()
         test.folder = r"C:\temp\test"
         print test.datapath
-        # Result: 'c:/temp/test/info.xml' #
+        # Result: 'c:/temp/test/info.json' #
         @endcode
-        @return joined path of folder and the info xml file
+        @return joined path of folder and the info json file
         '''
-        return libFile.join(self.folder, "info.xml")
+        return libFile.join(self.folder, "info.json")
 
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     @property
@@ -241,7 +238,7 @@ class Weights(object):
 
     ##
     # @property file
-    #The file name which contains the individual weights'''
+    # The file name which contains the individual weights'''
 
     file = property(_get_file_, _set_file_)
 
@@ -268,7 +265,7 @@ class SkinWeights(Weights):
     test.save_data()
 
     ##IMPORT SETUP
-    #Load the deformer data from the test xml file
+    #Load the deformer data from the test json file
     test.load_data()
     #Create deformer if needed and import in the weights
     test.import_weights()
@@ -277,6 +274,7 @@ class SkinWeights(Weights):
     @attention
     This module works only with joints at the moment. If you are using surfaces as an influence object, you will need to extend capability of this class.
     '''
+
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     def __init__(self):
         super(SkinWeights, self).__init__()
@@ -315,7 +313,7 @@ class SkinWeights(Weights):
             jnts = []
             noJnts = []
             # Alias for the joint list from the import data. Make sure the data is list
-            joint_data = libXml.list_persist(self.import_data["Joints"])
+            joint_data = self.import_data["Joints"]
             # Iterate through all the joints in the list
             for jnt in joint_data:
                 # Only bind joints that exists
@@ -344,7 +342,7 @@ class SkinWeights(Weights):
         '''
         self.export_data = {"Joints": cmds.skinCluster(str(self.target_deformer), q=1, inf=1)}
         return self.export_data
-        #@endcond
+        # @endcond
 
 
 class MultiWeights(Weights):
@@ -391,9 +389,9 @@ class MultiWeights(Weights):
 
     def _import_individual_weights_(self):
         # Iterate through all the deformers and import the weigths
-        for self.target_deformer in libXml.list_persist(self.import_data["Order"]):
+        for self.target_deformer in self.import_data["Order"]:
             # Import weight of cluster
-            weightInfo = libXml.ConvertXmlToDict(libFile.join(self.target_folder, self.file))
+            weightInfo = libFile.load_json(libFile.join(self.target_folder, self.file))
             if weightInfo['deformerWeight'].has_key("weights"):
                 evalStatment = 'deformerWeights -import -method "index" -deformer "%s" -path "%s" "%s"' % (
                     self.target_deformer, self.target_folder, self.file)
@@ -419,18 +417,18 @@ class MultiWeights(Weights):
         self.export_data = {"Order": self.target_deformers,
                             "Data": self.deformer_data
                             }
-        #Return the export data
+        # Return the export data
         return self.export_data
 
     @property
     def datapath(self):
-        # File path to the xml file which contains data relevant to the deformer. Here the data is saved in the subfolder This variable is usually used in testing scenarios
-        return libFile.join(self.target_folder, "%sInfo.xml" % self.deformer.capitalize())
+        # File path to the json file which contains data relevant to the deformer. Here the data is saved in the subfolder This variable is usually used in testing scenarios
+        return libFile.join(self.target_folder, "%sInfo.json" % self.deformer.capitalize())
 
     @property
     def file(self):
-        #Each exported file is based on the name of the deformer rather than the target
-        return ("%s.xml" % self.target_deformer)
+        # Each exported file is based on the name of the deformer rather than the target
+        return ("%s.json" % self.target_deformer)
 
     @property
     def target_deformers(self):
@@ -471,16 +469,17 @@ class ClusterWeights(MultiWeights):
       test.save_data()
 
       ##IMPORT SETUP
-      #Load the deformer data from the test xml file
+      #Load the deformer data from the test json file
       test.load_data()
       #Create deformer if needed and import in the weights
       test.import_weights()
       @endcode
 
       @remark
-      The @ref data xml file contains the vertices that are affected by the cluster deformer. This takes into account when the user creates a cluster from selected vertices.
+      The @ref data json file contains the vertices that are affected by the cluster deformer. This takes into account when the user creates a cluster from selected vertices.
 
     '''
+
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     def __init__(self):
         super(ClusterWeights, self).__init__()
@@ -506,12 +505,12 @@ class ClusterWeights(MultiWeights):
 
     def _create_deformers_(self):
         # Build in the order of the clusters
-        for cluster in libXml.list_persist(self.import_data["Order"]):
+        for cluster in self.import_data["Order"]:
             if not pm.objExists(cluster):
                 # Read info for each cluster
                 info = self.import_data["Data"][cluster]
                 # select vertices
-                libUtilities.select_vertices(self.target, libXml.list_persist(info["Vertices"]))
+                libUtilities.select_vertices(self.target, info["Vertices"])
                 # Create the cluster
                 cltr, cTransform = pm.cluster(rel=info["Relative"])
                 # Set the pivot
@@ -544,7 +543,7 @@ class BlendShapeWeights(MultiWeights):
       test.save_data()
 
       ##IMPORT SETUP
-      #Load the deformer data from the test xml file
+      #Load the deformer data from the test json file
       test.load_data()
       #Create deformer if needed and import in the weights
       test.import_weights()
@@ -584,16 +583,16 @@ class BlendShapeWeights(MultiWeights):
 
             # Export out the weights map information
             if len(weightMap):
-                #Save the xml file
-                libXml.write_xml(self.weight_file, {"WeightMap": weightMap})
+                # Save the json file
+                libFile.write_json(self.weight_file, {"WeightMap": weightMap})
 
     def _create_deformers_(self):
         # Setup missing geo shapes dictionary
         missing_shapes = {}
         # Build in the order of blendshapes
-        for blendshape in libXml.list_persist(self.import_data["Order"]):
+        for blendshape in self.import_data["Order"]:
             # Check if the blendshapes exists. If so create one.
-            shapes = libXml.list_persist(self.import_data["Data"][blendshape])
+            shapes = self.import_data["Data"][blendshape]
             if not pm.objExists(blendshape):
                 # Read info for each blendshape
                 # select select the shapes.
@@ -624,7 +623,7 @@ class BlendShapeWeights(MultiWeights):
         for self.target_deformer in self.target_deformers:
             # Load the weights if they were exported
             if libFile.exists(self.weight_file):
-                weightMap = libXml.ConvertXmlToDict(self.weight_file)["WeightMap"]
+                weightMap = libFile.load_json(self.weight_file)["WeightMap"]
                 for index, niceName in zip(self.target_deformer.weightIndexList(), self.target_deformer.getTarget()):
                     # Apply the weight if there was a weight map
                     if weightMap.has_key(niceName):
@@ -640,7 +639,8 @@ class BlendShapeWeights(MultiWeights):
     def weight_file(self):
         # Return the weight map file for each blendshape
         return libFile.join(self.target_folder, self.file)
-        #@endcond
+        # @endcond
+
 
 "----------------------------------------------------------------------------------------------------------------------------------------------"
 
@@ -670,14 +670,13 @@ class WeightManager(object):
 
         '''
 
-        self._xml_file_ = None
+        self._json_file_ = None
         self.weight_class = None
         self.command_mode = False
         self._deformer_ = None
         self.progress_tracker = None
         self.current_geo = None
         self.current_mode = ""
-
 
     def export_all(self):
         """Exports the weights and deformer data of the selected objects using the @ref weight_class"""
@@ -705,11 +704,11 @@ class WeightManager(object):
             geoInfo[self.current_geo] = deformerWeight.data
             self.update_progress()
 
-        # Save out the xml file
+        # Save out the json file
         if geoInfo:
             deformerType = self.deformer.capitalize()
-            print ("========%s Info Path========\n%s" % (deformerType, self.info_file))
-            libXml.write_xml(self.info_file, {"%sInfo" % deformerType: geoInfo})
+            print ("========{0} Info Path========\n{0}".format(deformerType, self.info_file))
+            libFile.write_json(self.info_file, {"{}Info".format(deformerType): geoInfo})
 
         pm.select(targets)
 
@@ -719,7 +718,7 @@ class WeightManager(object):
     def import_all(self):
         """Import the exported weights and data using the @ref weight_class"""
         # Import all Weights for selected object based on the information in the skinInfo
-        geoInfo = libXml.ConvertXmlToDict(self.info_file)["%sInfo" % self.deformer.capitalize()]
+        geoInfo = libFile.load_json(self.info_file)["{}Info".format(self.deformer.capitalize())]
         for self.current_geo in geoInfo:
             if pm.objExists(self.current_geo):
                 # Initialise the weight class
@@ -730,7 +729,7 @@ class WeightManager(object):
                 deformerWeight.import_weights()
             else:
                 # Ensure the geometry exists
-                print "GEO DOES NOT EXISTS: " + self.current_geo
+                print "GEO DOES NOT EXISTS: {}".format(self.current_geo)
             self.update_progress()
         pm.select(cl=1)
 
@@ -741,27 +740,27 @@ class WeightManager(object):
         deformerWeight.target = geo
         return deformerWeight
 
-    def _get_xml_file_(self):
-        # Is the xml file defined
-        if self._xml_file_ is None:
+    def _get_json_file_(self):
+        # Is the json file defined
+        if self._json_file_ is None:
             # raise error
-            cmds.error("XML file not defined")
+            cmds.error("Json file not defined")
         else:
-            # return the XML path
-            return self._xml_file_
+            # return the Json path
+            return self._json_file_
 
-    def _set_xml_file_(self, path):
-        # Check that the file path ends with xml path
-        if not libFile.has_extension(path, "xml"):
-            cmds.error('File path must end with ".xml" extensions')
-        # Check that parent folder exists for the xml path
+    def _set_json_file_(self, path):
+        # Check that the file path ends with json path
+        if not libFile.has_extension(path, "json"):
+            cmds.error('File path must end with ".json" extensions:{}'.format(path))
+        # Check that parent folder exists for the json path
         parent_folder = libFile.get_parent_folder(path)
         if not libFile.exists(parent_folder):
             # Create the parent folder
             libFile.folder_check(parent_folder)
-            print "Parent folder of the xml file did not exist. A folder was created"
-        # Set the XML path
-        self._xml_file_ = libFile.linux_path(path)
+            print "Parent folder of the json file did not exist. A folder was created"
+        # Set the json path
+        self._json_file_ = libFile.linux_path(path)
 
     def update_progress(self):
         '''Update the progress tracker'''
@@ -771,8 +770,8 @@ class WeightManager(object):
 
     ##
     # @property info_file
-    #User defined data path which contains the @ref Weights.data "deformer data" of all the processed geometry.
-    info_file = property(_get_xml_file_, _set_xml_file_)
+    # User defined data path which contains the @ref Weights.data "deformer data" of all the processed geometry.
+    info_file = property(_get_json_file_, _set_json_file_)
 
     @property
     def deformer(self):
@@ -784,7 +783,7 @@ class WeightManager(object):
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     @property
     def folder(self):
-        #Return the parent folder of the info file
+        # Return the parent folder of the info file
         return libFile.get_parent_folder(self.info_file)
 
     @property
@@ -792,8 +791,8 @@ class WeightManager(object):
         if self.current_mode == "Export":
             return libUtilities.get_selected(stringMode=True, scriptEditorWarning=self.command_mode)
         else:
-            return libXml.ConvertXmlToDict(self.info_file)["%sInfo" % self.deformer.capitalize()].keys()
-        # @endcond
+            return libFile.load_json(self.info_file)["{}Info".format(self.deformer.capitalize())].keys()
+            # @endcond
 
 
 class SkinWeightManager(WeightManager):
@@ -805,8 +804,8 @@ class SkinWeightManager(WeightManager):
     test = libWeights.SkinWeightManager()
 
     #REQUIRED SETUP
-    #Set the xml file path where all deformer info of the selected geometry will be saved
-    test.info_file = r"C:/test/SkinData/SkinInfo.xml"
+    #Set the json file path where all deformer info of the selected geometry will be saved
+    test.info_file = r"C:/test/SkinData/SkinInfo.json"
 
     ##EXPORT SETUP
     #Save out the weights
@@ -822,7 +821,7 @@ class SkinWeightManager(WeightManager):
     def __init__(self):
         super(SkinWeightManager, self).__init__()
         self.weight_class = SkinWeights
-    # @endcond
+        # @endcond
 
 
 class ClusterWeightManager(WeightManager):
@@ -834,8 +833,8 @@ class ClusterWeightManager(WeightManager):
     test = libWeights.ClusterWeightManager()
 
     #REQUIRED SETUP
-    #Set the xml file path where all deformer info of the selected geometry will be saved
-    test.info_file = r"C:/test/ClusterData/ClusterInfo.xml"
+    #Set the json file path where all deformer info of the selected geometry will be saved
+    test.info_file = r"C:/test/ClusterData/ClusterInfo.json"
 
     ##EXPORT SETUP
     #Save out the weights
@@ -847,11 +846,12 @@ class ClusterWeightManager(WeightManager):
     @endcode
 
     '''
+
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     def __init__(self):
         super(ClusterWeightManager, self).__init__()
         self.weight_class = ClusterWeights
-    # @endcond
+        # @endcond
 
 
 class BlendsWeightManager(WeightManager):
@@ -863,8 +863,8 @@ class BlendsWeightManager(WeightManager):
     test = libWeights.BlendsWeightManager()
 
     #REQUIRED SETUP
-    #Set the xml file path where all deformer info of the selected geometry will be saved
-    test.info_file = r"C:/test/BlendData/BlendInfo.xml"
+    #Set the json file path where all deformer info of the selected geometry will be saved
+    test.info_file = r"C:/test/BlendData/BlendInfo.json"
 
     ##EXPORT SETUP
     #Save out the weights
@@ -881,4 +881,4 @@ class BlendsWeightManager(WeightManager):
     def __init__(self):
         super(BlendsWeightManager, self).__init__()
         self.weight_class = BlendShapeWeights
-        #@endcond
+        # @endcond
