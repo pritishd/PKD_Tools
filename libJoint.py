@@ -137,7 +137,7 @@ def orient_joint(**kwargs):
                 childJoint = pm.listRelatives(flip_joint)[0]
                 childJoint.setParent(world=True)
                 flip_joint.attr('r{}'.format(forward)).set(180)
-                libUtilities.freeze_rotation(flip_joint)
+                libUtilities.freeze_rotation([flip_joint])
                 childJoint.setParent(flip_joint)
         children_joints[-1].jointOrient.set(0, 0, 0)
 
@@ -170,6 +170,7 @@ def zero_out_bend(**kwargs):
     @return the rotate order
     """
     joint_list = libUtilities.pyList(kwargs.get("joint_list") or get_joint_children(pm.selected()[0]))
+    libUtilities.freeze_rotation(joint_list)
     rotate_order = kwargs.get("rotate_order") or joint_list[0].rotateOrder.get(asString=True)
     target_axis = kwargs.get("axis", rotate_order[0])
     new_rotate_order = None

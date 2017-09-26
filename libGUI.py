@@ -6,6 +6,7 @@ Here we break from the pep 8 convention as pyside follows a camel case conventio
 """
 from functools import partial
 import pymel.core as pm
+from pymel.internal.plogging import pymelLogger as pyLog
 from PKD_Tools import libPySide
 from PKD_Tools import libUtilities
 from PKD_Tools import libJoint
@@ -151,7 +152,7 @@ class ManagerGUI(libPySide.QDockableWindow):
     @property
     def infoPath(self):
         """Return the @ref libWeights.Weights.data "data" file which exists in the user defined folder"""
-        infoPath = libFile.join(self.folder_path_line.text().strip(), "%sInfo.xml" % self.deformer)
+        infoPath = libFile.join(self.folder_path_line.text().strip(), "{}Info.json".format(self.deformer))
         return libFile.linux_path(infoPath)
 
     @property
@@ -479,7 +480,7 @@ class JointOrientWidget(libPySide.QtGui.QWidget):
         super(JointOrientWidget, self).__init__(*args, **kwargs)
         # Exposed variables
         self.current_rotate_order = None
-        self.gimbal_data = {"twist": "y", "bend": "x", "roll": "z", 'gimbal': 'roll'}
+        self.gimbal_data = libJoint.default_gimbal_data()
         self.joint = None
         self.details = False
         self._setup_()
@@ -542,9 +543,9 @@ class JointOrientWidget(libPySide.QtGui.QWidget):
         for i, axis in enumerate(self.current_rotate_order[:-1]):
             self.bend_list.setItemText(i, axis)
 
-    def set_gimbal_axis(self):
-        self.gimbal_list.setItemText(0, self.gimbal_data["roll"])
-        self.gimbal_list.setItemText(1, self.gimbal_data["twist"])
+    def set_gimbal_axis(self, gimbal_data):
+        self.gimbal_list.setItemText(0, gimbal_data["roll"])
+        self.gimbal_list.setItemText(1, gimbal_data["twist"])
 
     def set_ui_from_gimbal_data(self):
         def set_combo_box(combo_box, search):
@@ -555,14 +556,16 @@ class JointOrientWidget(libPySide.QtGui.QWidget):
         gimbal_data = self.gimbal_data.copy()
         current_gimbal = gimbal_data["gimbal"]
         gimbal_data["gimbal"] = "roll"
-        self.rotate_order = libJoint.get_rotate_order(gimbal_data)
+        self.current_rotate_order = libJoint.get_rotate_order(gimbal_data)
+        if self.details:
+            pyLog.info(self.current_rotate_order)
         set_combo_box(self.up_combo, gimbal_data['twist'])
-        set_combo_box(self.forward_combo, gimbal_data['up'])
+        set_combo_box(self.forward_combo, gimbal_data['roll'])
         self.set_bend_axis()
-        set_combo_box(self.bend_list, gimbal_data['bend'])
-        self.set_gimbal_axis()
-        set_combo_box(self.bend_list, gimbal_data[current_gimbal])
 
+        set_combo_box(self.bend_list, gimbal_data['bend'])
+        self.set_gimbal_axis(gimbal_data)
+        set_combo_box(self.gimbal_list, self.gimbal_data[current_gimbal])
 
     def orient(self):
         """Orient the joint based on the widget values. Raises a error if incorrect combo is found"""
@@ -581,17 +584,15 @@ class JointOrientWidget(libPySide.QtGui.QWidget):
         details = self.details
         self.current_rotate_order = libJoint.orient_joint(**locals())
         if self.details:
-            print "Current rotate order: {}\n".format(self.current_rotate_order)
+            pyLog.info("Current rotate order: {}".format(self.current_rotate_order))
         self.update_gimbal_axis()
         self.set_bend_axis()
-
 
     def update_gimbal_axis(self):
         new_gimbal_data = libJoint.get_gimbal_data(self.current_rotate_order)
         self.gimbal_data.update(new_gimbal_data)
         self.gimbal_data["gimbal"] = "roll"
-        self.set_gimbal_axis()
-
+        self.set_gimbal_axis(self.gimbal_data)
 
     def zero_out_bend(self):
         """Zero out the bend axis"""
@@ -601,10 +602,10 @@ class JointOrientWidget(libPySide.QtGui.QWidget):
         axis = self.bend_list.currentText()
         rotate_order = self.current_rotate_order
         if self.details:
-            print "Current rotate order: {}".format(rotate_order)
+            pyLog.info("Current rotate order: {}".format(self.current_rotate_order))
         self.current_rotate_order = libJoint.zero_out_bend(**locals()) or rotate_order
         if self.details:
-            print "Current rotate order: {}".format(self.current_rotate_order)
+            pyLog.info("New rotate order: {}".format(self.current_rotate_order))
         if self.joint and self.current_rotate_order:
             libUtilities.force_pynode(self.joint).rotateOrder.set(self.current_rotate_order)
         if rotate_order != self.current_rotate_order:
@@ -621,6 +622,7 @@ class JointOrientWidget(libPySide.QtGui.QWidget):
         all_joints = [self.joint] + libJoint.get_joint_children(self.joint)
         libJoint.set_rotate_order(rotate_order, all_joints)
 
+
 class JointOrientWindow(libPySide.QMainWindow):
     """Test Joint win"""
 
@@ -628,14 +630,16 @@ class JointOrientWindow(libPySide.QMainWindow):
         super(JointOrientWindow, self).__init__()
         self.setWindowTitle("Joint Orient")
 
+    def _add_joint_widget_(self):
+        self.joint_widget = JointOrientWidget(padding=40)
+
     def _setup_(self):
         super(JointOrientWindow, self)._setup_()
-        self.joint_widget = JointOrientWidget(padding=40)
-        # TEMP
+        self._add_joint_widget_()
         self.joint_widget.details = True
-        self.joint_widget.joint = pm.selected()[0]
         self.mainLayout.addWidget(self.joint_widget)
-        # pm.select(cl=True)
+
+
 # @endcond
 
 if __name__ == '__main__':
@@ -646,8 +650,8 @@ if __name__ == '__main__':
         sys.path.append(localPath)
 
     win = JointOrientWindow()
-
     win.show()
+    win.joint_widget.joint = pm.selected()[0]
 
     # ProgressGroupBox = libPySide.QGroupBox()
     # ProgressGroupBox.setAlignment(libPySide.QtCore.Qt.AlignHCenter)
