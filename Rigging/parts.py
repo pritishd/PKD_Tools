@@ -19,18 +19,22 @@ if __name__ == '__main__':
 class Rig(core.TransSubSystem):
     """This is a basic rig system. In order to build a rig component you must provide a valid JointSystem. Once a valid
     joint system is provided it will know what to do with that, eg if you provide a three joints to @ref limb.Arm it
-    would generate a basic 2 bone IK system"""
+    would generate a basic 2 bone IK system
+
+    You must also specify the rotate order
+    """
 
     def __init__(self, *args, **kwargs):
         super(Rig, self).__init__(*args, **kwargs)
-        self.isStretchable = kwargs.get("stretch", False)
-        self.isCartoony = kwargs.get("cartoony", False)
-        self.mainCtrlShape = kwargs.get("mainCtrlShape", "Box")
-        self.rotateOrder = "yzx"
-        self.mirrorData = {'side': self.mirrorSide, 'slot': 1}
-        self.hasParentMaster = kwargs.get("parentMaster", False)
-        self.hasPivot = kwargs.get("pivot", False)
-        self._evaluateLastJoint = True
+        if self._build_mode:
+            self.isStretchable = kwargs.get("stretch", False)
+            self.isCartoony = kwargs.get("cartoony", False)
+            self.mainCtrlShape = kwargs.get("mainCtrlShape", "Box")
+            self.rotateOrder = kwargs.get("rotateOrder", "yzx")
+            self.mirrorData = {'side': self.mirrorSide, 'slot': 1}
+            self.hasParentMaster = kwargs.get("parentMaster", False)
+            self.hasPivot = kwargs.get("pivot", False)
+            self._evaluateLastJoint = True
 
     def createProxyCube(self, targetJoint, childJoint):
         # Get the height
@@ -102,7 +106,7 @@ class Rig(core.TransSubSystem):
                         currentClass = currentClass.__bases__[0]
 
             # Setup the joint system
-            self.jointSystem.joints = joints
+            self.jointSystem.joints = libUtilities.stringList(joints)
             self.jointSystem.convertJointsToMetaJoints()
             self.jointSystem.setRotateOrder(self.rotateOrder)
         else:
@@ -220,7 +224,8 @@ class Rig(core.TransSubSystem):
 class Ik(Rig):
     def __init__(self, *args, **kwargs):
         super(Ik, self).__init__(*args, **kwargs)
-        self.ikControlToWorld = False
+        if self._build_mode:
+            self.ikControlToWorld = kwargs.get("ikControlToWorld", False)
 
     @property
     def ikHandle(self):
@@ -333,7 +338,7 @@ class Fk(Generic):
 
             if self.debugMode:
                 print libUtilities.print_attention()
-                print "Elbow position is: {0}".format(elbowPosition)
+                print "Elbow position is: {0}".format(self.elbowPosition)
                 print libUtilities.print_attention()
 
             for i in range(len(self.mainCtrls)):
@@ -352,21 +357,23 @@ class Fk(Generic):
     def elbowPosition(self):
         return 2
 
+
 class Quad(Fk):
     # Class where all the rotation from the solver to the locked
     @property
     def elbowPosition(self):
-       return 3
+        return 3
 
 
 class Foot(Fk):
-    def _init_(self, *args,**kwargs):
-        super(Foot, self)._init_(*args,**kwargs)
+    def _init_(self, *args, **kwargs):
+        super(Foot, self)._init_(*args, **kwargs)
         self.lockCtrlPositions.append(-2)
+
 
 class QuadFoot(Quad):
     def _init_(self, *args, **kwargs):
-        super(Fk, self)._init_(*args,**kwargs)
+        super(Fk, self)._init_(*args, **kwargs)
         self.lockCtrlPositions.append(-2)
 
 
@@ -380,6 +387,7 @@ class Blender(Rig):
         self._subSystemB = None
         self._blendAttr = None
 
+    # noinspection PyStatementEffect
     def buildBlendCtrl(self):
         # Build Blendcontrol
         self.blender = self.createCtrlObj(self.part, createXtra=False, addGimbal=False)
