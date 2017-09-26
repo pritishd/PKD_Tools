@@ -735,13 +735,21 @@ def freeze_rotation(target):
     pm.makeIdentity(target, n=0, s=0, r=1, t=0, apply=True)
 
 
+def lock_attr(attr):
+    """
+    Convience function to lock and hide a attr
+    @param attr: The pynode attr
+    """
+    attr.set(lock=True, keyable=False, channelBox=False)
+
+
 def lock_default_attribute(transform):
     """Lock all the translation attr
     @param transform: The transform node that is being evaluated
     """
     node = force_pynode(transform)
     for attr in _default_attibute_list_():
-        node.attr(attr)
+        lock_attr(node.attr(attr))
 
 
 def lock_translate(transform):
@@ -750,7 +758,7 @@ def lock_translate(transform):
     """
     node = force_pynode(transform)
     for attr in _translate_attribute_list_():
-        node.attr(attr)
+        lock_attr(node.attr(attr))
 
 
 def lock_rotate(transform):
@@ -759,7 +767,7 @@ def lock_rotate(transform):
     """
     node = force_pynode(transform)
     for attr in _rotate_attribute_list_():
-        node.attr(attr)
+        lock_attr(node.attr(attr))
 
 
 def lock_scale(transform):
@@ -768,15 +776,7 @@ def lock_scale(transform):
     """
     node = force_pynode(transform)
     for attr in _scale_attribute_list_():
-        node.attr(attr)
-
-
-def lock_attr(attr):
-    """
-    Convience function to lock and hide a attr
-    @param attr: The pynode attr
-    """
-    attr.set(lock=True, keyable=False, channelBox=False)
+        lock_attr(node.attr(attr))
 
 
 def _default_attibute_list_():
