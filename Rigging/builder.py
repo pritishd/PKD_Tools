@@ -1,16 +1,40 @@
-from PKD_Tools import libUtilities, libFile
-from PKD_Tools.Rigging import core, utils
+from collections import Mapping
 
-reload(core)
 import pymel.core as pm
+
+from PKD_Tools import libUtilities
+from PKD_Tools.Rigging import core, gui
+
+
+# TODO: Annotated Nodes wichrome://extensionll have prn
+# TODO: Use constrianedNode property to determine parents
+# TODO: We might need to override the side with our own alias eg {"C":None: "L": "AS" }
+
+def update_deep(d, u):
+    for k, v in u.items():
+        # this condition handles the problem
+        if not isinstance(d, Mapping):
+            d = u
+        elif isinstance(v, Mapping):
+            r = update_deep(d.get(k, {}), v)
+            d[k] = r
+        else:
+            d[k] = u[k]
+
+    return d
 
 
 class AnnotatedLocator(core.SpaceLocator):
     def __init__(self, *args, **kwargs):
+        if kwargs.has_key("part"):
+            kwargs["part"] = libUtilities.unique_name(kwargs["part"])
+        # Set the unique name
         super(AnnotatedLocator, self).__init__(*args, **kwargs)
-        libUtilities.lock_scale(self.pynode)
-        libUtilities.lock_rotate(self.pynode)
-        self.pynode.Symmetry.set(keyable=False, channelBox=False)
+        if self._build_mode:
+            libUtilities.lock_scale(self.pynode)
+            libUtilities.lock_rotate(self.pynode)
+            self.pynode.Symmetry.set(keyable=False, channelBox=False)
+            self.resetName()
 
     # noinspection PyUnresolvedReferences
     def build(self):
@@ -41,10 +65,10 @@ class AnnotatedLocator(core.SpaceLocator):
         self.annotation = annotationMeta
 
     # noinspection PyUnresolvedReferences
-    def setJointParent(self, targetSystem):
+    def buildJointParent(self, targetSystem):
         """
-        Parent the annotation to another AnnotatedLccator system. This will show the parent child relationship
-        @param targetSystem (metaRig) The target AnnotatedLccator you are trying to parent
+        Parent the annotation to another AnnotatedLocator system. This will show the parent child relationship
+        @param targetSystem (metaRig) The target AnnotatedLocator you are trying to parent
         """
         if not isinstance(targetSystem, AnnotatedLocator):
             raise RuntimeError("You can only reparent another annotated locator")
@@ -53,13 +77,46 @@ class AnnotatedLocator(core.SpaceLocator):
         if fakeJointMeta.pynode.getParent() != targetSystem.pynode:
             fakeJointMeta.setParent(targetSystem)
 
-        # Match the position
-        fakeJointMeta.snap(targetSystem, rotate=False)
-        fakeJointMeta.v = True
+            # Match the position
+            fakeJointMeta.snap(targetSystem, rotate=False)
+            fakeJointMeta.v = True
+
+    def setParent(self, targetSystem):
+        """Parent the joint system"""
+        if not isinstance(targetSystem, AnnotatedLocator):
+            raise RuntimeError("You can only reparent another annotated locator")
+
+        self.buildJointParent(self.constrainedNode)
+        targetSystem.getParentMetaNode().prnt = self.constrainedNode
 
     def __bindData__(self, *args, **kwgs):
         super(AnnotatedLocator, self).__bindData__(*args, **kwgs)
         self.addAttr("Symmetry", enumName="Symmetrical:Asymmetrical:Unique", attrType='enum')
+
+    def rename(self, newName, renameChildLinks=True):
+        """
+
+        @param newName: new name for the mNode
+        @param renameChildLinks: set to True by default, this will rename connections back to the mNode
+            from children who are connected directly to it, via an attr that matches the current mNode name.
+            These connected Attrs will be renamed to reflect the change in node name
+        """
+        super(AnnotatedLocator, self).rename(newName, renameChildLinks)
+        self.part = newName
+        self.resetName()
+        # Rename the fakeJoint
+        self.fakeJoint.rename(newName, renameChildLinks)
+        self.fakeJoint.part = newName
+        self.fakeJoint.resetName()
+        # Rename the locator
+        self.annotation.rename(newName, renameChildLinks)
+        self.annotation.part = newName
+        self.annotation.resetName()
+        self.annotation.pynode.text.set(newName)
+
+    @property
+    def constrainedNode(self):
+        return self
 
     # noinspection PyMissingOrEmptyDocstring
     @property
@@ -87,75 +144,214 @@ class AnnotatedLocator(core.SpaceLocator):
         self.addSupportNode(data, "Annotation")
 
 
-class AnnotatedJointSystem(core.JointCollection):
-    """JointCollection class which deals with a collection of joint.    """
+class PalmAnnotatedLocator(AnnotatedLocator):
+    @property
+    def constrainedNode(self):
+        return self.getParentMetaNode().prnt.Joints[0]
 
-    def build(self):
-        """Build the joints based on data from the @ref jointData joint data"""
-        # TODO: When building a mirrored joint. Add a prexix to the joint name
-        # Iterate though all the joint list
+
+class HoofAnnotatedLocator(AnnotatedLocator):
+    @property
+    def constrainedNode(self):
+        return self.getParentMetaNode().prnt.Joints[-1]
+
+
+class FootAnnotatedLocator(AnnotatedLocator):
+    @property
+    def constrainedNode(self):
+        return self.getParentMetaNode().prnt.Joints[1]
+
+
+class BuilderJointSystem(core.JointCollection):
+    _annotatedLocator = AnnotatedLocator
+
+    def buildNewJoints(self, templateNames, currentPos=None):
+        """
+        Build a new template system
+        @param templateNames: List of names of templates
+        @param currentPos: (vector) The initial position
+        """
+        if currentPos is None:
+            currentPos = [0, 1, 0]
+        metaLocators = []
+        for count, locName in enumerate(templateNames):
+            jointData = {"Name": locName,
+                         "Position": [currentPos[0], currentPos[1] + count, currentPos[2]],
+                         "JointOrient": []}
+            metaLocators.append(self.buildLocator(jointData, metaLocators[count - 1] if count else None))
+            self.jointData += [jointData]
+
+        self.joints = metaLocators
+
+    def updatePositionData(self):
+        jointData = self.jointData
+        for jointInfo, joint in zip(jointData, self.joints):
+            jointInfo["Position"] = list(joint.pynode.getTranslation(space="world"))
+        self.jointData = jointData
+
+    # noinspection PyCallingNonCallable
+    def buildLocator(self, jointData, parent=None):
+        """
+        Build locator and set joint parent if possible
+        @param jointData: Joint data which contains information on how to build this locator
+        @param parent: An annotated  locator
+        @return: The build meta locator
+        """
+        metaLocator = self.jointClass(side="L", part=jointData["Name"])
+        jointData["Name"] = metaLocator.part
+        metaLocator.build()
+        metaLocator.translate = jointData["Position"]
+        if parent:
+            metaLocator.buildJointParent(parent)
+        return metaLocator
+
+    @property
+    def jointClass(self):
+        return self._annotatedLocator
+
+    # noinspection PyMethodOverriding
+    @jointClass.setter
+    def jointClass(self, locatorSystemType):
+        if not isinstance(locatorSystemType, AnnotatedLocator):
+            raise TypeError("Target system must be a type of 'Annotated Locator'")
+        self._annotatedLocator = locatorSystemType
+
+    @property
+    def hasJointOrientData(self):
         if self.jointData:
-            # Init the metaJoint list
-            metaJoints = []
-            for i, joint in enumerate(self.jointData):
-                # Build a joint based on the name
-                metaJoint = AnnotatedLocator(side=self.side, part=joint["Name"])
-                metaJoint.build()
-                # Set the position and joint orientation
-                metaJoint.pynode.setTranslation(joint["Position"], space="world")
-                metaJoints.append(metaJoint)
-                if i:
-                    metaJoint.setJointParent(metaJoints[i - 1])
-            # Set the meta joints as the main joints
-            self.joints = metaJoints
+            return bool(self.jointData[0]["JointOrient"])
         else:
-            libUtilities.pyLog.error("No Joint Data Specified")
+            return False
 
-
-class BuilderJointSystem(core.JointSystem):
-    def jointOrient(self):
-        pass
-    def flipAxis(self):
-        pass
 
 class Builder(core.MovableSystem):
     def __init__(self, *args, **kwargs):
         super(Builder, self).__init__(*args, **kwargs)
         self.componentKwargs = {}
-        self.buildData = {}
+        self.jointWin = None
 
-    def __bindData__(self, *args, **kwgs):
-        super(Builder, self).__bindData__(*args, **kwgs)
-        self.addAttr("buildData", "")
+    def __bindData__(self, *args, **kwargs):
+        super(Builder, self).__bindData__(*args, **kwargs)
 
-    def buildTemplate(self, number=1, parent=""):
-        pass
+    def buildTemplate(self):
+        builderJointsSystem = BuilderJointSystem(part=self.part, side=self.side, endSuffix="BuildSys")
+        builderJointsSystem.buildNewJoints(self.templateNames)
+        for loc in builderJointsSystem.joints:
+            loc.pynode.setParent(self.pynode)
 
-    def joint2loc(self):
-        pass
+        self.builderJointSystem = builderJointsSystem
 
     def loc2joint(self):
+        self.builderJointSystem.updatePositionData()
+        if not self.jointSystem:
+            newJointSystem = core.JointSystem(part=self.part, side=self.side, endSuffix="JntSys")
+            newJointSystem.jointData = self.builderJointSystem.jointData
+            newJointSystem.gimbalData = self.builderJointSystem.gimbalData
+            newJointSystem.build()
+            self.jointSystem = newJointSystem
+        else:
+            if self.builderJointSystem.jointData != self.jointSystem.jointData:
+                self.jointSystem.jointData = self.builderJointSystem.jointData
+                self.jointSystem.updatePosition()
+
+        self.jointSystem.joints[0].v = True
+        pyJoints = [joint.pynode for joint in self.builderJointSystem.joints]
+        for shape in pm.listRelatives(pyJoints, allDescendents=True, shapes=True):
+            shape.visibility.set(False)
+
+    def jointOrientWin(self):
+        if self.jointSystem:
+            jointWin = gui.JointOrientWindow([self.jointSystem.pynode.gimbalData,
+                                              self.builderJointSystem.pynode.gimbalData])
+            jointWin.show()
+            jointWin.joint_widget.gimbal_data = self.jointSystem.gimbalData
+            jointWin.joint_widget.joint = self.jointSystem.joints[0].pynode
+            jointWin.joint_widget.set_ui_from_gimbal_data()
+            self.jointWin = jointWin
+
+    def joint2loc(self):
+        self.jointSystem.rebuild_joint_data()
+        self.jointSystem.joints[0].v = False
+        pyJoints = [joint.pynode for joint in self.jointSystem.joints]
+        libUtilities.freeze_rotation(pyJoints)
+        pyLocs = [joint.pynode for joint in self.builderJointSystem.joints]
+        self.builderJointSystem.jointData = self.jointSystem.jointData
+        self.builderJointSystem.updatePosition()
+        for shape in pm.listRelatives(pyLocs, allDescendents=True, shapes=True):
+            shape.visibility.set(True)
+
+    def setParent(self, target):
         pass
 
+    @property
+    def templateNames(self):
+        return []
 
-class SpineBuider(Builder):
+    @property
+    def jointSystem(self):
+        return self.getSupportNode("JointSystem")
+
+    @jointSystem.setter
+    def jointSystem(self, data):
+        self.addSupportNode(data, "JointSystem")
+
+    @property
+    def builderJointSystem(self):
+        return self.getSupportNode("BuilderJointSystem")
+
+    @builderJointSystem.setter
+    def builderJointSystem(self, data):
+        self.addSupportNode(data, "BuilderJointSystem")
+
+    @property
+    def buildData(self):
+        return {"Builder": self.builderJointSystem.buildData, "Joint": self.jointSystem.buildData}
+
+
+class Extendable(Builder):
+    jointCount = 2
+    @property
+    def templateNames(self):
+        return ["{0}{1}".format(self.part, i) for i in range(1, self.jointCount+2)]
+
+
+class Finger(Extendable):
     pass
+
+
+class Eyes(Extendable):
+    pass
+
+
+APPENDAGE = {"Hoof": ["Hoof", "HoofEnd"],
+             "Palm": ["Palm"],
+             "Paw": ["Ankle", "Toe", "ToeEnd", "Heel"],
+             "Foot": ["Toe", "ToeEnd", "Heel"]}
 
 
 class LimbBuilder(Builder):
-    pass
+    @property
+    def templateNames(self):
+        return ["HipShoulder", "KneeElbow", "AnklePalm"]
 
 
 class QuadBuilder(Builder):
-    pass
+    @property
+    def templateNames(self):
+        return ["FemurUpper", "HipShoulder", "KneeElbow", "AnklePalm"]
 
 
 if __name__ == '__main__':
     pm.newFile(f=1)
-    l = AnnotatedLocator(side="L", part="Test")
-
-    k = AnnotatedLocator(side="L", part="TestA")
-    k.build()
-    l.build()
-    k.translate = [0, 2, 0]
-    l.setJointParent(k)
+    # l = AnnotatedLocator(side="L", part="Test")
+    # k = AnnotatedLocator(side="L", part="TestA")
+    # k.build()
+    # l.build()
+    # k.translate = [0, 2, 0]
+    # l.setJointParent(k)
+    extendBuilder = Extendable(part="Spine", side="C")
+    extendBuilder.jointCount = 5
+    extendBuilder.buildTemplate()
+    extendBuilder.loc2joint()
+    # extendBuilder.joint2loc()
+    extendBuilder.jointOrientWin()
