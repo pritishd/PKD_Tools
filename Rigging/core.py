@@ -702,7 +702,7 @@ class JointCollection(Network):
                     metaJoint.pynode.jointOrient.set(joint["JointOrient"])
                     for attr in ["jointOrientX", "jointOrientY", "jointOrientZ"]:
                         metaJoint.pynode.attr(attr).setKeyable(True)
-                self.set_joint_rotate_order(metaJoint)
+                self.setJointRotateOrder(metaJoint)
                 metaJoints.append(metaJoint)
                 if i:
                     metaJoint.pynode.setParent(metaJoints[i - 1].mNode)
@@ -719,7 +719,7 @@ class JointCollection(Network):
         for jointInfo, joint in zip(self.jointData, self.joints):
             joint.pynode.setTranslation(jointInfo["Position"], space="world")
 
-    def set_joint_rotate_order(self, metaJoint):
+    def setJointRotateOrder(self, metaJoint):
         """Orient created meta joint based on the gimbal data
         @param metaJoint: (str) The joint being created
         """
@@ -767,6 +767,10 @@ class JointCollection(Network):
     @property
     def buildData(self):
         return {"GimbalData": self.gimbalData, "JointData": self.jointData}
+
+    @property
+    def rotateOrder(self):
+        return libJoint.get_rotate_order(self.gimbalData)
 
 
 class JointSystem(JointCollection):
@@ -885,11 +889,10 @@ class JointSystem(JointCollection):
         else:
             libUtilities.pyLog.error("Unable to replicate as there is no existing joint data")
 
-    def set_joint_rotate_order(self, metaJoint):
+    def setJointRotateOrder(self, metaJoint):
         """Orient created meta joint based on the gimbal data
         @param metaJoint: (MetaJoint) the target joint
         """
-        print libJoint.get_rotate_order(self.gimbalData)
         metaJoint.rotateOrder = libJoint.get_rotate_order(self.gimbalData)
 
     @property
