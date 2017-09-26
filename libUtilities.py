@@ -413,8 +413,12 @@ def transfer_shape(source, target, snap_to_target=True):
     if snap_to_target:
         snap(source, target)
         pm.makeIdentity(source, apply=1)
-        pm.cluster(source)
-        pm.delete(source, ch=1)
+        try:
+            pm.cluster(source)
+            pm.delete(source, ch=1)
+        except RuntimeError:
+            pyLog.warning("Cannot cluster {}".format(source))
+
     oldShape = source.getShape()
     pm.parent(oldShape, target, shape=1, relative=1)
     return oldShape
