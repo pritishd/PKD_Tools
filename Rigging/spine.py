@@ -7,6 +7,7 @@ from PKD_Tools.Rigging import core
 from PKD_Tools.Rigging import utils
 from PKD_Tools.Rigging import parts
 from PKD_Tools import libUtilities, libVector, libMath
+from PKD_Tools.libUtilities import output_window
 import pymel.core as pm
 
 
@@ -18,6 +19,7 @@ class IkSpine(parts.Ik):
     def __init__(self, *args, **kwargs):
         super(IkSpine, self).__init__(*args, **kwargs)
         self.devSpine = False
+        self.bSpline = True
 
     def buildHelperJoints(self):
         # Build the help joint system
@@ -41,21 +43,27 @@ class IkSpine(parts.Ik):
         self.controlCurve.part = self.part
         self.transferPropertiesToChild(self.controlCurve, "CtrlCurve")
         self.controlCurve.resetName()
-
         # Build the bspline ik curve
+        curve_name = utils.nameMe(self.side, self.part, "BaseCurve")
+        # Sometimes bSpline might generate less CVs as the source....Investigate
         ikCurve, fitNode = pm.fitBspline(baseCurve,
                                          ch=1,
                                          tol=0.01,
-                                         n=utils.nameMe(self.side, self.part, "BaseCurve"))
+                                         n=curve_name)
+        if len(ikCurve.getCVs()) != len(jntSystem.positions):
+            pm.delete(ikCurve)
+            ikCurve = utils.createCurve(jntSystem.positions, degree=2)
+            ikCurve.rename(curve_name)
+            self.bSpline = False
         self.ikCurve = core.MovableSystem(ikCurve.name())
         self.ikCurve.part = self.part
         self.transferPropertiesToChild(self.ikCurve, "BaseCurve")
-        fitNodeMeta = core.MetaRig(fitNode.name())
-        fitNodeMeta.part = self.part
-        self.ikCurve.addSupportNode(fitNodeMeta, "BaseDriver")
-        self.ikCurve.transferPropertiesToChild(fitNodeMeta, "FitNode")
-        fitNodeMeta.resetName()
-
+        if self.bSpline:
+            fitNodeMeta = core.MetaRig(fitNode.name())
+            fitNodeMeta.part = self.part
+            self.ikCurve.addSupportNode(fitNodeMeta, "BaseDriver")
+            self.ikCurve.transferPropertiesToChild(fitNodeMeta, "FitNode")
+            fitNodeMeta.resetName()
         # Build the spline IK
         name = utils.nameMe(self.side, self.part, "IkHandle")
         startJoint = jntSystem.joints[0].shortName()
@@ -95,9 +103,13 @@ class IkSpine(parts.Ik):
         pass
 
     def build(self):
+        output_window("Building IK")
         self.build_ik()
+        output_window("Building Controls")
         self.buildControl()
+        output_window("Connecting Controls")
         self.connectToControl()
+        output_window("Cleaning up")
         self.cleanUp()
 
     def buildControl(self):
@@ -229,7 +241,7 @@ class SubControlSpine(IkSpine):
         # List of weights [CV][JOINT]
         self.addAttr("ikSkinWeightMap", "")
         self.addAttr("preNormalisedMap", "")
-        self.addAttr("fallOffMethod", "Distance")
+        self.addAttr("fallOffMethod", kwargs.get("fallOffMethod", "Distance"))
         self.currentWeightMap = []
         if not hasattr(self, "numHighLevelCtrls"):
             self.numHighLevelCtrls = 3
@@ -248,12 +260,12 @@ class SubControlSpine(IkSpine):
         pm.delete(self.ikCurve.mNode, constructionHistory=True)
         # Delete the shape under the Ik curve
         pm.delete(self.controlCurve.pynode.getShape())
-        # Duplicate the bspline
-        tempBSpline = pm.duplicate(self.ikCurve.mNode)[0]
+        # Duplicate the smooth IKCurve
+        tempCurve = pm.duplicate(self.ikCurve.mNode)[0]
         # Transfer the shape
-        libUtilities.transfer_shape(tempBSpline, self.ikDriveCurve)
+        libUtilities.transfer_shape(tempCurve, self.ikDriveCurve)
         # Delete the temp node
-        pm.delete(tempBSpline)
+        pm.delete(tempCurve)
         # Rename the shape
         libUtilities.fix_shape_name(self.ikDriveCurve)
 
@@ -289,7 +301,6 @@ class SubControlSpine(IkSpine):
             ctrl.addSupportNode(curveJoint, "IkSkinJoint")
             # Connect as support joint
             crvSkinJnts.append(curveJoint)
-
         joints = [jnt.pynode for jnt in crvSkinJnts]
 
         skinCluster = libUtilities.skinGeo(self.ikDriveCurve, joints)
@@ -364,18 +375,27 @@ class SubControlSpine(IkSpine):
         # self.currentWeightMap.append(list(zeroWeights))
 
         # For each CV calculate weights
-        for cv in range(len(self.jointSystem)):
-            # Init the skinDataCV
-            skinDataCV = []
-            # Get the distance from CV
-            for joint in range(self.numHighLevelCtrls):
-                jointPos = libUtilities.get_world_space_pos(self.ikSkinJoints[joint])
-                skinDataCV.append(libVector.distanceBetween(jointPos, self.ikDriveCurve.getCVs()[cv]))
-            # Get the max position
-            maxDistance = max(skinDataCV)
-            # Calculate weight
-            currentWeightMap = [round(((maxDistance - position) / maxDistance), 3) for position in skinDataCV]
-            weightMap.append(currentWeightMap)
+        if len(self.jointSystem) != len(self.ikDriveCurve.getCVs()):
+            self.breakpoint("Number of Joints and ikDrive CV do not match")
+        else:
+            for cv in range(len(self.jointSystem)):
+                # Init the skinDataCV
+                skinDataCV = []
+                # Get the distance from CV
+                for joint in range(self.numHighLevelCtrls):
+                    jointPos = libUtilities.get_world_space_pos(self.ikSkinJoints[joint])
+                    try:
+                        skinDataCV.append(libVector.distanceBetween(jointPos, self.ikDriveCurve.getCVs()[cv]))
+                    except IndexError:
+                        print cv
+                        print len(self.ikDriveCurve.getCVs())
+                        raise IndexError
+
+                # Get the max position
+                maxDistance = max(skinDataCV)
+                # Calculate weight
+                currentWeightMap = [round(((maxDistance - position) / maxDistance), 3) for position in skinDataCV]
+                weightMap.append(currentWeightMap)
 
         self.currentWeightMap = weightMap
         # Reverse zero
@@ -725,6 +745,7 @@ class ComplexSpine(SubControlSpine):
         metaCtrls = []
         # Iterate though all the position
         for i in range(self.numHighLevelCtrls):
+            output_window("Build Main Control: {}".format(i))
             # Create a control object
             ctrl = self.createCtrlObj("%s%i" % (self.part, i))
             # Set the position
@@ -835,16 +856,15 @@ class ComplexSpine(SubControlSpine):
 
 if __name__ == '__main__':
     pm.newFile(f=1)
-
-    mainSystem = core.TransSubSystem(side="C", part="Core")
-    ikSystem = HumanSpine(side="L", part="Core")
+    # mainSystem = core.TransSubSystem(side="C", part="Core")
+    ikSystem = ComplexSpine(side="L", part="Core")
     ikSystem.ikControlToWorld = True
-    #ikSystem.numHighLevelCtrls = 4
+    ikSystem.numHighLevelCtrls = 5
     ikSystem.fallOffMethod = "Distance"
     # ikSystem.devSpine = True
     ikSystem.isStretchable = True
     ikSystem.testBuild()
     ikSystem.addStretch()
 
-    mainSystem.addMetaSubSystem(ikSystem, "FK")
-    #ikSystem.convertSystemToSubSystem(ikSystem.systemType)
+    # mainSystem.addMetaSubSystem(ikSystem, "FK")
+    # ikSystem.convertSystemToSubSystem(ikSystem.systemType)
