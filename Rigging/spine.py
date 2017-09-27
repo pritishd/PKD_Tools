@@ -52,7 +52,7 @@ class IkSpine(parts.Ik):
                                          n=curve_name)
         if len(ikCurve.getCVs()) != len(jntSystem.positions):
             pm.delete(ikCurve)
-            ikCurve = utils.createCurve(jntSystem.positions, degree=2)
+            ikCurve = utils.createCurve(jntSystem.positions)
             ikCurve.rename(curve_name)
             self.bSpline = False
         self.ikCurve = core.MovableSystem(ikCurve.name())

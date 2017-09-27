@@ -6,7 +6,7 @@
 import sys
 import pymel.core as pm
 from maya import cmds, mel
-from pymel.internal.plogging import pymelLogger as pyLog
+from PKD_Tools import logger
 
 
 def force_pynode(node):
@@ -418,7 +418,7 @@ def transfer_shape(source, target, snap_to_target=True):
                 pm.cluster(source)
                 pm.delete(source, ch=1)
             except RuntimeError:
-                pyLog.warning("Cannot cluster {}".format(source))
+                logger.warning("Cannot cluster {}".format(source))
 
     oldShape = source.getShape()
     pm.parent(oldShape, target, shape=1, relative=1)
@@ -517,7 +517,7 @@ def snapBake(source, target):
     try:
         target.setScale(scale)
     except:
-        pyLog.warning("Unable to set the target scale")
+        logger.warning("Unable to set the target scale")
 
 
 def melEval(evalStatment, echo=False):
@@ -531,7 +531,7 @@ def melEval(evalStatment, echo=False):
                 print statement
             mel.eval("%s;" % statement)
         except:
-            pyLog.warning("## ## ##  FAILED MEL STATEMENT: %s## ## ## " % ("%s;" % statement))
+            logger.warning("## ## ##  FAILED MEL STATEMENT: %s## ## ## " % ("%s;" % statement))
 
 
 def print_list(listItems):
@@ -625,7 +625,7 @@ def mel2pyStr(text, namespace):
     @param namespace: The module name
     """
     if not text.endswith(";"):
-        pyLog.warning('Please end the mel code with ";"')
+        logger.warning('Please end the mel code with ";"')
     else:
         import pymel.tools.mel2py as py2mel
         print py2mel.mel2pyStr(text, pymelNamespace=namespace)
@@ -653,7 +653,7 @@ def change_tangents(tangent):
         pm.keyTangent(itt="clamped", g=True)
     else:
         pm.keyTangent(g=True, itt=tangent)
-    pyLog.info("Current Tangents: %s" % tangent.capitalize())
+    logger.info("Current Tangents: %s" % tangent.capitalize())
 
 
 def get_animation_time_range():

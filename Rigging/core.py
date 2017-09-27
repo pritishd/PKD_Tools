@@ -271,8 +271,8 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
                 # Node is already converted into a subcomponent
                 return
         except Exception as e:
-            libUtilities.pyLog.info(str(e))
-            libUtilities.pyLog.info("Rename failed on:{0}".format(self.mNode))
+            libUtilities.logger.info(str(e))
+            libUtilities.logger.info("Rename failed on:{0}".format(self.mNode))
             self.select()
             raise RuntimeError("Rename Failed")
 
@@ -287,7 +287,7 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
         children = self.getChildren(walk=True, asMeta=self.returnNodesAsMeta,
                                     cAttrs=["%s_%s" % (self.CTRL_Prefix, target)])
         if not children:
-            libUtilities.pyLog.warn("%s ctrl not found on %s" % (target, self.shortName()))
+            libUtilities.logger.warn("%s ctrl not found on %s" % (target, self.shortName()))
         else:
             return children[0]
 
@@ -313,7 +313,7 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
         children = self.getChildren(walk=True, asMeta=self.returnNodesAsMeta, cAttrs=["SUP_%s" % target])
         if not children:
             if self.debugMode:
-                libUtilities.pyLog.warn("%s not support node found on %s" % (target, self.shortName()))
+                libUtilities.logger.warn("%s not support node found on %s" % (target, self.shortName()))
         else:
             if type(children[0]) == Red9_Meta.MetaClass:
                 children[0] = MetaRig(children[0].mNode)
@@ -466,7 +466,7 @@ class MovableSystem(MetaRig):
         elif self.pynode.type() in ["transform", "joint"]:
             self.pynode.setParent(targetNode)
         else:
-            libUtilities.pyLog.error("{0} is not a transform/joint node. Unable to parent".format(self.pynode))
+            libUtilities.logger.error("{0} is not a transform/joint node. Unable to parent".format(self.pynode))
 
     def addParent(self, **kwargs):
         """Add parent node for the transform node"""
@@ -498,15 +498,15 @@ class MovableSystem(MetaRig):
 
         # Debug statement
         if self.debugMode:
-            libUtilities.pyLog.warning("%sConstrainting %s to %s. Maintain offset is %s "
-                                       % (conType, self.constrainedNode, target, kwargs["mo"]))
+            libUtilities.logger.warning("%sConstrainting %s to %s. Maintain offset is %s "
+                                        % (conType, self.constrainedNode, target, kwargs["mo"]))
 
         # Get the constraint function from the library
         consFunc = getattr(pm, "%sConstraint" % conType)
 
         # Check the constraint type
         if self.constrainedNode.nodeType() not in ["transform", "joint"]:
-            libUtilities.pyLog.error(
+            libUtilities.logger.error(
                 "%s is not a transform/joint node. Unable to add constraint" % self.constrainedNode)
 
         # Delete the weightAlias keywords from the kwargs list before passing it to Maya
@@ -709,7 +709,7 @@ class JointCollection(Network):
             # Set the meta joints as the main joints
             self.joints = metaJoints
         else:
-            libUtilities.pyLog.error("No Joint Data Specified")
+            libUtilities.logger.error("No Joint Data Specified")
 
     def updatePosition(self):
         """Update the position of the joints based on the joint data
@@ -756,7 +756,7 @@ class JointCollection(Network):
         if self.jointData:
             positionList = [joint["Position"] for joint in self.jointData]
         else:
-            libUtilities.pyLog.error("No joint data found")
+            libUtilities.logger.error("No joint data found")
         return positionList
 
     @property
@@ -887,7 +887,7 @@ class JointSystem(JointCollection):
             # Return the joint system
             return replicateJointSystem
         else:
-            libUtilities.pyLog.error("Unable to replicate as there is no existing joint data")
+            libUtilities.logger.error("Unable to replicate as there is no existing joint data")
 
     def setJointRotateOrder(self, metaJoint):
         """Orient created meta joint based on the gimbal data
