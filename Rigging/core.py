@@ -631,6 +631,7 @@ class Joint(MovableSystem):
             # self.pynode.drawLabel.set(True)
             # self.pynode.otherType.set(self.part)
             #
+
     def setParent(self, targetSystem):
         """
         In case the target system is a joint then ensure their inverse scale are hooked up
@@ -662,7 +663,6 @@ class JointCollection(Network):
         super(JointCollection, self).__init__(*args, **kwargs)
         if self._build_mode:
             self.jointData = []
-
 
     # @endcond
 
@@ -703,6 +703,8 @@ class JointCollection(Network):
                     for attr in ["jointOrientX", "jointOrientY", "jointOrientZ"]:
                         metaJoint.pynode.attr(attr).setKeyable(True)
                 self.setJointRotateOrder(metaJoint)
+                if self.mirrorMode != "None":
+                    self.mirrorJoint(metaJoint)
                 metaJoints.append(metaJoint)
                 if i:
                     metaJoint.pynode.setParent(metaJoints[i - 1].mNode)
@@ -710,6 +712,13 @@ class JointCollection(Network):
             self.joints = metaJoints
         else:
             libUtilities.logger.error("No Joint Data Specified")
+
+    def mirrorJoint(self, metaJoint):
+        """
+        Mirror the meta joint on YZ axis
+        @param metaJoint: The meta joint being mirrored
+        """
+        pass
 
     def updatePosition(self):
         """Update the position of the joints based on the joint data
@@ -735,6 +744,7 @@ class JointCollection(Network):
         # ensure these are added by default
         self.addAttr("jointData", [])
         self.addAttr("gimbalData", libJoint.default_gimbal_data())
+        self.addAttr("mirror", enumName='None:Behaviour:Orientation', attrType='enum')
 
     @property
     def joints(self):
@@ -771,6 +781,10 @@ class JointCollection(Network):
     @property
     def rotateOrder(self):
         return libJoint.get_rotate_order(self.gimbalData)
+
+    @property
+    def mirrorMode(self):
+        return self.pynode.mirror.get(asString=True)
 
 
 class JointSystem(JointCollection):
@@ -894,6 +908,24 @@ class JointSystem(JointCollection):
         @param metaJoint: (MetaJoint) the target joint
         """
         metaJoint.rotateOrder = libJoint.get_rotate_order(self.gimbalData)
+
+    def mirrorJoint(self, metaJoint):
+        """
+        Mirror the meta joint on YZ axis
+        @param metaJoint: The meta joint being mirrored
+        """
+        mirrorKwargs = {"mirrorYZ": True}
+        if self.mirrorMode == "Behaviour":
+            mirrorKwargs["mirrorBehavior"] = True
+        mirroredJoint = pm.mirrorJoint(metaJoint.pynode, **mirrorKwargs)[0]
+        if self.mirrorMode == "Orientation":
+            "TODO: Go back to the main proc and realign each by making it look towards the child by using" \
+            "orient constraint"
+            pass
+            # libJoint.orient_joint(joint=mirroredJoint, up=self.gimbalData["twist"], forward=self.gimbalData["roll"])
+        metaJoint.snap(mirroredJoint)
+        libUtilities.freeze_rotation(metaJoint.pynode)
+        pm.delete(mirroredJoint)
 
     @property
     def jointClass(self):

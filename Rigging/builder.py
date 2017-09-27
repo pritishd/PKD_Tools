@@ -205,6 +205,13 @@ class BuilderJointSystem(core.JointCollection):
             metaLocator.buildJointParent(parent)
         return metaLocator
 
+    def mirrorJoint(self, metaJoint):
+        """
+        Mirror the meta locator on YZ axis
+        @param metaJoint: The meta joint being mirrored
+        """
+        metaJoint.tx = metaJoint.tx * -1
+
     @property
     def jointClass(self):
         return self._annotatedLocator
