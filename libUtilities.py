@@ -736,6 +736,13 @@ def freeze_rotation(target):
     pm.makeIdentity(target, n=0, s=0, r=1, t=0, apply=True)
 
 
+def freeze_scale(target):
+    """Freeze the scale attribute of a transform node
+    @param target: The transform node or list of target that is being evaluated
+    """
+    pm.makeIdentity(target, n=0, s=1, r=0, t=0, apply=True)
+
+
 def lock_attr(attr):
     """
     Convience function to lock and hide a attr
