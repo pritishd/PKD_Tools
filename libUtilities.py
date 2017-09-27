@@ -3,7 +3,7 @@
 @brief Miscellenous package with useful commands that is imported by other packages.
 @details As the package gets more complex, we will refactor common methods into specialised packages
 """
-
+import sys
 import pymel.core as pm
 from maya import cmds, mel
 from pymel.internal.plogging import pymelLogger as pyLog
@@ -890,3 +890,10 @@ def cheap_point_constraint(source, target, maintainOffset=False):
         return pma
     else:
         source.worldPosition[0] >> target
+
+
+def output_window(text):
+    """Write to the output windows instead of the script editor
+    @param text: (str) The text to be outputted
+    """
+    sys.__stdout__.write(text)
