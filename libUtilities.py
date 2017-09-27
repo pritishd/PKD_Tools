@@ -413,11 +413,12 @@ def transfer_shape(source, target, snap_to_target=True):
     if snap_to_target:
         snap(source, target)
         pm.makeIdentity(source, apply=1)
-        try:
-            pm.cluster(source)
-            pm.delete(source, ch=1)
-        except RuntimeError:
-            pyLog.warning("Cannot cluster {}".format(source))
+        if source.getShape().type() != "locator":
+            try:
+                pm.cluster(source)
+                pm.delete(source, ch=1)
+            except RuntimeError:
+                pyLog.warning("Cannot cluster {}".format(source))
 
     oldShape = source.getShape()
     pm.parent(oldShape, target, shape=1, relative=1)
@@ -896,4 +897,4 @@ def output_window(text):
     """Write to the output windows instead of the script editor
     @param text: (str) The text to be outputted
     """
-    sys.__stdout__.write(text)
+    sys.__stdout__.write("\n".format(text))
