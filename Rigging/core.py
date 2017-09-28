@@ -891,6 +891,9 @@ class JointSystem(JointCollection):
                 # Copy the data across
                 replicateJointSystem.jointData = self.jointData
 
+            # Get the gimbal data
+            replicateJointSystem.gimbalData = self.gimbalData
+
             # Set the rotate order
             replicateJointSystem.setRotateOrder(self.joints[0].rotateOrder)
 
