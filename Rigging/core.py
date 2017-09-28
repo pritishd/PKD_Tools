@@ -846,6 +846,11 @@ class JointSystem(JointCollection):
         # Set the joint data
         self.jointData = jointData
 
+    def build(self):
+        """Rebuild the joint data if it is rebuilt"""
+        if self.mirrorMode == "None":
+            self.rebuild_joint_data()
+
     def setParent(self, targetSystem):
         """
         Always parent the first joint to the the transform/pynode
