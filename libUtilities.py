@@ -4,6 +4,7 @@
 @details As the package gets more complex, we will refactor common methods into specialised packages
 """
 import sys
+from collections import Mapping
 import pymel.core as pm
 from maya import cmds, mel
 from PKD_Tools import logger
@@ -903,3 +904,19 @@ def output_window(text):
     """
     sys.__stdout__.writelines("{}\n".format(text))
 
+
+def update_deep_dict(target, source):
+    """Recursively update a target dict with a source dict
+    @param target: (dict) The target dictionary
+    @param source: (dict) The source dictionary
+    """
+    for key, value in source.items():
+        # this condition handles the problem
+        if not isinstance(target, Mapping):
+            target = source
+        elif isinstance(value, Mapping):
+            res = update_deep_dict(target.get(key, {}), value)
+            target[key] = res
+        else:
+            target[key] = source[key]
+    return target
