@@ -157,17 +157,18 @@ def lockAttr(target, attributes, lock=True):
             pm.setAttr(target + "." + attributes[i], l=0)
 
 
-def color_curve(target, col):
+def color_curve(target, color):
     """
     Override Color for shape object
     @param target: The target curve object
-    @param col: The color index
+    @param color: The color name
     """
+    color_dict = {"red": 13, "blue": 6, "yellow": 17, "lightblue": 18}
+
     if target is not None:
         shape = pm.listRelatives(target, f=1, s=1)[0]
         pm.setAttr(shape + ".overrideEnabled", 1)
-        pm.setAttr(shape + ".overrideColor", col)
-
+        pm.setAttr(shape + ".overrideColor", color_dict[color])
 
 def parZero(target, suffix="Prnt"):
     """
