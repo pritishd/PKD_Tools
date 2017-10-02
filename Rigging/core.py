@@ -663,6 +663,8 @@ class JointCollection(Network):
         super(JointCollection, self).__init__(*args, **kwargs)
         if self._build_mode:
             self.jointData = []
+        self._jointDict = {}
+        self._jointList = []
 
     # @endcond
 
@@ -758,7 +760,9 @@ class JointCollection(Network):
 
     @property
     def jointList(self):
-        return [joint.shortName() for joint in self.joints]
+        if not self._jointList:
+            self._jointList = [joint.shortName() for joint in self.joints]
+        return self._jointList
 
     @property
     def positions(self):
@@ -785,6 +789,13 @@ class JointCollection(Network):
     @property
     def mirrorMode(self):
         return self.pynode.mirror.get(asString=True)
+
+    @property
+    def jointDict(self):
+        if not self._jointDict:
+            for joint in self.joints:
+                self._jointDict[joint.part] = self.joint
+        return self._jointDict
 
 
 class JointSystem(JointCollection):
