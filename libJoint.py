@@ -213,6 +213,16 @@ def get_rotate_order(gimbal_data):
         return '{}{}{}'.format(gimbal_data["bend"], gimbal_data["twist"], gimbal_data["roll"])
 
 
+def freeze_rotation(joint):
+    """
+    Freeze the rotation and scale on the joint chain
+    @param joint: The target joint
+    """
+    joint_list = [joint] + get_joint_children(joint)
+    libUtilities.freeze_scale(joint_list)
+    libUtilities.freeze_rotation(joint_list)
+
+
 def default_gimbal_data():
     """
     @return: (dict) Gimbal settings data for joint created at origin
