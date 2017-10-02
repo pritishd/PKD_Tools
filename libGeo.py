@@ -614,20 +614,8 @@ def create_sticky_control(geo, position, name, setup_type="pointOnMesh"):
     # Create space locator
     geo = libUtilities.force_pynode(geo)
 
-    class ctrl(object):
-        """
-        Create con
-        """
-
-        def __init__(self, loc_name):
-            self.ctrl = pm.createNode("transform", name=loc_name)
-            self.xtra = libUtilities.parZero(self.ctrl, "Xtra")
-            self.prnt = libUtilities.parZero(self.xtra)
-            self.prnt.rename("{}_Prnt".format(loc_name))
-            self.ctrl.rename("{}_Ctrl".format(loc_name))
-
     # Create the ctrl obj
-    new_ctrl = ctrl(name)
+    new_ctrl = libUtilities.Ctrl(name)
     info = {"ctrl": new_ctrl}
     if setup_type == "follicle":
         new_ctrl.prnt.translate.set(position)

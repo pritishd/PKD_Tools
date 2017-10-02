@@ -920,3 +920,22 @@ def update_deep_dict(target, source):
         else:
             target[key] = source[key]
     return target
+
+
+class Ctrl(object):
+    """
+    Create basic ctrl setup
+    """
+
+    def __init__(self, loc_name):
+        """
+        Initialise the object
+        :param loc_name: (str) The base name
+        """
+        self.ctrl = pm.createNode("transform", name=loc_name)
+        self.xtra = parZero(self.ctrl, "Xtra")
+        self.prnt = parZero(self.xtra)
+        self.prnt.rename("{}_Prnt".format(loc_name))
+        self.ctrl.rename("{}_Ctrl".format(loc_name))
+        for node in self.ctrl, self.xtra, self.prnt:
+            lock_attr(node.v)
