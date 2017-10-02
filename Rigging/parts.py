@@ -34,7 +34,7 @@ class Rig(core.TransSubSystem):
             self.mirrorData = {'side': self.mirrorSide, 'slot': 1}
             self.hasParentMaster = kwargs.get("parentMaster", False)
             self.hasPivot = kwargs.get("pivot", False)
-            self._evaluateLastJoint = True
+            self._evaluateLastJoint = kwargs.get("evaluateLastJoint", True)
 
     def createProxyCube(self, targetJoint, childJoint):
         # Get the height
@@ -199,6 +199,10 @@ class Rig(core.TransSubSystem):
     @property
     def isDeformable(self):
         return self.isCartoony or self.isStretchable
+
+    @property
+    def evaluateLastJointBool(self):
+        return self._evaluateLastJoint
 
     @property
     def evaluateLastJoint(self):
