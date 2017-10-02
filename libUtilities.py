@@ -213,7 +213,7 @@ def get_world_space_pos(source):
     @return: Position
     """
     if hasattr(source, "getTranslation"):
-        return source.getTranslation(space="world")
+        return pm.xform(source, rp=True, ws=True, query=True)
     elif hasattr(source, "getPosition"):
         return source.getPosition(space="world")
     else:
@@ -881,15 +881,12 @@ def cheap_point_constraint(source, target, maintainOffset=False):
         source.select()
         raise ValueError("Source must be a locator")
 
-    # Calculate diff
-    diff = None
-    if maintainOffset:
-        diff = get_world_space_pos(source) - get_world_space_pos(target)
-
     if hasattr(target, "translate"):
         target = target.translate
 
     if maintainOffset:
+        # Calculate diff
+        diff = get_world_space_pos(source) - get_world_space_pos(target)
         # Create a MD node
         pma = pm.createNode("plusMinusAverage")
         pma.input3D[0].input3D.set(diff)
@@ -904,4 +901,5 @@ def output_window(text):
     """Write to the output windows instead of the script editor
     @param text: (str) The text to be outputted
     """
-    sys.__stdout__.write("\n".format(text))
+    sys.__stdout__.writelines("{}\n".format(text))
+
