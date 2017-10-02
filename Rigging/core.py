@@ -584,7 +584,7 @@ class MovableSystem(MetaRig):
         @param data (metaRig) The parent meta class
         """
         self.addSupportNode(data, "Prnt")
-        # @endcond
+        # @e ndcond
 
 
 class TransSubSystem(MovableSystem):
@@ -848,7 +848,8 @@ class JointSystem(JointCollection):
 
     def build(self):
         """Rebuild the joint data if it is rebuilt"""
-        if self.mirrorMode == "None":
+        super(JointSystem, self).build()
+        if self.mirrorMode != "None":
             self.rebuild_joint_data()
 
     def setParent(self, targetSystem):
@@ -1194,22 +1195,28 @@ class Ctrl(MovableSystem):
         for item in self.createdNodes:
             libUtilities.lock_scale(item.pynode)
 
-    def _createRotateDriver_(self):
-        """Internal function to create a rotate driver"""
-        pmaMeta = MetaRig(side=self.side,
-                          part=self.part,
-                          endSuffix="RotateDriver",
-                          nodeType="plusMinusAverage")
+    def _createSpecialDrivers_(self, nodeType, supportType):
+        """Internal function to create special XYZ node drivers
 
-        pmaMeta.addAttr("connectedAxis", {"X": False, "Y": False, "Z": False})
-        self.addSupportNode(pmaMeta, "RotateDriver")
-        return pmaMeta
+        This adds a special attr to track connected axis
+        @param nodeType: (str) The type of node you want
+        @param supportType: (str) The suffix name and support type
+        """
+
+        metaNode = MetaRig(side=self.side,
+                           part=self.part,
+                           nodeType=nodeType,
+                           endSuffix=supportType)
+
+        metaNode.addAttr("connectedAxis", {"X": False, "Y": False, "Z": False})
+        self.addSupportNode(metaNode, supportType)
+        return metaNode
 
     def _connectAxisRotateDriver_(self, axis):
         """Internal function to connect rotate driver"""
         pmaMeta = self.getSupportNode("RotateDriver")
         if not pmaMeta:
-            pmaMeta = self._createRotateDriver_()
+            pmaMeta = self._createSpecialDrivers_("plusMinusAverage", "RotateDriver")
 
         # Is the rotate axis connected
         rotateStatus = pmaMeta.connectedAxis
@@ -1227,23 +1234,45 @@ class Ctrl(MovableSystem):
             pmaMeta.connectedAxis = rotateStatus
         return pmaMeta
 
+    def addCounterTwist(self):
+        """Internal function to get a negative twist value. This is important when the behaviour of a joint is
+        mirrored and maya is twisting the other way eg IKHandle
+
+        This node must be explicitly created by the other rig part
+        """
+        self._createSpecialDrivers_("multiplyDivide", "CounterTwist")
+
+    def getTwistDriver(self, axis):
+        """
+        Get the twist driver
+        @param axis: (string) Which XYZ axis that is being driven
+        @return: Pynode attribute that needs to be connected
+        """
+        rotateDriverAttr = self.getRotateDriver(axis)
+        counterTwistNode = self.getSupportNode("CounterTwist")
+        if counterTwistNode:
+            counterTwistStatus = counterTwistNode.connectAxis
+            if not counterTwistStatus[axis]:
+                rotateDriverAttr >> counterTwistNode.pynode.attr("input1{}".format(axis))
+                counterTwistNode.pynode.attr("input2{}".format(axis)).set(-1)
+            return counterTwistNode.pynode.attr("output{}".format(axis))
+        else:
+            return rotateDriverAttr
+
     def getRotateDriver(self, axis):
         """
         A rotate driver is where instead of using direct connections we use plus minus average
         This will allows us to add rotation value from gimbal node and the control
-        @param axis (string) Which XYZ axis that is being driven
-        @return Pynode attribute that needs to be connected
+        @param axis: (string) Which XYZ axis that is being driven
+        @return: Pynode attribute that needs to be connected
         """
+        pynode = self.pynode
+        attr = "r"
         if self.hasGimbal:
             pmaMeta = self._connectAxisRotateDriver_(axis)
-            if axis == "X":
-                return pmaMeta.pynode.output3Dx
-            elif axis == "Y":
-                return pmaMeta.pynode.output3Dy
-            else:
-                return pmaMeta.pynode.output3Dz
-        else:
-            self.pynode.attr("rotate{0}".format(axis))
+            pynode = pmaMeta.pynode
+            attr = "output3D"
+        return pynode.attr("{0}{1}".format(attr, axis.lower()))
 
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     @property
