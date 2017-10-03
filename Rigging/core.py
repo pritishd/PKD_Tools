@@ -647,6 +647,12 @@ class Joint(MovableSystem):
                 targetNode.scale >> self.pynode.inverseScale
 
 
+class SkinJoint(Joint):
+    @property
+    def trueName(self):
+        return "{0}_{1}".format(self.part, self.side)
+
+
 # noinspection PyMissingOrEmptyDocstring
 class JointCollection(Network):
     """A template class which deals with a collection of joint. This can deal with actual physical joints or locators
@@ -794,7 +800,7 @@ class JointCollection(Network):
     def jointDict(self):
         if not self._jointDict:
             for joint in self.joints:
-                self._jointDict[joint.part] = self.joint
+                self._jointDict[joint.part] = joint
         return self._jointDict
 
 
@@ -858,7 +864,7 @@ class JointSystem(JointCollection):
         self.jointData = jointData
 
     def build(self):
-        """Rebuild the joint data if it is rebuilt"""
+        """Rebuild the joint data if it is orientated"""
         super(JointSystem, self).build()
         if self.mirrorMode != "None":
             self.rebuild_joint_data()
@@ -886,10 +892,14 @@ class JointSystem(JointCollection):
         The easiest way to have customised suffix is to give an keyword argument
         """
         if self.jointData:
-            # New joint system option
-            replicateJointSystem = JointSystem(*args, **kwargs)
+            supportType = kwargs.get("supportType")
+            if supportType == "Skin":
+                replicateJointSystem = SkinJointSystem(*args, **kwargs)
+            else:
+                # New joint system option
+                replicateJointSystem = JointSystem(*args, **kwargs)
             # Here we have a customised joint system where it acts as a support system
-            if kwargs.has_key("supportType"):
+            if supportType:
                 # Change the system name
                 newSuffix = kwargs["supportType"] + "Sys"
                 replicateJointSystem.rigType = newSuffix
@@ -950,6 +960,16 @@ class JointSystem(JointCollection):
     @property
     def jointClass(self):
         return Joint
+
+
+class SkinJointSystem(JointSystem):
+    def build(self):
+        super(SkinJointSystem, self).build()
+        for joint in self.joints:
+            joint.resetName()
+
+    def jointClass(self):
+        return SkinJoint
 
 
 # noinspection PyUnresolvedReferences
@@ -1400,6 +1420,81 @@ class MyCameraMeta(Red9_Meta.MetaClass, MetaEnhanced):
         # @endcond
 
 
+# noinspection PyStatementEffect
+class StretchSystem(Network):
+
+    def build(self):
+
+        supportNodes = dict()
+        # Create the initialiser
+        triggerCondition = MetaRig(part=self.part, side=self.side, endSuffix="TriggerCondition", nodeType="multiplyDivide")
+        triggerCondition.operation = 2
+        supportNodes["Trigger"] = triggerCondition
+
+        # Remove the difference from 1
+        remainder = MetaRig(part=self.part, side=self.side, endSuffix="Remainder", nodeType="addDoubleLinear")
+        supportNodes["Remainder"] = remainder
+
+        # Muliply that effect from factor
+        factor = MetaRig(part=self.part, side=self.side, endSuffix="Factor", nodeType="multiplyDivide")
+        supportNodes["Factor"] = factor
+
+        # Add that back in the final connection
+        finalOutput = MetaRig(part=self.part, side=self.side, endSuffix="FinalOutput", nodeType="addDoubleLinear")
+        supportNodes["FinalOutput"] = finalOutput
+
+        # Connect all the node as support nodes
+        for supportType in supportNodes:
+            self.addSupportNode(supportNodes[supportType], supportType)
+
+        # Set intial value
+        finalOutput.input2 = 1
+        remainder.input1 = -1
+
+        # Connect
+        triggerCondition.pynode.outputX >> remainder.pynode.input2
+        remainder.pynode.output >> factor.pynode.input2X
+        factor.pynode.outputX >> finalOutput.pynode.input1
+
+    def setInitialValue(self, value):
+        """
+        Set initial value
+        @param value: (float) The intial value
+        """
+        self.trigger.input2X = value
+
+    def connectTrigger(self, attr):
+        """
+        Connect the trigger attribute
+        @param attr (pyattr) The incoming attribute
+        """
+        attr >> self.trigger.pynode.input1X
+
+    def connectAmount(self, attr):
+        attr >> self.factor.pynode.input1X
+
+    def connectOutput(self, attr):
+        """
+         Connect the output scale attribute
+         @param attr (pyattr) The target attribute
+         """
+
+        self.finalOutput.pynode.output >> attr
+
+    @property
+    def trigger(self):
+        return self.getSupportNode("Trigger")
+
+    @property
+    def factor (self):
+        return self.getSupportNode("Factor")
+
+    @property
+    def finalOutput(self):
+        return self.getSupportNode("FinalOutput")
+
+
+# noinspection PyStatementEffect
 class CartoonySystem(Network):
     """@brief A setup which simulates the squash and stretch effect through joints
     @details The effect that can be driven by the scale value on the joints
@@ -1407,9 +1502,6 @@ class CartoonySystem(Network):
 
     TODO: Document the property
     """
-
-    def __init__(self, *args, **kwargs):
-        super(CartoonySystem, self).__init__(*args, **kwargs)
 
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     def build(self):
