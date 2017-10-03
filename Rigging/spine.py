@@ -389,7 +389,7 @@ class SubControlSpine(IkSpine):
 
         if transpose:
             # Transpose the weightmap to [CV][joint]
-            self.currentWeightMap = map(list, zip(*weightMap))
+            self.currentWeightMap = libUtilities.transpose(weightMap)
         else:
             self.currentWeightMap = weightMap
 
@@ -821,7 +821,7 @@ class ComplexSpine(SubControlSpine):
         # prenormalisedTwistMap[-1] = libMath.redistribute_value(prenormalisedTwistMap[-1], 0)
 
         # Transpose the weight
-        self.prenormalisedTwistMap = map(list, zip(*prenormalisedTwistMap))
+        self.prenormalisedTwistMap = libUtilities.transpose(prenormalisedTwistMap)
 
         # Normalise the weights
         normalisedTwist = []

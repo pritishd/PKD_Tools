@@ -170,6 +170,7 @@ def color_curve(target, color):
         pm.setAttr(shape + ".overrideEnabled", 1)
         pm.setAttr(shape + ".overrideColor", color_dict[color])
 
+
 def parZero(target, suffix="Prnt"):
     """
     Zero out a translation on dag by positioning the a new group in the same place as the target
@@ -940,3 +941,16 @@ class Ctrl(object):
         self.ctrl.rename("{}_Ctrl".format(loc_name))
         for node in self.ctrl, self.xtra, self.prnt:
             lock_attr(node.v)
+
+
+def transpose(collection):
+    """
+    Turn a list of index upside down
+        [[1,2,3]      --- [[1,4]
+        [4,5,6]]      --- [2,5]
+                      --- [3,6]]
+    @param collection: The original collection of indexes
+    @return: The transposed values
+    """
+
+    return map(list, zip(*collection))

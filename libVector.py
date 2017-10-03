@@ -8,6 +8,8 @@ import operator
 import maya.mel as mm
 import math
 
+from PKD_Tools import libMath, libUtilities
+
 
 class vector:
     """ Vector class to do basic vector maths"""
@@ -91,3 +93,19 @@ def distanceBetween(pointA, pointB):
     return math.sqrt(math.pow((pointA[0] - pointB[0]), 2) +
                      math.pow((pointA[1] - pointB[1]), 2) +
                      math.pow((pointA[2] - pointB[2]), 2))
+
+
+def spread_vector(pointA, pointB, sections):
+    """
+    Break up a group of vertices into further sections
+    @param pointA:
+    @param pointB:
+    @param sections: How many vectors do you want to spread this vector
+    @return: The vector delineated each vector
+    """
+    positions = []
+    for i in range(3):
+        positions.append(libMath.spread(pointA[i], pointB[i], sections))
+
+    return libUtilities.transpose(positions)
+
