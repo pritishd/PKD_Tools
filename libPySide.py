@@ -15,7 +15,7 @@ import PySide.QtCore as QtCore
 import PySide.QtGui as QtGui
 import maya.OpenMayaUI as OpenMayaUI
 from maya import cmds
-from pymel.internal.plogging import pymelLogger as pyLog
+from PKD_Tools import logger
 
 try:
     import libFile
@@ -249,7 +249,7 @@ class QMainWindow(QtGui.QMainWindow):
         """Set the icon for via QIcon"""
         # Make sure the icon exists
         if not libFile.exists(iconPath):
-            pyLog.warning("No Icon exists for path:%s" % iconPath)
+            logger.warning("No Icon exists for path:%s" % iconPath)
         else:
             # Set the icon
             icon = QtGui.QIcon(QtGui.QPixmap(iconPath))
@@ -257,7 +257,7 @@ class QMainWindow(QtGui.QMainWindow):
                 super(QMainWindow, self).setWindowIcon(icon)
             except Exception as e:
                 print e
-                pyLog.warning("Failed to set Icon")
+                logger.warning("Failed to set Icon")
 
     def show(self, *args, **kwargs):
         self._closeExistingWindow_()
@@ -275,7 +275,7 @@ class QMainWindow(QtGui.QMainWindow):
                 if qt.__class__.__name__ == self.__class__.__name__:
                     qt.close()
             except:
-                pyLog.warning('Failed to close an instance of this GUI:%s' % str(self))
+                logger.warning('Failed to close an instance of this GUI:%s' % str(self))
 
     def resizeWindow(self):
         """Method to resize whenever a widget is hidden"""
@@ -330,8 +330,8 @@ class QDockableWindow(QMainWindow):
                                                    floatChangeCommand=self._autoResize_
                                                    )
         except Exception, e:
-            pyLog.info(str(e))
-            pyLog.info("Maya dock window failed")
+            logger.info(str(e))
+            logger.info("Maya dock window failed")
 
         super(QDockableWindow, self).show()
 
@@ -360,7 +360,7 @@ class TestGUI(QDockableWindow):
 
     def _setup_(self):
         super(TestGUI, self)._setup_()
-        pyLog.info("Child Info Called")
+        logger.info("Child Info Called")
         # Create a series of rows, and in each row, put our buttons
         for row in self.rows:
 

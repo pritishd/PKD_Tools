@@ -9,7 +9,7 @@ import os
 
 from maya import cmds, mel
 import pymel.core as pm
-from pymel.internal.plogging import pymelLogger as pyLog
+from PKD_Tools import logger
 
 import libUtilities
 import libFile
@@ -152,7 +152,7 @@ class ObjManager(object):
                       options="groups=0;ptgroups=0;materials=0;smoothing=0;normals=0",
                       es=1)
             file_info[self.current_target] = path
-            pyLog.info("Exporting\n%s" % file_info[self.current_target])
+            logger.info("Exporting\n%s" % file_info[self.current_target])
             if not self.new_scene and self.cleansing_mode:
                 pm.delete(self.current_target)
                 pm.refresh()
@@ -180,7 +180,7 @@ class ObjManager(object):
             if not self.cleansing_mode:
                 if pm.objExists(self.current_target):
                     pm.delete(self.current_target)
-            pyLog.info("Importing\n%s" % file_info[self.current_target])
+            logger.info("Importing\n%s" % file_info[self.current_target])
             if self.cleansing_mode:
                 os.remove(file_info[self.current_target])
             for top in pm.ls(assemblies=True, ud=True):
@@ -230,7 +230,7 @@ class ObjManager(object):
         self.export_all()
         self.setup_cleanse_scene()
         self.import_all()
-        pyLog.info("Scene Is Cleansed")
+        logger.info("Scene Is Cleansed")
 
     def setup_cleanse_scene(self):
         if self.new_scene:
@@ -398,9 +398,9 @@ def convert_joint_to_cluster(targetGeo, skipList=None, info=False):
         pm.progressWindow(edit=True, progress=currentProgress, status=('Progress: ' + str(int(currentProgress)) + '%'))
         pm.refresh()
         if info:
-            pyLog.info("Info gathered: " + jnt.name())
+            logger.info("Info gathered: " + jnt.name())
         else:
-            pyLog.info("Converted: " + jnt.name())
+            logger.info("Converted: " + jnt.name())
 
     pm.progressWindow(endProgress=1)
     return clusterInfo
