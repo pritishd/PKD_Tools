@@ -69,6 +69,7 @@ class LimbIk(parts.Ik):
             libUtilities.melEval(self.ikSolver)
 
     def build(self):
+        super(LimbIk, self).build()
         # Load any IK plugin
         self.loadIKPlugin()
         # Build the IK System
