@@ -1,5 +1,3 @@
-from collections import Mapping
-
 import pymel.core as pm
 
 from PKD_Tools import libUtilities
@@ -9,20 +7,6 @@ from PKD_Tools.Rigging import core, gui
 # TODO: Annotated Nodes wichrome://extensionll have prn
 # TODO: Use constrianedNode property to determine parents
 # TODO: We might need to override the side with our own alias eg {"C":None: "L": "AS" }
-
-def update_deep(d, u):
-    for k, v in u.items():
-        # this condition handles the problem
-        if not isinstance(d, Mapping):
-            d = u
-        elif isinstance(v, Mapping):
-            r = update_deep(d.get(k, {}), v)
-            d[k] = r
-        else:
-            d[k] = u[k]
-
-    return d
-
 
 class AnnotatedLocator(core.SpaceLocator):
     def __init__(self, *args, **kwargs):
@@ -65,7 +49,7 @@ class AnnotatedLocator(core.SpaceLocator):
         self.annotation = annotationMeta
 
     # noinspection PyUnresolvedReferences
-    def buildJointParent(self, targetSystem):
+    def setJointParent(self, targetSystem):
         """
         Parent the annotation to another AnnotatedLocator system. This will show the parent child relationship
         @param targetSystem (metaRig) The target AnnotatedLocator you are trying to parent
@@ -80,13 +64,16 @@ class AnnotatedLocator(core.SpaceLocator):
             # Match the position
             fakeJointMeta.snap(targetSystem, rotate=False)
             fakeJointMeta.v = True
+        else:
+            print "Already parented to the right one"
+            print "Target: {0}, FakeMeta: {1}".format(targetSystem.pynode, fakeJointMeta.pynode)
 
     def setParent(self, targetSystem):
         """Parent the joint system"""
         if not isinstance(targetSystem, AnnotatedLocator):
             raise RuntimeError("You can only reparent another annotated locator")
 
-        self.buildJointParent(self.constrainedNode)
+        self.setJointParent(self.constrainedNode)
         targetSystem.getParentMetaNode().prnt = self.constrainedNode
 
     def __bindData__(self, *args, **kwgs):
@@ -202,7 +189,7 @@ class BuilderJointSystem(core.JointCollection):
         metaLocator.build()
         metaLocator.translate = jointData["Position"]
         if parent:
-            metaLocator.buildJointParent(parent)
+            metaLocator.setJointParent(parent)
         return metaLocator
 
     def mirrorJoint(self, metaJoint):
@@ -234,11 +221,12 @@ class BuilderJointSystem(core.JointCollection):
 class Builder(core.MovableSystem):
     def __init__(self, *args, **kwargs):
         super(Builder, self).__init__(*args, **kwargs)
-        self.componentKwargs = {}
         self.jointWin = None
+        self.options = {"symType": "sym", "mirror": "Orientation"}
 
     def __bindData__(self, *args, **kwargs):
         super(Builder, self).__bindData__(*args, **kwargs)
+        self.addAttr("options", {})
 
     def buildTemplate(self):
         builderJointsSystem = BuilderJointSystem(part=self.part, side=self.side, endSuffix="BuildSys")
@@ -255,6 +243,7 @@ class Builder(core.MovableSystem):
             newJointSystem.jointData = self.builderJointSystem.jointData
             newJointSystem.gimbalData = self.builderJointSystem.gimbalData
             newJointSystem.build()
+            newJointSystem.joints[0].setParent(self)
             self.jointSystem = newJointSystem
         else:
             if self.builderJointSystem.jointData != self.jointSystem.jointData:
@@ -269,7 +258,8 @@ class Builder(core.MovableSystem):
     def jointOrientWin(self):
         if self.jointSystem:
             jointWin = gui.JointOrientWindow([self.jointSystem.pynode.gimbalData,
-                                              self.builderJointSystem.pynode.gimbalData])
+                                              self.builderJointSystem.pynode.gimbalData],
+                                             self.joint2loc)
             jointWin.show()
             jointWin.joint_widget.gimbal_data = self.jointSystem.gimbalData
             jointWin.joint_widget.joint = self.jointSystem.joints[0].pynode
@@ -287,12 +277,23 @@ class Builder(core.MovableSystem):
         for shape in pm.listRelatives(pyLocs, allDescendents=True, shapes=True):
             shape.visibility.set(True)
 
-    def setParent(self, target):
-        pass
+    def setBuildParent(self, target):
+        if not isinstance(target, AnnotatedLocator):
+            raise TypeError("Target system must be a type of 'Annotated Locator'")
+        self.buildJoints[0].setJointParent(target)
+        self.prnt = target
+
+    @property
+    def buildJoints(self):
+        return self.builderJointSystem.joints
+
+    @property
+    def bindJoints(self):
+        return self.jointSystem.joints
 
     @property
     def templateNames(self):
-        return []
+        return ["{}0".self.part, "{}1".self.part]
 
     @property
     def jointSystem(self):
@@ -314,12 +315,33 @@ class Builder(core.MovableSystem):
     def buildData(self):
         return {"Builder": self.builderJointSystem.buildData, "Joint": self.jointSystem.buildData}
 
+    @property
+    def exportData(self):
+        """
+        @return: Exportable build data
+        """
+        info = {"Build": self.builderJointSystem.buildData}
+        if self.prnt:
+            info["Parent"] = self.prnt.part
+        position = round(info["Build"]["JointData"][0]["Position"][0], 3)
+        side = "C"
+        if position > 0.0:
+            side = "L"
+        elif position < 0.0:
+            side = "R"
+        info["Side"] = side
+        info["Options"] = self.options
+        return {self.part: info}
+
 
 class Extendable(Builder):
     jointCount = 2
     @property
     def templateNames(self):
-        return ["{0}{1}".format(self.part, i) for i in range(1, self.jointCount+2)]
+        width = 1
+        if self.jointCount >= 8:
+            width = 2
+        return ["{self.part}{i:0{width}}".format(**locals()) for i in range(1, self.jointCount + 2)]
 
 
 class Finger(Extendable):
@@ -337,28 +359,32 @@ APPENDAGE = {"Hoof": ["Hoof", "HoofEnd"],
 
 
 class LimbBuilder(Builder):
+    appendage = ""
+    @property
+    def appendName(self):
+        if APPENDAGE.has_key(self.appendage):
+            return APPENDAGE[self.appendage]
+        else:
+            return []
+
     @property
     def templateNames(self):
-        return ["HipShoulder", "KneeElbow", "AnklePalm"]
+        return ["HipShoulder", "KneeElbow", "AnklePalm"] + self.appendName
 
 
-class QuadBuilder(Builder):
+class QuadBuilder(LimbBuilder):
     @property
     def templateNames(self):
-        return ["FemurUpper", "HipShoulder", "KneeElbow", "AnklePalm"]
+        return ["FemurUpper"] + super(QuadBuilder, self).templateNames
 
 
 if __name__ == '__main__':
     pm.newFile(f=1)
-    # l = AnnotatedLocator(side="L", part="Test")
-    # k = AnnotatedLocator(side="L", part="TestA")
-    # k.build()
-    # l.build()
-    # k.translate = [0, 2, 0]
-    # l.setJointParent(k)
     extendBuilder = Extendable(part="Spine", side="C")
     extendBuilder.jointCount = 5
     extendBuilder.buildTemplate()
     extendBuilder.loc2joint()
-    # extendBuilder.joint2loc()
     extendBuilder.jointOrientWin()
+    li = QuadBuilder(part="Arm", side="C")
+    li.appendage = "Palm"
+    li.buildTemplate()
