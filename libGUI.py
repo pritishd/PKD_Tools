@@ -6,7 +6,7 @@ Here we break from the pep 8 convention as pyside follows a camel case conventio
 """
 from functools import partial
 import pymel.core as pm
-from pymel.internal.plogging import pymelLogger as pyLog
+from PKD_Tools import logger
 from PKD_Tools import libPySide
 from PKD_Tools import libUtilities
 from PKD_Tools import libJoint
@@ -539,6 +539,11 @@ class JointOrientWidget(libPySide.QtGui.QWidget):
         self.gimbal_button.clicked.connect(self.change_gimbal)
         self.stack_layout.addWidget(gimbal_group)
 
+        # Add Done window
+        self.stack_layout.addWidget(libPySide.horizontal_divider())
+        self.done_button = libPySide.QtGui.QPushButton("Done")
+        self.stack_layout.addWidget(self.done_button)
+
     def set_bend_axis(self):
         for i, axis in enumerate(self.current_rotate_order[:-1]):
             self.bend_list.setItemText(i, axis)
@@ -558,7 +563,7 @@ class JointOrientWidget(libPySide.QtGui.QWidget):
         gimbal_data["gimbal"] = "roll"
         self.current_rotate_order = libJoint.get_rotate_order(gimbal_data)
         if self.details:
-            pyLog.info(self.current_rotate_order)
+            logger.info(self.current_rotate_order)
         set_combo_box(self.up_combo, gimbal_data['twist'])
         set_combo_box(self.forward_combo, gimbal_data['roll'])
         self.set_bend_axis()
@@ -583,8 +588,10 @@ class JointOrientWidget(libPySide.QtGui.QWidget):
         flip_up = self.flip_up_check.isChecked()
         details = self.details
         self.current_rotate_order = libJoint.orient_joint(**locals())
+        self.gimbal_data["flip_up"] = flip_up
+        self.gimbal_data["flip_forward"] = flip_forward
         if self.details:
-            pyLog.info("Current rotate order: {}".format(self.current_rotate_order))
+            logger.info("Current rotate order: {}".format(self.current_rotate_order))
         self.update_gimbal_axis()
         self.set_bend_axis()
 
@@ -602,10 +609,10 @@ class JointOrientWidget(libPySide.QtGui.QWidget):
         axis = self.bend_list.currentText()
         rotate_order = self.current_rotate_order
         if self.details:
-            pyLog.info("Current rotate order: {}".format(self.current_rotate_order))
+            logger.info("Current rotate order: {}".format(self.current_rotate_order))
         self.current_rotate_order = libJoint.zero_out_bend(**locals()) or rotate_order
         if self.details:
-            pyLog.info("New rotate order: {}".format(self.current_rotate_order))
+            logger.info("New rotate order: {}".format(self.current_rotate_order))
         if self.joint and self.current_rotate_order:
             libUtilities.force_pynode(self.joint).rotateOrder.set(self.current_rotate_order)
         if rotate_order != self.current_rotate_order:
@@ -638,6 +645,7 @@ class JointOrientWindow(libPySide.QMainWindow):
         self._add_joint_widget_()
         self.joint_widget.details = True
         self.mainLayout.addWidget(self.joint_widget)
+        self.joint_widget.done_button.clicked.connect(self.close)
 
 
 # @endcond

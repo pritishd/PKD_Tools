@@ -227,4 +227,4 @@ def default_gimbal_data():
     """
     @return: (dict) Gimbal settings data for joint created at origin
     """
-    return {"twist": "y", "bend": "x", "roll": "z", 'gimbal': 'roll'}
+    return {"twist": "y", "bend": "x", "roll": "z", 'gimbal': 'roll', 'flip_forward': False, 'flip_up': False}
