@@ -4,7 +4,7 @@
 """
 
 import pymel.core as pm
-from pymel.internal.plogging import pymelLogger as pyLog
+from PKD_Tools import logger
 
 from PKD_Tools import libFile, libUtilities, libMath
 
@@ -33,7 +33,7 @@ def exportCrlShapes():
             curvesData[top.name()] = detailedInfo
 
     libFile.write_json(CTRLS_INFO_INFO, curvesData)
-    pyLog.info("Curve information written to: %s" % CTRLS_INFO_INFO)
+    logger.info("Curve information written to: %s" % CTRLS_INFO_INFO)
 
 
 def buildCtrlShape(type=""):
@@ -49,7 +49,7 @@ def buildCtrlShape(type=""):
                         degree=detailedInfo["degree"])
 
     else:
-        pyLog.error("%s not found in exported curve information file" % type)
+        logger.error("%s not found in exported curve information file" % type)
 
 
 def buildAllCtrlsShapes():
