@@ -22,7 +22,6 @@ class JointOrientWidget(libGUI.JointOrientWidget):
             pm.delete("PKD_child_locker")
             libJoint.freeze_rotation(self.joint)
 
-
     def _setup_(self):
         super(JointOrientWidget, self)._setup_()
         self.stack_layout.insertWidget(3, libPySide.horizontal_divider())
@@ -60,9 +59,16 @@ class JointOrientWidget(libGUI.JointOrientWidget):
 
 
 class JointOrientWindow(libGUI.JointOrientWindow):
-    def __init__(self, pyattr):
+    def __init__(self, pyattr, closeFunc=None):
         self.pyattr = pyattr
+        self.closeFunc = closeFunc
         super(JointOrientWindow, self).__init__()
 
     def _add_joint_widget_(self):
         self.joint_widget = JointOrientWidget(padding=40, pyattr=self.pyattr)
+        self.joint_widget.done_button.clicked.connect(self.closeWin)
+
+    def closeWin(self):
+        if self.closeFunc:
+            self.closeFunc()
+        super(JointOrientWindow, self).close()
