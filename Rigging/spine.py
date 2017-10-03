@@ -3,12 +3,13 @@
 @brief Module which creates the three spine setup
 """
 
-from PKD_Tools.Rigging import core
-from PKD_Tools.Rigging import utils
-from PKD_Tools.Rigging import parts
-from PKD_Tools import libUtilities, libVector, libMath
-from PKD_Tools.libUtilities import output_window
 import pymel.core as pm
+
+from PKD_Tools import libUtilities, libVector, libMath
+from PKD_Tools.Rigging import core
+from PKD_Tools.Rigging import parts
+from PKD_Tools.Rigging import utils
+from PKD_Tools.libUtilities import output_window
 
 
 # TODO: SubCtrl needs have their system so that we can navigate
@@ -29,10 +30,31 @@ class IkSpine(parts.Ik):
     def buildDevSolver(self):
         self.buildSolver()
 
-    @property
-    def ikJointSystem(self):
-        # Decide which joints has the solver
-        return self.jointSystem
+    def addStretch(self):
+        super(IkSpine, self).addStretch()
+        """
+        arcMainNode = mc.rename(mc.arclen(IKCrvLenMain, ch=1), self.name + "_" + self.sfx + "_arcLenMain")
+        mc.connectAttr(arcMainNode + ".arcLength", stMD + ".input2X")
+        """
+        arcLen = pm.arclen(self.ikCurve.pynode, constructionHistory=True)
+        arcLenMeta = core.MetaRig(arcLen)
+        arcLenMeta.part = self.part
+        self.transferPropertiesToChild(arcLenMeta, "ArcLen")
+        arcLenMeta.resetName()
+        self.stretchSystem.setInitialValue(arcLenMeta.pynode.arcLength.get())
+        self.stretchSystem.connectTrigger(arcLenMeta.pynode.arcLength)
+        self.connectStretchJoints()
+
+        self.mainCtrls[0].addDivAttr("stretch", "strDiv")
+        self.mainCtrls[0].addFloatAttr("Amount", sn="amount")
+        amountAttr = self.mainCtrls[0].pynode.amount
+        self.stretchSystem.connectAmount(amountAttr)
+        amountAttr.set(1)
+
+    def connectStretchJoints(self):
+        scaleAxis = "s{}".format(self.forwardAxis.lower())
+        for joint in self.ikJointSystem.joints[:(-1 - int(self.evaluateLastJointBool))]:
+            self.stretchSystem.connectOutput(joint.pynode.attr(scaleAxis))
 
     def buildSolver(self):
         jntSystem = self.ikJointSystem
@@ -98,11 +120,8 @@ class IkSpine(parts.Ik):
             for joint, helpJoint in zip(self.jointSystem.joints, self.helpJointSystem.joints):
                 joint.setParent(helpJoint)
 
-    def addStretch(self):
-        """TODO: Add stretch"""
-        pass
-
     def build(self):
+        super(IkSpine, self).build()
         output_window("Building IK")
         self.build_ik()
         output_window("Building Controls")
@@ -144,6 +163,11 @@ class IkSpine(parts.Ik):
             self.ctrlGrp.setParent(self)
             for ctrl in self.mainCtrls:
                 ctrl.setParent(self.ctrlGrp)
+
+    @property
+    def ikJointSystem(self):
+        # Decide which joints has the solver
+        return self.jointSystem
 
     @property
     def infoGrp(self):
@@ -189,11 +213,6 @@ class IkSpine(parts.Ik):
 
 
 class SimpleSpine(IkSpine):
-    @property
-    def ikJointSystem(self):
-        # The help joint systerm has the solver
-        return self.helpJointSystem
-
     def buildControl(self):
         super(SimpleSpine, self).buildControl()
         ctrls = []
@@ -221,7 +240,7 @@ class SimpleSpine(IkSpine):
         # Skiplist
         skipAxis = []
         for axis in ["x", "y", "z"]:
-            if axis != self.primaryAxis[0]:
+            if axis != self.forwardAxis.lower():
                 skipAxis.append(axis)
 
         # Iterate through all the joints
@@ -233,18 +252,25 @@ class SimpleSpine(IkSpine):
             pm.orientConstraint(self.mainCtrls[pos].parentDriver.pynode, self.jointSystem.joints[pos].pynode, mo=True,
                                 skip=skipAxis)
 
+    @property
+    def ikJointSystem(self):
+        # The help joint systerm has the solver
+        return self.helpJointSystem
+
 
 # noinspection PyStatementEffect
 class SubControlSpine(IkSpine):
     def __init__(self, *args, **kwargs):
         super(SubControlSpine, self).__init__(*args, **kwargs)
         # List of weights [CV][JOINT]
+        self.fallOffMethod = kwargs.get("fallOffMethod", "Distance")
+        self.currentWeightMap = []
+
+    def __bindData__(self, *args, **kwgs):
+        super(SubControlSpine, self).__bindData__(*args, **kwgs)
         self.addAttr("ikSkinWeightMap", "")
         self.addAttr("preNormalisedMap", "")
-        self.addAttr("fallOffMethod", kwargs.get("fallOffMethod", "Distance"))
-        self.currentWeightMap = []
-        if not hasattr(self, "numHighLevelCtrls"):
-            self.numHighLevelCtrls = 3
+        self.addAttr("fallOffMethod", "")
 
     def reparentIkJoint(self):
         # Reparent the Joint
@@ -439,7 +465,8 @@ class SubControlSpine(IkSpine):
                 newWeights[index] = 0
                 # Redistribute the difference in the proporation of the other weights
                 # This way all the weight will add to 1
-                newWeights = libMath.calculate_proportions(newWeights, diffWeight)
+                if sum(newWeights):
+                    newWeights = libMath.calculate_proportions(newWeights, diffWeight)
 
             # Set the new weights
             if newWeights:
@@ -581,10 +608,6 @@ class SubControlSpine(IkSpine):
                 int(self.primaryAxis[2] == "z")]
 
     @property
-    def forwardAxis(self):
-        return self.jointSystem.gimbalData["twist"].upper()
-
-    @property
     def upAxis(self):
         return self.jointSystem.gimbalData["roll"].upper()
 
@@ -615,6 +638,10 @@ class SubControlSpine(IkSpine):
 
 # noinspection PyStatementEffect
 class HumanSpine(SubControlSpine):
+    def __init__(self, *args, **kwargs):
+        super(HumanSpine, self).__init__(*args, **kwargs)
+        self.mirrorBehaviour = kwargs.get("mirrorBehaviour", False)
+
     def buildControl(self):
         super(HumanSpine, self).buildControl()
         self.buildMainControls()
@@ -644,11 +671,11 @@ class HumanSpine(SubControlSpine):
             middleJntA = self.jointSystem.joints[len(self.jointSystem) / 2].mNode
             middleJntB = self.jointSystem.joints[len(self.jointSystem) / 2 - 1].mNode
             # Align position
-            middleCtrl.addConstraint(middleJntA, "point", False)
-            middleCtrl.addConstraint(middleJntB, "point", False)
+            middleCtrl.addConstraint(middleJntA, "point", mo=False)
+            middleCtrl.addConstraint(middleJntB, "point", mo=False)
             if not self.ikControlToWorld:
-                middleCtrl.addConstraint(middleJntA, "orient", False)
-                middleCtrl.addConstraint(middleJntB, "orient", False)
+                middleCtrl.addConstraint(middleJntA, "orient", mo=False)
+                middleCtrl.addConstraint(middleJntB, "orient", mo=False)
             # Delete the constraints
             middleCtrl.pointConstraint.delete()
             middleCtrl.orientConstraint.delete()
@@ -657,13 +684,11 @@ class HumanSpine(SubControlSpine):
         self.mainCtrls = [firstCtrl, middleCtrl, lastCtrl]
 
     def connectTwist(self):
-        self.ikHandle.rootTwistMode = True
         # Create plusMinusAverage which control the final twist
         twistPlusMinus = core.MetaRig(side=self.side,
                                       part="%sTwist" % self.part,
                                       endSuffix="PMA",
                                       nodeType="plusMinusAverage")
-        twistPlusMinus.pynode.output1D >> self.ikHandle.pynode.twist
 
         # Create multiplyDivide which would counter twist for the top control
         multiplyDivide = core.MetaRig(side=self.side,
@@ -672,15 +697,23 @@ class HumanSpine(SubControlSpine):
                                       nodeType="multiplyDivide")
         multiplyDivide.input2X = -1
 
+        if self.mirrorBehaviour:
+            self.mainCtrls[0].addCounterTwist()
+            self.mainCtrls[1].addCounterTwist()
+
         # Connect the top control to the twist
-        self.mainCtrls[2].getRotateDriver(self.forwardAxis) >> twistPlusMinus.pynode.input1D[0]
+        self.mainCtrls[2].getTwistDriver(self.forwardAxis) >> twistPlusMinus.pynode.input1D[0]
 
         # Connect to the bottom controller to the counter twist and roll
-        self.mainCtrls[0].getRotateDriver(self.forwardAxis) >> multiplyDivide.pynode.input1X
-        self.mainCtrls[0].getRotateDriver(self.forwardAxis) >> self.ikHandle.pynode.roll
+        self.mainCtrls[0].getTwistDriver(self.forwardAxis) >> multiplyDivide.pynode.input1X
         multiplyDivide.pynode.outputX >> twistPlusMinus.pynode.input1D[1]
 
+        # Connect IK Handle twist and roll
+        twistPlusMinus.pynode.output1D >> self.ikHandle.pynode.twist
+        self.mainCtrls[0].getTwistDriver(self.forwardAxis) >> self.ikHandle.pynode.roll
+
         # Add PMA and MD as supprt node
+        self.ikHandle.rootTwistMode = True
         self.ikHandle.addSupportNode(twistPlusMinus, "Twist")
         self.ikHandle.addSupportNode(multiplyDivide, "CounterTwist")
 
@@ -715,7 +748,14 @@ class HumanSpine(SubControlSpine):
 class ComplexSpine(SubControlSpine):
     def __init__(self, *args, **kwargs):
         super(ComplexSpine, self).__init__(*args, **kwargs)
-        self.addAttr("twistMap", "")
+        self.numHighLevelCtrls = kwargs.get("numHighLevelCtrls", 3)
+        self.lockHead = kwargs.get("lockHead", False)
+        self.lockTail = kwargs.get("lockTail", False)
+        self._evaluateLastJoint = kwargs.get("evaluateLastJoint", False)
+
+    def __bindData__(self, *args, **kwgs):
+        super(ComplexSpine, self).__bindData__(*args, **kwgs)
+        self.addAttr("twistMap", [])
         self.addAttr("prenormalisedTwistMap", [])
 
     def calculateIkSkinFallOff(self):
@@ -725,11 +765,6 @@ class ComplexSpine(SubControlSpine):
 
     def buildHelperJoints(self):
         super(SubControlSpine, self).buildHelperJoints()
-
-    @property
-    def ikJointSystem(self):
-        # The help joint system has the solver
-        return self.helpJointSystem
 
     def buildControl(self):
         super(ComplexSpine, self).buildControl()
@@ -741,7 +776,6 @@ class ComplexSpine(SubControlSpine):
     def buildMainControls(self):
         # Get the ctrl postion
         ctrlPosition = utils.recalculatePosition(self.jointSystem.positions, self.numHighLevelCtrls)
-
         metaCtrls = []
         # Iterate though all the position
         for i in range(self.numHighLevelCtrls):
@@ -774,9 +808,9 @@ class ComplexSpine(SubControlSpine):
         self.mainCtrls = metaCtrls
 
     def calculateTwistWeights(self):
-        # If distance based falloff method then calculate the position based twist as that gives a better falloff
-        # Calculate position based falloff
-        self.positionFallOff(len(self.jointSystem) - 1, False)
+        # Position based twist as that gives the best falloff so far
+        numJoints = len(self.jointSystem) - int(self.evaluateLastJointBool) - int(self.lockHead) - int(self.lockTail)
+        self.positionFallOff(numJoints, False)
         # Get the currentMap
         prenormalisedTwistMap = self.currentWeightMap
 
@@ -793,7 +827,6 @@ class ComplexSpine(SubControlSpine):
         normalisedTwist = []
         for weightMap in self.prenormalisedTwistMap:
             normalisedTwist.append(libMath.calculate_proportions(weightMap, 1))
-
         # Set the twistMap
         self.twistMap = normalisedTwist
 
@@ -807,7 +840,7 @@ class ComplexSpine(SubControlSpine):
             if not pmaHelp:
                 pmaHelp = core.MetaRig(side=self.side,
                                        part=jointMeta.part,
-                                       endSuffix="RotateDriver",
+                                       endSuffix="RotateAverage",
                                        nodeType="plusMinusAverage")
                 jointMeta.addSupportNode(pmaHelp, "rotateAverage")
                 pmaHelp.pynode.attr("output3D%s" % axis.lower()) >> jointMeta.pynode.attr("rotate%s" % axis)
@@ -823,7 +856,7 @@ class ComplexSpine(SubControlSpine):
                 skipAxis.append(axis)
 
         # Iterate through the weightMap/Joints
-        for weightMap, joint in zip(self.twistMap, range(len(self.jointSystem) - 1)):
+        for weightMap, joint in zip(self.twistMap, range(len(self.jointSystem) - int(self.evaluateLastJointBool))):
             # Do not add weight
             for singleWeight, ctrl in zip(weightMap, self.mainCtrls):
                 if singleWeight != 0.0:
@@ -833,16 +866,17 @@ class ComplexSpine(SubControlSpine):
                     # Get Rotate Driver
                     rotateDriver = ctrl.getRotateDriver(self.forwardAxis)
 
+                    wm_name = "WeightManager{}".format(self.forwardAxis)
                     # Create a Weight MD
                     weightManager = core.MetaRig(side=ctrl.side,
-                                                 part="%s%s" % (self.jointSystem.joints[joint].part.capitalize(),
-                                                                ctrl.part.capitalize()),
-                                                 endSuffix="WeightManager%s" % self.forwardAxis,
+                                                 part="{0}{1}".format(self.jointSystem.joints[joint].part.capitalize(),
+                                                                      ctrl.part.capitalize()),
+                                                 endSuffix=wm_name,
                                                  nodeType="multiplyDivide")
 
                     # Add it as support node to joint
-                    self.jointSystem.joints[joint].getSupportNode("rotateAverage").addSupportNode(weightManager,
-                                                                                                  "WeightManage%s" % self.forwardAxis)
+                    self.jointSystem.joints[joint].getSupportNode("rotateAverage").addSupportNode(
+                        weightManager, wm_name)
 
                     # Connect the Rotate Driver
                     rotateDriver >> weightManager.pynode.input1X
@@ -853,14 +887,17 @@ class ComplexSpine(SubControlSpine):
                     # Connect to the rotateAverage
                     weightManager.pynode.outputX >> rotateAverage
 
+    @property
+    def ikJointSystem(self):
+        # The help joint system has the solver
+        return self.helpJointSystem
+
 
 if __name__ == '__main__':
     pm.newFile(f=1)
     # mainSystem = core.TransSubSystem(side="C", part="Core")
-    ikSystem = ComplexSpine(side="L", part="Core")
+    ikSystem = HumanSpine(side="L", part="Core", numHighLevelCtrls=5, fallOffMethod="Position")
     ikSystem.ikControlToWorld = True
-    ikSystem.numHighLevelCtrls = 5
-    ikSystem.fallOffMethod = "Distance"
     # ikSystem.devSpine = True
     ikSystem.isStretchable = True
     ikSystem.testBuild()

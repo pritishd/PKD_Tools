@@ -6,10 +6,9 @@
 #
 from pymel import core as pm
 
-from PKD_Tools import libUtilities
+from PKD_Tools import libUtilities, libJoint
 from PKD_Tools.Red9 import Red9_CoreUtils
-from PKD_Tools.Rigging import utils
-from PKD_Tools.Rigging import core
+from PKD_Tools.Rigging import core, utils
 
 if __name__ == '__main__':
     for mod in libUtilities, utils, core:
@@ -30,11 +29,12 @@ class Rig(core.TransSubSystem):
             self.isStretchable = kwargs.get("stretch", False)
             self.isCartoony = kwargs.get("cartoony", False)
             self.mainCtrlShape = kwargs.get("mainCtrlShape", "Box")
-            self.rotateOrder = kwargs.get("rotateOrder", "yzx")
+            self.rotateOrder = kwargs.get("rotateOrder", libJoint.get_rotate_order(libJoint.default_gimbal_data()))
             self.mirrorData = {'side': self.mirrorSide, 'slot': 1}
             self.hasParentMaster = kwargs.get("parentMaster", False)
             self.hasPivot = kwargs.get("pivot", False)
             self._evaluateLastJoint = kwargs.get("evaluateLastJoint", True)
+            self.flipProxyCube = kwargs.get("flipProxyCube", False)
 
     def createProxyCube(self, targetJoint, childJoint):
         # Get the height
@@ -51,6 +51,11 @@ class Rig(core.TransSubSystem):
         # reset the pivot to origin
         cube.scalePivot.set([0, 0, 0])
         cube.rotatePivot.set([0, 0, 0])
+
+        if self.flipProxyCube:
+            cube.rotateX.set(180)
+            libUtilities.freeze_rotation(cube)
+
         # Snap the pivot of the cube to this cluster
 
         # Snap the cube to joint
@@ -112,6 +117,7 @@ class Rig(core.TransSubSystem):
         else:
             self.jointSystem = jointSystem
             # Build the Part
+        self.rotateOrder = self.jointSystem.rotateOrder
         self.build()
 
         if buildProxy:
@@ -138,7 +144,7 @@ class Rig(core.TransSubSystem):
             self.jointSystem.joints[0].pynode.setParent(self.pynode)
 
     def build(self):
-        pass
+        self.snap(self.jointSystem.joints[0], rotate=False)
 
     def addStretch(self):
         for position, ctrl in enumerate(self.mainCtrls):
@@ -180,6 +186,23 @@ class Rig(core.TransSubSystem):
             if self.isCartoony:
                 self.addSquash()
 
+    def buildSkinJoints(self):
+        # Build the skin system
+        self.skinJointSystem = self.jointSystem.replicate(side=self.side, part="%sSkinJoints" % self.part, supportType="Skin")
+
+        # Connect joints
+        for skinJoint, finalJoint in zip(self.skinJointSystem, self.jointSystem):
+            skinJoint.addConstraint(finalJoint, mo=True)
+            if self.isDeformable:
+                for attr in ["sx", "sz", "sz"]:
+                    scaleAttr = skinJoint.pynode.attr(attr)
+                    if scaleAttr.listConnections():
+                        finalJoint.pynode.attr(attr) >> scaleAttr
+
+    @property
+    def jointDict(self):
+        return self.jointSystem.jointDict
+
     @property
     def jointSystem(self):
         return self.getSupportNode("JointSystem")
@@ -187,6 +210,14 @@ class Rig(core.TransSubSystem):
     @jointSystem.setter
     def jointSystem(self, data):
         self.addSupportNode(data, "JointSystem")
+
+    @property
+    def skinJointSystem(self):
+        return self.getSupportNode("SkinJointSystem")
+
+    @skinJointSystem.setter
+    def skinJointSystem(self, data):
+        self.addSupportNode(data, "SkinJointSystem")
 
     @property
     def ctrlGrp(self):
@@ -224,12 +255,23 @@ class Rig(core.TransSubSystem):
     def mainCtrls(self, ctrlList):
         raise RuntimeError("Cannot be set at this {0} object level".format(self.__class__.__name__))
 
+    @property
+    def forwardAxis(self):
+        return self.jointSystem.gimbalData["twist"].upper()
+
 
 class Ik(Rig):
     def __init__(self, *args, **kwargs):
         super(Ik, self).__init__(*args, **kwargs)
         if self._build_mode:
             self.ikControlToWorld = kwargs.get("ikControlToWorld", False)
+
+    def addStretch(self):
+        """TODO: Add stretch"""
+        stretchSystem = core.StretchSystem(side=self.side, part="Stretch")
+        stretchSystem.build()
+        self.addMetaSubSystem(stretchSystem, "Stretch")
+
 
     @property
     def ikHandle(self):
@@ -238,6 +280,10 @@ class Ik(Rig):
     @ikHandle.setter
     def ikHandle(self, data):
         self.addSupportNode(data, "IKHandle")
+
+    @property
+    def stretchSystem(self):
+        return self.getMetaSubSystem("Stretch")
 
 
 class Generic(Rig):
@@ -305,6 +351,7 @@ class Generic(Rig):
                 ctrl.setParent(self.ctrlGrp)
 
     def build(self):
+        super(Generic, self).build()
         self.buildControl()
         if self.isDeformable:
             self.buildOffsetJoint()
@@ -461,6 +508,7 @@ class Blender(Rig):
         pass
 
     def build(self):
+        super(Blender, self).build()
         self.buildBlendCtrl()
         self.blendJoints()
         self.blendVisibility()
