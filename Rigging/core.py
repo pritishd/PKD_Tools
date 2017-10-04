@@ -1282,7 +1282,7 @@ class Ctrl(MovableSystem):
         rotateDriverAttr = self.getRotateDriver(axis)
         counterTwistNode = self.getSupportNode("CounterTwist")
         if counterTwistNode:
-            counterTwistStatus = counterTwistNode.connectAxis
+            counterTwistStatus = counterTwistNode.connectedAxis
             if not counterTwistStatus[axis]:
                 rotateDriverAttr >> counterTwistNode.pynode.attr("input1{}".format(axis))
                 counterTwistNode.pynode.attr("input2{}".format(axis)).set(-1)
