@@ -1175,7 +1175,7 @@ class Ctrl(MovableSystem):
         # Add Attribute control the visibility
         self.addDivAttr("Show", "pivotVis")
         self.addBoolAttr("Pivot")
-        self.pynode.Pivot >> self.pivot.pynode.v
+        self.pynode.Pivot >> self.pivot.pynode.getShape().v
         # @endcond
 
     def addChild(self, targetNode):
