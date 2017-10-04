@@ -447,7 +447,7 @@ class Hoof(object):
 
         # Create a negative multiply divide for the heel
         heelMd = libUtilities.inverseMultiplyDivide()
-        heelMdMeta = core.MovableSystem(heelMd.name(), nodeType="multiplyDivide")
+        heelMdMeta = core.MetaRig(heelMd.name(), nodeType="multiplyDivide")
         heelMdMeta.part = "%sHeel" % self.part
         heelMdMeta.rigType = "InverseMD"
         heelMdMeta.resetName()
