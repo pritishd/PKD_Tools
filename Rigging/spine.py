@@ -602,12 +602,6 @@ class SubControlSpine(IkSpine):
         self.connectChildren(ctrlList, "SubCtrls", allowIncest=True, cleanCurrent=True)
 
     @property
-    def upVector(self):
-        return [int(self.rollAxis == "x"),
-                int(self.rollAxis == "y"),
-                int(self.rollAxis == "z")]
-
-    @property
     def ikSkin(self):
         return self.getSupportNode("IkSkin").pynode
 

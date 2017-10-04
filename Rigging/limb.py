@@ -84,6 +84,7 @@ class LimbIk(parts.Ik):
         self.pv.ctrlShape = "Locator"
         self.pv.build()
         self.pv.setParent(self)
+        self.pv.setRotateOrder(self.rotateOrder)
 
         # Position And Align The Pole Vector Control
 
@@ -119,8 +120,8 @@ class LimbIk(parts.Ik):
         # Pole vector points at second joint
         pm.aimConstraint(self.jointSystem.joints[self.startJointNumber + 1].pynode,
                          self.pv.pynode,
-                         aimVector=(0, 0, 1),
-                         upVector=(0, 0, 1))
+                         aimVector=self.upVector,
+                         upVector=self.upVector)
 
         pm.poleVectorConstraint(self.pv.mNode, self.ikHandle.mNode, weight=1)
         self.ikHandle.twist = pvTwist
@@ -235,7 +236,7 @@ class Hip(Arm):
         # Align with first joint
         hipCtrl.snap(firstJoint.pynode)
         # Parent the hip IkControl
-        self.hipIKHandle.SUP_Prnt.setParent(hipCtrl)
+        self.hipIKHandle.SUP_Prnt.setParent(hipCtrl.parentDriver)
         # Create a helper joint
         pm.select(cl=1)
         self.aimHelper = core.Joint(part=firstJoint.part, side=self.side, endSuffix="AimHelper")

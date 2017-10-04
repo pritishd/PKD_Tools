@@ -309,6 +309,12 @@ class Ik(Rig):
     def stretchSystem(self):
         return self.getMetaSubSystem("Stretch")
 
+    @property
+    def upVector(self):
+        return [int(self.rollAxis == "x"),
+                int(self.rollAxis == "y"),
+                int(self.rollAxis == "z")]
+
 
 class Generic(Rig):
     def __init__(self, *args, **kwargs):
