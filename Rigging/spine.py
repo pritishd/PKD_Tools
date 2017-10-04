@@ -52,7 +52,7 @@ class IkSpine(parts.Ik):
         amountAttr.set(1)
 
     def connectStretchJoints(self):
-        scaleAxis = "s{}".format(self.forwardAxis.lower())
+        scaleAxis = "s{}".format(self.twistAxis.lower())
         for joint in self.ikJointSystem.joints[:(-1 - int(self.evaluateLastJointBool))]:
             self.stretchSystem.connectOutput(joint.pynode.attr(scaleAxis))
 
@@ -240,7 +240,7 @@ class SimpleSpine(IkSpine):
         # Skiplist
         skipAxis = []
         for axis in ["x", "y", "z"]:
-            if axis != self.forwardAxis.lower():
+            if axis != self.twistAxis.lower():
                 skipAxis.append(axis)
 
         # Iterate through all the joints
@@ -549,7 +549,7 @@ class SubControlSpine(IkSpine):
                                             fractionMode=False,
                                             follow=True,
                                             curve=self.ikDriveCurve,
-                                            upAxis=self.upAxis,
+                                            upAxis=self.rollAxis,
                                             worldUpType="objectrotation",
                                             worldUpVector=self.upVector,
                                             worldUpObject=self.pynode
@@ -606,10 +606,6 @@ class SubControlSpine(IkSpine):
         return [int(self.primaryAxis[2] == "x"),
                 int(self.primaryAxis[2] == "y"),
                 int(self.primaryAxis[2] == "z")]
-
-    @property
-    def upAxis(self):
-        return self.jointSystem.gimbalData["roll"].upper()
 
     @property
     def ikSkin(self):
@@ -702,15 +698,15 @@ class HumanSpine(SubControlSpine):
             self.mainCtrls[1].addCounterTwist()
 
         # Connect the top control to the twist
-        self.mainCtrls[2].getTwistDriver(self.forwardAxis) >> twistPlusMinus.pynode.input1D[0]
+        self.mainCtrls[2].getTwistDriver(self.twistAxis) >> twistPlusMinus.pynode.input1D[0]
 
         # Connect to the bottom controller to the counter twist and roll
-        self.mainCtrls[0].getTwistDriver(self.forwardAxis) >> multiplyDivide.pynode.input1X
+        self.mainCtrls[0].getTwistDriver(self.twistAxis) >> multiplyDivide.pynode.input1X
         multiplyDivide.pynode.outputX >> twistPlusMinus.pynode.input1D[1]
 
         # Connect IK Handle twist and roll
         twistPlusMinus.pynode.output1D >> self.ikHandle.pynode.twist
-        self.mainCtrls[0].getTwistDriver(self.forwardAxis) >> self.ikHandle.pynode.roll
+        self.mainCtrls[0].getTwistDriver(self.twistAxis) >> self.ikHandle.pynode.roll
 
         # Add PMA and MD as supprt node
         self.ikHandle.rootTwistMode = True
@@ -724,12 +720,12 @@ class HumanSpine(SubControlSpine):
         self.ikHandle.dWorldUpType = "Object Rotation Up (Start/End)"
 
         # Forward axis from the primary rotation
-        self.ikHandle.dForwardAxis = "Positive %s" % self.forwardAxis
+        self.ikHandle.dForwardAxis = "Positive %s" % self.twistAxis
         # Some versions of Maya do that have this attribute
         if hasattr(self.ikHandle, "dWorldUpAxis"):
             # This may depend if it is positive or negative
             # Check the joint orient value
-            self.ikHandle.dWorldUpAxis = "Positive %s" % self.upAxis
+            self.ikHandle.dWorldUpAxis = "Positive %s" % self.rollAxis
 
         # Control Vector. Might need negative for flipped
         self.ikHandle.dWorldUpVector = self.upVector
@@ -843,7 +839,7 @@ class ComplexSpine(SubControlSpine):
                                        endSuffix="RotateAverage",
                                        nodeType="plusMinusAverage")
                 jointMeta.addSupportNode(pmaHelp, "rotateAverage")
-                pmaHelp.pynode.attr("output3D%s" % axis.lower()) >> jointMeta.pynode.attr("rotate%s" % axis)
+                pmaHelp.pynode.attr("output3D%s" % axis.lower()) >> jointMeta.pynode.attr("rotate%s" % axis.upper())
 
             currentConnect = pmaHelp.pynode.input3D.numConnectedElements()
 
@@ -861,12 +857,12 @@ class ComplexSpine(SubControlSpine):
             for singleWeight, ctrl in zip(weightMap, self.mainCtrls):
                 if singleWeight != 0.0:
                     # Get the input PMA for the joint
-                    rotateAverage = _get_joint_twist_average_(self.jointSystem.joints[joint], self.forwardAxis)
+                    rotateAverage = _get_joint_twist_average_(self.jointSystem.joints[joint], self.twistAxis)
 
                     # Get Rotate Driver
-                    rotateDriver = ctrl.getRotateDriver(self.forwardAxis)
+                    rotateDriver = ctrl.getRotateDriver(self.twistAxis)
 
-                    wm_name = "WeightManager{}".format(self.forwardAxis)
+                    wm_name = "WeightManager{}".format(self.twistAxis)
                     # Create a Weight MD
                     weightManager = core.MetaRig(side=ctrl.side,
                                                  part="{0}{1}".format(self.jointSystem.joints[joint].part.capitalize(),

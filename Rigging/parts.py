@@ -256,8 +256,16 @@ class Rig(core.TransSubSystem):
         raise RuntimeError("Cannot be set at this {0} object level".format(self.__class__.__name__))
 
     @property
-    def forwardAxis(self):
+    def twistAxis(self):
         return self.jointSystem.gimbalData["twist"].upper()
+
+    @property
+    def rollAxis(self):
+        return self.jointSystem.gimbalData["roll"].upper()
+
+    @property
+    def bendAxis(self):
+        return self.jointSystem.gimbalData["bend"].upper()
 
 
 class Ik(Rig):
