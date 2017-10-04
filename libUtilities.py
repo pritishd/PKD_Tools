@@ -100,7 +100,7 @@ def addFloatAttr(target, attrName="", attrMax=1, attrMin=0, softValue=0, shortNa
     pm.setAttr(target + "." + shortName, e=1, k=1)
 
 
-def addDivAttr(target, label, ln):
+def addDivAttr(target, label, ln=None):
     """
     Add a divider on a transform node
     @param target: Tranform node
@@ -108,6 +108,8 @@ def addDivAttr(target, label, ln):
     @param ln: The alias name of the attribute
     @return:
     """
+    if not ln:
+        ln = label
     pm.addAttr(target, ln=ln, en="%s:" % label, at="enum", nn="________")
     pm.setAttr("{0}.{1}".format(target, ln), lock=True, cb=True)
 
