@@ -219,6 +219,7 @@ class BuilderJointSystem(core.JointCollection):
 
 
 class Builder(core.MovableSystem):
+    """TODO: Build templates from data"""
     def __init__(self, *args, **kwargs):
         super(Builder, self).__init__(*args, **kwargs)
         self.jointWin = None
