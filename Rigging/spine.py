@@ -36,7 +36,7 @@ class IkSpine(parts.Ik):
         arcMainNode = mc.rename(mc.arclen(IKCrvLenMain, ch=1), self.name + "_" + self.sfx + "_arcLenMain")
         mc.connectAttr(arcMainNode + ".arcLength", stMD + ".input2X")
         """
-        arcLen = pm.arclen(self.ikCurve.pynode, constructionHistory=True)
+        arcLen = pm.arclen(self.mainCurve.pynode, constructionHistory=True)
         arcLenMeta = core.MetaRig(arcLen)
         arcLenMeta.part = self.part
         self.transferPropertiesToChild(arcLenMeta, "ArcLen")
@@ -153,8 +153,9 @@ class IkSpine(parts.Ik):
         self.reparentIkJoint()
         # Reparent the two curve and ik Handle
         for crv in [self.ikCurve, self.controlCurve, self.ikHandle.prnt]:
-            crv.setParent(self.infoGrp)
-            crv.setParent(self.infoGrp)
+            if crv:
+                crv.setParent(self.infoGrp)
+                crv.setParent(self.infoGrp)
 
         # Create the control grp
         if self.mainCtrls:
@@ -211,11 +212,19 @@ class IkSpine(parts.Ik):
     def helpJointSystem(self, data):
         self.addSupportNode(data, "HelpJointSystem")
 
+    @property
+    def mainCurve(self):
+        if self.bSpline:
+            self.controlCurve
+        else:
+            return self.ikCurve
+
 
 class SimpleSpine(IkSpine):
     def buildControl(self):
         super(SimpleSpine, self).buildControl()
         ctrls = []
+        # TODO: Use enumarate
         for joint, pos in zip(self.jointSystem.jointData,
                               range(len(self.jointSystem))):
             # Create the control
@@ -242,15 +251,20 @@ class SimpleSpine(IkSpine):
         for axis in ["x", "y", "z"]:
             if axis != self.twistAxis.lower():
                 skipAxis.append(axis)
-
+        controlCurve = self.mainCurve
         # Iterate through all the joints
         for pos in range(len(self.jointSystem)):
             # Cluster the CV point on the control curve
-            self.mainCtrls[pos].locator.clusterCV(self.controlCurve.pynode.cv[pos])
+            self.mainCtrls[pos].locator.clusterCV(controlCurve.pynode.cv[pos])
 
             # OrientConstraint the Joint
             pm.orientConstraint(self.mainCtrls[pos].parentDriver.pynode, self.jointSystem.joints[pos].pynode, mo=True,
                                 skip=skipAxis)
+
+    def cleanUp(self):
+        super(SimpleSpine, self).cleanUp()
+        if not self.bSpline:
+            self.controlCurve.delete()
 
     @property
     def ikJointSystem(self):
