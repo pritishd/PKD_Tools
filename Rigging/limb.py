@@ -259,7 +259,31 @@ class Hip(Arm):
         pm.aimConstraint(self.mainIK.pynode, self.aimHelper.pynode, mo=1, wut="object", wuo=upVector.mNode)
 
         # Orient Constraint the Hip Constraint
-        hipCtrl.addConstraint(self.aimHelper.pynode, "orient")
+        hipCtrl.addConstraint(self.aimHelper.pynode, "orient", weightAlias="IK")
+
+        # Create a base joint
+        homeJoint = core.Joint(part=self.part, side=self.side, endSuffix="HomeJnt")
+        homeJoint.v = False
+        homeJoint.rotateOrder = self.rotateOrder
+        homeJoint.setParent(self)
+        homeJoint.snap(self.jointSystem.joints[0])
+        libUtilities.freeze_rotation(homeJoint.pynode)
+        # Add another contraint
+        hipCtrl.addConstraint(homeJoint, "orient", mo=True, weightAlias=self.part)
+
+
+        # Blend between the two constraint
+        self.inverse = core.MetaRig(side=self.side, part=self.part, endSuffix="Inverse", nodeType="reverse")
+
+        # Attribute based on the system type
+        libUtilities.addDivAttr(hipCtrl.pynode,"SpaceSwitch")
+        attrName = "IK_Parent"
+        libUtilities.addFloatAttr(hipCtrl.pynode, attrName)
+        blendAttr = hipCtrl.pynode.attr(attrName)
+        # Connect the inverse node
+        blendAttr >> self.inverse.pynode.inputX
+        self.inverse.pynode.outputX >> hipCtrl.orientConstraint.pynode.w0
+        blendAttr >> hipCtrl.orientConstraint.pynode.w1
 
         # Point constrain the first joint
         pm.pointConstraint(hipCtrl.mNode, firstJoint.mNode, mo=1)
@@ -366,6 +390,8 @@ class Hand(object):
         self.addSupportNode(data, "palmIKHandle")
 
     """"""
+
+
 class ArmHand(Arm, Hand):
     def buildControl(self):
         self.hasPivot = True
@@ -417,7 +443,7 @@ class Hoof(object):
             # Reset the joint orientation
             pm.parent(helperJnt, world=True)
             # Remove the primary axis
-            helperJnt.attr("jointOrient%s" % self.primaryAxis[2].upper()).set(0)
+            helperJnt.attr("jointOrient%s" % self.bendAxis.upper()).set(0)
             # Align the control to this joint
             self.mainIK.snap(helperJnt, rotate=False)
             # Delete helper joint
@@ -436,13 +462,13 @@ class Hoof(object):
             # Create the 2 rotate system
         tipToeRoll = core.MovableSystem(part=self.part, side=self.side, endSuffix="TipToeRoll")
         tipToeRoll.addParent(snap=False, endSuffix="TipToeRollPrnt")
-        tipToeRoll.snap(self.jointSystem.joints[-2].mNode)
+        tipToeRoll.snap(self.jointSystem.joints[-1].mNode)
         libUtilities.snap(tipToeRoll.prnt.mNode, self.jointSystem.joints[self.endJointNumber].mNode, translate=False)
 
         # self.toeRoll.setParent(self.jointSystem.Joints[-1])
         heelRoll = core.MovableSystem(part=self.part, side=self.side, endSuffix="HeelRoll")
         heelRoll.addParent(snap=False, endSuffix="HeelRollPrnt")
-        heelRoll.snap(self.jointSystem.joints[-1].mNode)
+        heelRoll.snap(self.jointSystem.joints[-2].mNode)
         libUtilities.snap(heelRoll.prnt.mNode, self.jointSystem.joints[self.endJointNumber].mNode, translate=False)
 
         # Create a negative multiply divide for the heel
@@ -462,8 +488,8 @@ class Hoof(object):
 
         # Connect the Rolls
         self.mainIK.pynode.Heel >> heelMd.input1X
-        heelMd.outputX >> heelRoll.pynode.attr("r%s" % self.primaryAxis[2])
-        self.mainIK.pynode.TipToe >> tipToeRoll.pynode.attr("r%s" % self.primaryAxis[2])
+        heelMd.outputX >> heelRoll.pynode.attr("r%s" % self.bendAxis.lower())
+        self.mainIK.pynode.TipToe >> tipToeRoll.pynode.attr("r%s" % self.bendAxis.lower())
 
         # Reparent the IK Handles
         self.ikHandle.setParent(heelRoll)
@@ -608,8 +634,8 @@ class Foot(Hoof):
             roll.setParent(self.RollSystem.getSupportNode("heelRoll"))
 
         # Connect to the attributes to the rolls
-        self.mainIK.pynode.Ball >> ballRoll.pynode.attr("r%s" % self.primaryAxis[2])
-        self.mainIK.pynode.Toe >> toeRoll.pynode.attr("r%s" % self.primaryAxis[2])
+        self.mainIK.pynode.Ball >> ballRoll.pynode.attr("r%s" % self.bendAxis.lower())
+        self.mainIK.pynode.Toe >> toeRoll.pynode.attr("r%s" % self.bendAxis.lower())
 
     @property
     def toeIKHandle(self):
@@ -637,6 +663,7 @@ class ArmFoot(Arm, Foot):
     def alignControl(self):
         Arm.alignControl(self)
         Foot.align_control(self)
+
 
 # noinspection PyUnresolvedReferences,PyArgumentList,PyStatementEffect,PyTypeChecker
 class HipFoot(Hip, Foot):
@@ -675,6 +702,7 @@ class QuadFoot(Quad, Foot):
     def alignControl(self):
         Quad.alignControl(self)
         Foot.align_control(self)
+
 
 # noinspection PyUnresolvedReferences,PyArgumentList,PyStatementEffect,PyTypeChecker
 class Paw(Foot):
@@ -716,7 +744,7 @@ class Paw(Foot):
         self.ikHandle.setParent(ankleRoll)
 
         # Connect to the attributes to the rolls
-        self.mainIK.pynode.Ankle >> ankleRoll.pynode.attr("r%s" % self.primaryAxis[2])
+        self.mainIK.pynode.Ankle >> ankleRoll.pynode.attr("r%s" % self.bendAxis.upper())
 
     @property
     def ankleIKHandle(self):

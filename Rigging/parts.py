@@ -43,6 +43,11 @@ class Rig(core.TransSubSystem):
         # Create the cube of that height
         cube = pm.polyCube(height=height, ch=False)[0]
 
+        cubeMeta = core.MovableSystem(part=targetJoint.part.get(), side=self.side, endSuffix="Geo")
+        libUtilities.transfer_shape(cube, cubeMeta.pynode)
+        libUtilities.fix_shape_name(cubeMeta.pynode)
+        pm.delete(cube)
+        cube = cubeMeta.pynode
         cube.translateY.set(height * .5)
 
         # Freeze Transform
@@ -53,14 +58,17 @@ class Rig(core.TransSubSystem):
         cube.rotatePivot.set([0, 0, 0])
 
         if self.flipProxyCube:
-            cube.rotateX.set(180)
+            cube.attr(self.bendAxis).set(180)
             libUtilities.freeze_rotation(cube)
 
+        cube.rotateOrder = self.rotateOrder
         # Snap the pivot of the cube to this cluster
 
         # Snap the cube to joint
         libUtilities.snap(cube, targetJoint)
         libUtilities.skinGeo(cube, [targetJoint])
+
+        return cubeMeta
 
     def createCtrlObj(self, part, **kwargs):
         shape = kwargs.get("shape")
@@ -135,8 +143,11 @@ class Rig(core.TransSubSystem):
 
     def buildProxy(self):
         # Build the proxy cube
+        proxyGrp = core.MovableSystem(side=self.side, part=self.part, endSuffix="ProxyGrp")
+        proxyGrp.setParent(self)
         for i in range(len(self.jointSystem.joints) - 1):
-            self.createProxyCube(self.jointSystem.joints[i].pynode, self.jointSystem.joints[i + 1].pynode)
+            cubeMeta = self.createProxyCube(self.jointSystem.joints[i].pynode, self.jointSystem.joints[i + 1].pynode)
+            cubeMeta.setParent(proxyGrp)
 
     def cleanUp(self):
         if not self.jointSystem.joints[0].pynode.getParent():
@@ -144,7 +155,8 @@ class Rig(core.TransSubSystem):
             self.jointSystem.joints[0].pynode.setParent(self.pynode)
 
     def build(self):
-        self.snap(self.jointSystem.joints[0], rotate=False)
+        pass
+        # self.snap(self.jointSystem.joints[0], rotate=False)
 
     def addStretch(self):
         for position, ctrl in enumerate(self.mainCtrls):
@@ -154,7 +166,7 @@ class Rig(core.TransSubSystem):
                 # Parent Constraint the ctrl to the previous joint
                 ctrl.addConstraint(driveJoint.pynode, maintainOffset=True)
             # Connect the scale lenght
-            scaleAxis = "s{0}".format(self.primaryAxis[0])
+            scaleAxis = "s{0}".format(self.t)
             # Connect the stretch axis
             ctrl.pynode.attr(scaleAxis) >> self.jointSystem.joints[position].pynode.attr(scaleAxis)
 
@@ -163,7 +175,9 @@ class Rig(core.TransSubSystem):
         mainCartoonySystem = core.NetSubSystem(side=self.side, part="Cartoony")
         self.addMetaSubSystem(mainCartoonySystem, "Cartoony")
 
-        axis = self.mainCtrls[0].primaryAxis.upper()
+        bend = self.bendAxis.upper()
+        roll = self.rollAxis.upper()
+        twist = self.twistAxis.upper()
         for i in range(len(self.jointSystem) - int(bool(self.evaluateLastJoint))):
             cartoonySystem = core.CartoonySystem(side=self.side, part="{0}Toon".format(self.mainCtrls[i].part))
             mainCartoonySystem.addMetaSubSystem(cartoonySystem, "Cartoony{0}".format(self.mainCtrls[i].part))
@@ -172,9 +186,9 @@ class Rig(core.TransSubSystem):
             self.mainCtrls[i].addFloatAttr("elasticity", 50, -50)
             cartoonySystem.connectDisable(self.mainCtrls[i].pynode.disable)
             cartoonySystem.connectElasticity(self.mainCtrls[i].pynode.elasticity)
-            cartoonySystem.connectTrigger(self.mainCtrls[i].pynode.attr("scale%s" % axis[0]))
-            cartoonySystem.connectOutput(self.jointSystem.joints[i].pynode.attr("scale%s" % axis[1]))
-            cartoonySystem.connectOutput(self.jointSystem.joints[i].pynode.attr("scale%s" % axis[2]))
+            cartoonySystem.connectTrigger(self.mainCtrls[i].pynode.attr("scale%s" % twist))
+            cartoonySystem.connectOutput(self.jointSystem.joints[i].pynode.attr("scale%s" % roll))
+            cartoonySystem.connectOutput(self.jointSystem.joints[i].pynode.attr("scale%s" % bend))
 
         if self.systemType:
             mainCartoonySystem.convertSystemToSubSystem(self.systemType)
@@ -188,7 +202,9 @@ class Rig(core.TransSubSystem):
 
     def buildSkinJoints(self):
         # Build the skin system
-        self.skinJointSystem = self.jointSystem.replicate(side=self.side, part="%sSkinJoints" % self.part, supportType="Skin")
+        self.skinJointSystem = self.jointSystem.replicate(side=self.side,
+                                                          part="%sSkinJoints".format(self.part),
+                                                          supportType="Skin")
 
         # Connect joints
         for skinJoint, finalJoint in zip(self.skinJointSystem, self.jointSystem):
@@ -273,13 +289,13 @@ class Ik(Rig):
         super(Ik, self).__init__(*args, **kwargs)
         if self._build_mode:
             self.ikControlToWorld = kwargs.get("ikControlToWorld", False)
+        self.mirrorBehaviour = kwargs.get("mirrorBehaviour", False)
 
     def addStretch(self):
         """TODO: Add stretch"""
         stretchSystem = core.StretchSystem(side=self.side, part="Stretch")
         stretchSystem.build()
         self.addMetaSubSystem(stretchSystem, "Stretch")
-
 
     @property
     def ikHandle(self):
@@ -406,7 +422,7 @@ class Fk(Generic):
 
             # Lock the elbow
             for position in self.lockCtrlPositions:
-                for attr in self.primaryAxis[:-1]:
+                for attr in self.bendAxis:
                     attrName = "rotate{0}".format(attr.upper())
                     self.mainCtrls[position].pynode.attr(attrName).set(lock=True, keyable=False, channelBox=False)
         else:

@@ -603,9 +603,9 @@ class SubControlSpine(IkSpine):
 
     @property
     def upVector(self):
-        return [int(self.primaryAxis[2] == "x"),
-                int(self.primaryAxis[2] == "y"),
-                int(self.primaryAxis[2] == "z")]
+        return [int(self.rollAxis == "x"),
+                int(self.rollAxis == "y"),
+                int(self.rollAxis == "z")]
 
     @property
     def ikSkin(self):
@@ -636,7 +636,6 @@ class SubControlSpine(IkSpine):
 class HumanSpine(SubControlSpine):
     def __init__(self, *args, **kwargs):
         super(HumanSpine, self).__init__(*args, **kwargs)
-        self.mirrorBehaviour = kwargs.get("mirrorBehaviour", False)
 
     def buildControl(self):
         super(HumanSpine, self).buildControl()
@@ -694,8 +693,9 @@ class HumanSpine(SubControlSpine):
         multiplyDivide.input2X = -1
 
         if self.mirrorBehaviour:
+            # This will add one extra MD. So just keep it for now
             self.mainCtrls[0].addCounterTwist()
-            self.mainCtrls[1].addCounterTwist()
+            self.mainCtrls[2].addCounterTwist()
 
         # Connect the top control to the twist
         self.mainCtrls[2].getTwistDriver(self.twistAxis) >> twistPlusMinus.pynode.input1D[0]
@@ -846,10 +846,10 @@ class ComplexSpine(SubControlSpine):
             return pmaHelp.pynode.input3D[currentConnect].attr("input3D%s" % axis.lower())
 
         # Skiplist
-        skipAxis = []
-        for axis in ["x", "y", "z"]:
-            if axis != self.primaryAxis[0]:
-                skipAxis.append(axis)
+        # skipAxis = [self.rollAxis, self.bendAxis]
+        # for axis in ["x", "y", "z"]:
+        #     if axis != self.primaryAxis[0]:
+        #         skipAxis.append(axis)
 
         # Iterate through the weightMap/Joints
         for weightMap, joint in zip(self.twistMap, range(len(self.jointSystem) - int(self.evaluateLastJointBool))):
