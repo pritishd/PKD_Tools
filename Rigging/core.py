@@ -870,7 +870,6 @@ class JointSystem(JointCollection):
         """Rebuild the joint data if it is orientated"""
         super(JointSystem, self).build()
         if self.mirrorMode != "None":
-            pm.duplicate(self.joints[0].pynode)
             libJoint.orient_joint(joint=self.joints[0].pynode,
                                   up=self.gimbalData["twist"],
                                   forward=self.gimbalData["roll"],
