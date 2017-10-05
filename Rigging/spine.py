@@ -823,9 +823,22 @@ class ComplexSpine(SubControlSpine):
         # Position based twist as that gives the best falloff so far
         numJoints = len(self.jointSystem) - int(self.evaluateLastJointBool) - int(self.lockHead) - int(self.lockTail)
         self.positionFallOff(numJoints, False)
+
         # Get the currentMap
         prenormalisedTwistMap = self.currentWeightMap
 
+        newRotate = prenormalisedTwistMap[0:1]
+        # Zeroout the eggect
+        newRotate[0] = libMath.redistribute_value(newRotate[0], -1)
+
+        for rotationMap in prenormalisedTwistMap[1:-1]:
+            rotationMap = libMath.redistribute_value(rotationMap, 0)
+            rotationMap = libMath.redistribute_value(rotationMap, -1)
+            newRotate.append(rotationMap)
+
+        newRotate.append(prenormalisedTwistMap[-1])
+
+        newRotate[-1] = libMath.redistribute_value(newRotate[-1], 0)
         # In case we want to lock the effect on the control like the tail start
         # Zero out the effect of the first ctrl on the last joint
         # prenormalisedTwistMap[0] = libMath.redistribute_value(prenormalisedTwistMap[0], -1)
@@ -833,7 +846,7 @@ class ComplexSpine(SubControlSpine):
         # prenormalisedTwistMap[-1] = libMath.redistribute_value(prenormalisedTwistMap[-1], 0)
 
         # Transpose the weight
-        self.prenormalisedTwistMap = libUtilities.transpose(prenormalisedTwistMap)
+        self.prenormalisedTwistMap = libUtilities.transpose(newRotate)
 
         # Normalise the weights
         normalisedTwist = []
@@ -871,7 +884,10 @@ class ComplexSpine(SubControlSpine):
         for weightMap, joint in zip(self.twistMap, range(len(self.jointSystem) - int(self.evaluateLastJointBool))):
             # Do not add weight
             for singleWeight, ctrl in zip(weightMap, self.mainCtrls):
-                if singleWeight != 0.0:
+                if singleWeight == 1:
+                    rotateDriver = ctrl.getRotateDriver(self.twistAxis)
+                    rotateDriver >> self.jointSystem.joints[joint].pynode.attr("rotate%s" % self.twistAxis.upper())
+                elif singleWeight != 0.0:
                     # Get the input PMA for the joint
                     rotateAverage = _get_joint_twist_average_(self.jointSystem.joints[joint], self.twistAxis)
 
