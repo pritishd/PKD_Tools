@@ -605,6 +605,14 @@ class SubControlSpine(IkSpine):
         # Disable the cycle check warning
         pm.cycleCheck(e=False)
 
+
+    def cleanUp(self):
+        super(SubControlSpine, self).cleanUp()
+        self.controlCurve.v = False
+        self.ikCurve.overrideEnabled = True
+        self.ikCurve.overrideDisplayType = 2
+
+
     @property
     def SubCtrls(self):
         return self.getChildren(asMeta=self.returnNodesAsMeta, walk=True, cAttrs=["SUP_SubCtrls"])
