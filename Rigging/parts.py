@@ -61,7 +61,7 @@ class Rig(core.TransSubSystem):
             cube.attr(self.bendAxis).set(180)
             libUtilities.freeze_rotation(cube)
 
-        cube.rotateOrder = self.rotateOrder
+        cube.rotateOrder.set(self.rotateOrder)
         # Snap the pivot of the cube to this cluster
 
         # Snap the cube to joint
