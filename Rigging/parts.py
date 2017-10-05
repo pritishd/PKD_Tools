@@ -155,8 +155,7 @@ class Rig(core.TransSubSystem):
             self.jointSystem.joints[0].pynode.setParent(self.pynode)
 
     def build(self):
-        pass
-        # self.snap(self.jointSystem.joints[0], rotate=False)
+        self.rotateOrder = self.jointSystem.rotateOrder
 
     def addStretch(self):
         for position, ctrl in enumerate(self.mainCtrls):

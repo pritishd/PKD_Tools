@@ -671,6 +671,7 @@ class JointCollection(Network):
             self.jointData = []
         self._jointDict = {}
         self._jointList = []
+        self._rotateOrder = None
 
     # @endcond
 
@@ -790,7 +791,9 @@ class JointCollection(Network):
 
     @property
     def rotateOrder(self):
-        return libJoint.get_rotate_order(self.gimbalData)
+        if not self._rotateOrder:
+            self._rotateOrder = libJoint.get_rotate_order(self.gimbalData)
+        return self._rotateOrder
 
     @property
     def mirrorMode(self):
@@ -849,7 +852,7 @@ class JointSystem(JointCollection):
             # Select the joint
             joint.pynode.select()
             # Create a joint
-            newJoint = pm.joint()
+            newJoint = pm.joint(rotationOrder=self.rotateOrder)
             # Set it to world space
             newJoint.setParent(w=1)
             # Read the new joint infomrmation
@@ -867,6 +870,7 @@ class JointSystem(JointCollection):
         """Rebuild the joint data if it is orientated"""
         super(JointSystem, self).build()
         if self.mirrorMode != "None":
+            pm.duplicate(self.joints[0].pynode)
             libJoint.orient_joint(joint=self.joints[0].pynode,
                                   up=self.gimbalData["twist"],
                                   forward=self.gimbalData["roll"],
@@ -942,7 +946,7 @@ class JointSystem(JointCollection):
         """Orient created meta joint based on the gimbal data
         @param metaJoint: (MetaJoint) the target joint
         """
-        metaJoint.rotateOrder = libJoint.get_rotate_order(self.gimbalData)
+        metaJoint.rotateOrder = self.rotateOrder
 
     def mirrorJoint(self, metaJoint):
         """

@@ -215,7 +215,7 @@ class IkSpine(parts.Ik):
     @property
     def mainCurve(self):
         if self.bSpline:
-            self.controlCurve
+            return self.controlCurve
         else:
             return self.ikCurve
 
