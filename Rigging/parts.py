@@ -202,7 +202,7 @@ class Rig(core.TransSubSystem):
     def buildSkinJoints(self):
         # Build the skin system
         self.skinJointSystem = self.jointSystem.replicate(side=self.side,
-                                                          part="%sSkinJoints".format(self.part),
+                                                          part="{}SkinJoints".format(self.part),
                                                           supportType="Skin")
 
         # Connect joints
@@ -321,6 +321,7 @@ class Generic(Rig):
         self.mainCtrlShape = "Circle"
         self.lockTranslation = False
         self.lockRotation = False
+        self.lockScale = False
         self.jointDriverSystem = None
 
     # A basic Type system
@@ -331,6 +332,12 @@ class Generic(Rig):
         for position, joint in enumerate(self.jointSystem.joints[0:self.evaluateLastJoint]):
             # Create and snap the control
             ctrlMeta = self.createCtrlObj(joint.part)
+            if self.lockTranslation:
+                ctrlMeta.lockTranslate()
+            if self.lockRotation:
+                ctrlMeta.lockRotate()
+            if self.lockScale:
+                ctrlMeta.lockScale()
             ctrlMeta.snap(joint.pynode)
             ctrls.append(ctrlMeta)
             if position and not self.isDeformable:
