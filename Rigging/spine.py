@@ -43,6 +43,8 @@ class IkSpine(parts.Ik):
         arcLenMeta.resetName()
         self.stretchSystem.setInitialValue(arcLenMeta.pynode.arcLength.get())
         self.stretchSystem.connectTrigger(arcLenMeta.pynode.arcLength)
+
+        # Connect Stretch Joint
         self.connectStretchJoints()
 
         self.mainCtrls[0].addDivAttr("stretch", "strDiv")
@@ -53,7 +55,8 @@ class IkSpine(parts.Ik):
 
     def connectStretchJoints(self):
         scaleAxis = "s{}".format(self.twistAxis.lower())
-        for joint in self.ikJointSystem.joints[:(-1 - int(self.evaluateLastJointBool))]:
+        joints = self.ikJointSystem.joints[1:(-1 - int(self.evaluateLastJointBool))]
+        for joint in joints:
             self.stretchSystem.connectOutput(joint.pynode.attr(scaleAxis))
 
     def buildSolver(self):
