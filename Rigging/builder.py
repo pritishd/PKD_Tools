@@ -8,6 +8,40 @@ from PKD_Tools.Rigging import core, gui
 # TODO: Use constrianedNode property to determine parents
 # TODO: We might need to override the side with our own alias eg {"C":None: "L": "AS" }
 
+class Info(object):
+    """
+    Api to deal with exportable/imported. This will have quick properties for faster access
+    """
+
+    def __init__(self, info):
+        self.info = info.copy()
+
+    @property
+    def jointData(self):
+        return self.info["Build"]["JointData"]
+
+    @property
+    def gimbalData(self):
+        return self.info["Build"]["GimbalData"]
+
+    @property
+    def side(self):
+        return self.info["Side"]
+
+    @property
+    def options(self):
+        return self.info["Options"].copy()
+
+    @property
+    def parent(self):
+        if self.info.has_key("Parent"):
+            return self.info["Parent"]
+
+    @property
+    def part(self):
+        return self.info["Part"]
+
+
 class AnnotatedLocator(core.SpaceLocator):
     def __init__(self, *args, **kwargs):
         if kwargs.has_key("part"):
@@ -24,9 +58,9 @@ class AnnotatedLocator(core.SpaceLocator):
     def build(self):
         # Create the annotation
         pm.select(clear=True)
-        locPosition = self.pynode.getTranslation(space="world")
+        locPosition = libUtilities.get_world_space_pos(self.pynode)
 
-        pm.select(clear=True)
+        pm.select(self.mNode)
         fakeJoint = pm.annotate(self.mNode, point=locPosition).getParent()
         fakeJoint.setParent(self.pynode)
         fakeJoint.v.set(False)
@@ -64,6 +98,14 @@ class AnnotatedLocator(core.SpaceLocator):
             # Match the position
             fakeJointMeta.snap(targetSystem, rotate=False)
             fakeJointMeta.v = True
+
+            # Connect attr
+            targetShapeAttr = self.pynode.getShape().worldMatrix[0]
+            fakeJointAttr = fakeJointMeta.pynode.getShape().dagObjectMatrix[0]
+
+            if self.pynode not in fakeJointAttr.listConnections():
+                targetShapeAttr >> fakeJointAttr
+
         else:
             print "Already parented to the right one"
             print "Target: {0}, FakeMeta: {1}".format(targetSystem.pynode, fakeJointMeta.pynode)
@@ -224,10 +266,36 @@ class Builder(core.MovableSystem):
         super(Builder, self).__init__(*args, **kwargs)
         self.jointWin = None
         self.options = {"symType": "sym", "mirror": "Orientation"}
+        self.importData = None
 
     def __bindData__(self, *args, **kwargs):
         super(Builder, self).__bindData__(*args, **kwargs)
         self.addAttr("options", {})
+
+    def rebuild(self):
+        info = self.importData
+        # Create the Build system
+        builderJointsSystem = BuilderJointSystem(part=info.part, side=info.side, endSuffix="BuildSys")
+        builderJointsSystem.jointData = info.jointData
+        builderJointsSystem.gimbalData = info.gimbalData
+        builderJointsSystem.build()
+
+
+        for i, loc in enumerate(builderJointsSystem.joints):
+            pm.select(cl=True)
+            loc.build()
+            loc.pynode.setParent(self.pynode)
+            if i:
+                loc.setJointParent(builderJointsSystem.joints[i - 1])
+        self.options = info.options
+
+
+        # Build the joint system
+        self.builderJointSystem = builderJointsSystem
+        self.buildJointSystem()
+        self.jointSystem.joints[0].v = False
+
+        return info
 
     def buildTemplate(self):
         builderJointsSystem = BuilderJointSystem(part=self.part, side=self.side, endSuffix="BuildSys")
@@ -237,15 +305,20 @@ class Builder(core.MovableSystem):
 
         self.builderJointSystem = builderJointsSystem
 
+    def buildJointSystem(self):
+        if not self.builderJointSystem:
+            raise ValueError("No build system defined. Cannot make a joint system")
+        newJointSystem = core.JointSystem(part=self.part, side=self.side, endSuffix="JntSys")
+        newJointSystem.jointData = self.builderJointSystem.jointData
+        newJointSystem.gimbalData = self.builderJointSystem.gimbalData
+        newJointSystem.build()
+        newJointSystem.joints[0].setParent(self)
+        self.jointSystem = newJointSystem
+
     def loc2joint(self):
         self.builderJointSystem.updatePositionData()
         if not self.jointSystem:
-            newJointSystem = core.JointSystem(part=self.part, side=self.side, endSuffix="JntSys")
-            newJointSystem.jointData = self.builderJointSystem.jointData
-            newJointSystem.gimbalData = self.builderJointSystem.gimbalData
-            newJointSystem.build()
-            newJointSystem.joints[0].setParent(self)
-            self.jointSystem = newJointSystem
+            self.buildJointSystem()
         else:
             if self.builderJointSystem.jointData != self.jointSystem.jointData:
                 self.jointSystem.jointData = self.builderJointSystem.jointData
@@ -294,7 +367,7 @@ class Builder(core.MovableSystem):
 
     @property
     def templateNames(self):
-        return ["{}0".self.part, "{}1".self.part]
+        return ["{}0".format(self.part), "{}1".format(self.part)]
 
     @property
     def jointSystem(self):
@@ -321,7 +394,7 @@ class Builder(core.MovableSystem):
         """
         @return: Exportable build data
         """
-        info = {"Build": self.builderJointSystem.buildData}
+        info = {"Part": self.part, "Build": self.builderJointSystem.buildData}
         if self.prnt:
             info["Parent"] = self.prnt.part
         position = round(info["Build"]["JointData"][0]["Position"][0], 3)
@@ -332,11 +405,12 @@ class Builder(core.MovableSystem):
             side = "R"
         info["Side"] = side
         info["Options"] = self.options
-        return {self.part: info}
+        return info
 
 
 class Extendable(Builder):
     jointCount = 2
+
     @property
     def templateNames(self):
         width = 1
@@ -361,6 +435,7 @@ APPENDAGE = {"Hoof": ["Hoof", "HoofEnd"],
 
 class LimbBuilder(Builder):
     appendage = ""
+
     @property
     def appendName(self):
         if APPENDAGE.has_key(self.appendage):
@@ -378,6 +453,25 @@ class QuadBuilder(LimbBuilder):
     def templateNames(self):
         return ["FemurUpper"] + super(QuadBuilder, self).templateNames
 
+
+def buildTemplates(templateData):
+    builderDict = {}
+    for info in templateData:
+        info = Info(info)
+        builder = Builder(part=info.part, side=info.side)
+        builder.importData = info
+        builder.rebuild()
+        builderDict[info.part] = builder
+
+    for builder in builderDict.values():
+        if builder.importData.parent:
+            if pm.objExists(builder.importData.parent):
+                metaLoc = core.MetaRig(builder.importData.parent)
+                builder.setBuildParent(metaLoc)
+    return builderDict
+
+
+core.Red9_Meta.registerMClassInheritanceMapping()
 
 if __name__ == '__main__':
     pm.newFile(f=1)
