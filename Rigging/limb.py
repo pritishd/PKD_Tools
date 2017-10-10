@@ -108,7 +108,7 @@ class LimbIk(parts.Ik):
 
             # Delete the polevector
             pm.delete(self.ikHandle.mNode, cn=1)
-            self.ikHandle.poleVector = default_pole_vector
+            self.ikHandle.pynode.poleVector.set(default_pole_vector)
 
             # Find the twist value so it goes back to zero
             from PKD_Tools.Rigging import nilsNoFlipIK
