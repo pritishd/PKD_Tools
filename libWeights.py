@@ -143,7 +143,7 @@ class Weights(object):
     def _get_file_(self):
         # Return the name of data json file that is linked to the geo
         if not self._file_:
-            self._file_ = self.target + ".json"
+            self._file_ = self.target.split(":")[-1] + ".json"
         return self._file_
 
     def _set_file_(self, fileName):
