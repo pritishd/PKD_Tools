@@ -1158,15 +1158,15 @@ class Ctrl(MovableSystem):
     def addPivot(self):
         """Add animatable pivot to a control. Most useful in a @ref limb.Foot setup"""
         # @cond DOXYGEN_SHOULD_SKIP_THIS
-        self.pivot = MovableSystem(name=utils.nameMe(self.side, self.part, "Pivot"), nodeType="transform")
+        self.pivot = Ctrl(name=utils.nameMe(self.side, self.part, "Pivot"),
+                          nodeType="transform", createXtra=False)
+        self.pivot.ctrlShape = "Locator"
         self.pivot.part = self.part
         self.pivot.rigType = "pivot"
+        self.pivot.build()
         self.pivot.pynode.setParent(self.mNode)
+        self.pivot.prnt.delete()
         # Set the shape
-        tempCtrlShape = utils.buildCtrlShape("Locator")
-        libUtilities.transfer_shape(tempCtrlShape, self.pivot.pynode)
-        libUtilities.fix_shape_name(self.pivot.pynode)
-        pm.delete(tempCtrlShape)
         # Snap ctrl
         libUtilities.snap(self.pivot.mNode, self.mNode)
 
@@ -1354,12 +1354,12 @@ class Ctrl(MovableSystem):
 
     @property
     def pivot(self):
-        data = self.getSupportNode("Pivot")
+        data = self.getRigCtrl("Pivot")
         return data
 
     @pivot.setter
     def pivot(self, data):
-        self.addSupportNode(data, "Pivot")
+        self.addRigCtrl(data, "Pivot")
 
     @property
     def hasPivot(self):
