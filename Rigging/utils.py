@@ -169,6 +169,30 @@ def recalculatePosition(currentPositions, newNumberPositions, degree=2):
     pm.delete(crv)
     return newPositions
 
+def getCVInfo(allCtrls):
+    """Generate a dictionary of Control and it's CV positions
+    @param allCtrls: The current list of controls
+    @return: dictionary of ctrl name and their position
+    """
+    ctrlInfo = {}
+    for ctrl in allCtrls:
+        ctrl = pm.PyNode(ctrl)
+        cvPos = [list(cv) for cv in ctrl.getCVs()]
+        ctrlInfo[ctrl.name()] = cvPos
+    return ctrlInfo
+
+
+def setCVInfo(ctrlInfo):
+    """Restore CV shapes based on the list of name and position dictionary
+    @param ctrlInfo: list of dictionary with name of the node and positions of
+        CVs
+    """
+    for ctrl in ctrlInfo:
+        if pm.objExists(ctrl):
+            ctrl = pm.PyNode(ctrl)
+            for i, cvInfo in enumerate(CVs):
+                pm.xform(ctrl.cv[i], translate=cvInfo, objectSpace=True)
+
 
 if __name__ == '__main__':
     pass
