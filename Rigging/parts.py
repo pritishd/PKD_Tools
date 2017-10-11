@@ -282,6 +282,10 @@ class Rig(core.TransSubSystem):
     def bendAxis(self):
         return self.jointSystem.gimbalData["bend"].upper()
 
+    @property
+    def parenterJointSystem(self):
+        return self.jointSystem
+
 
 class Ik(Rig):
     def __init__(self, *args, **kwargs):

@@ -3,6 +3,7 @@
 @brief Module which creates the three spine setup
 """
 
+import operator
 import pymel.core as pm
 
 from PKD_Tools import libUtilities, libVector, libMath
@@ -656,6 +657,41 @@ class HumanSpine(SubControlSpine):
     def __init__(self, *args, **kwargs):
         super(HumanSpine, self).__init__(*args, **kwargs)
 
+    def build(self):
+        super(HumanSpine, self).build()
+        output_window("Locking {} Start and End Joints".format(self.part))
+        self.lockTailHead()
+
+    def lockTailHead(self):
+        firstLastGetter = operator.itemgetter(0, -1)
+        jointData = firstLastGetter(self.jointSystem.jointData)
+        originalNames = []
+        for data in jointData:
+            originalNames.append(data["Name"])
+            data["Name"] = "{}Help".format(data["Name"])
+        helper = core.JointSystem(side=self.side, part="HelperJoints")
+        helper.jointData = jointData
+        helper.gimbalData = self.jointSystem.gimbalData
+        helper.build()
+
+        # Align and orient constraints to the control
+        for helpJoint, joint, ctrl in zip(helper.joints, firstLastGetter(self.jointSystem.joints),
+                                          firstLastGetter(self.mainCtrls)):
+            helpJoint.snap(joint)
+            helpJoint.setParent(joint)
+            skipAxis = [self.twistAxis.lower()]
+            helpJoint.addConstraint(ctrl.parentDriver, "orient", mo=True, skip=skipAxis)
+
+        # Fix the name
+        helpJoints = helper.joints
+        for name, joint in zip(originalNames, helpJoints):
+            joint.rigType = "HelpJoint"
+            joint.part = name
+            joint.resetName()
+
+        helper.joints = [helpJoints[0]] + self.jointSystem.joints[1:-1] + [helpJoints[-1]]
+        self.helpJointSystem = helper
+
     def buildControl(self):
         super(HumanSpine, self).buildControl()
         self.buildMainControls()
@@ -758,6 +794,10 @@ class HumanSpine(SubControlSpine):
     def numHighLevelCtrls(self):
         # Make it in a read only attibute
         return 3
+
+    @property
+    def parenterJointSystem(self):
+        return self.helpJointSystem
 
 
 class ComplexSpine(SubControlSpine):
