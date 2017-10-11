@@ -1308,6 +1308,48 @@ class Ctrl(MovableSystem):
             attr = "output3D"
         return pynode.attr("{0}{1}".format(attr, axis.lower()))
 
+    def clusterShape(self, shapeCentric=True):
+        cluster = pm.cluster(self.pynode)[1]
+        transform = pm.createNode("transform", name="tempTransform")
+        transform.rotateOrder.set(self.rotateOrder)
+        translateSnap = True
+        if shapeCentric:
+            libUtilities.snap(transform, cluster, rotate=False)
+            translateSnap = False
+        libUtilities.snap(transform, self.pynode, translate=translateSnap)
+        cluster.setParent(transform)
+        prnt = libUtilities.parZero(transform)
+        prnt.rotateOrder.set(self.rotateOrder)
+        return transform
+
+    def cleanShapeHistory(self, transform=None):
+        pm.delete(self.pynode, constructionHistory=True)
+        if transform:
+            pm.delete(transform.getParent())
+
+    def scaleShape(self, scaleAmount, shapeCentric=True):
+        cluster = self.clusterShape(shapeCentric)
+        cluster.scale.set([scaleAmount, scaleAmount, scaleAmount])
+        self.cleanShapeHistory(cluster)
+
+    def twistShape(self, degrees, shapeCentric=True):
+        cluster = self.clusterShape(shapeCentric)
+        gimbal_data = libJoint.get_gimbal_data(self.primaryAxis)
+        cluster.attr("r{}".format(gimbal_data["twist"])).set(degrees)
+        self.cleanShapeHistory(cluster)
+
+    def rollShape(self, degrees, shapeCentric=True):
+        cluster = self.clusterShape(shapeCentric)
+        gimbal_data = libJoint.get_gimbal_data(self.primaryAxis)
+        cluster.attr("r{}".format(gimbal_data["roll"])).set(degrees)
+        self.cleanShapeHistory(cluster)
+
+    def bendShape(self, degrees, shapeCentric=True):
+        cluster = self.clusterShape(shapeCentric)
+        gimbal_data = libJoint.get_gimbal_data(self.primaryAxis)
+        cluster.attr("r{}".format(gimbal_data["bend"])).set(degrees)
+        self.cleanShapeHistory(cluster)
+
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     @property
     def createdNodes(self):
@@ -1425,12 +1467,11 @@ class MyCameraMeta(Red9_Meta.MetaClass, MetaEnhanced):
 
 # noinspection PyStatementEffect
 class StretchSystem(Network):
-
     def build(self):
-
         supportNodes = dict()
         # Create the initialiser
-        triggerCondition = MetaRig(part=self.part, side=self.side, endSuffix="TriggerCondition", nodeType="multiplyDivide")
+        triggerCondition = MetaRig(part=self.part, side=self.side, endSuffix="TriggerCondition",
+                                   nodeType="multiplyDivide")
         triggerCondition.operation = 2
         supportNodes["Trigger"] = triggerCondition
 
@@ -1489,7 +1530,7 @@ class StretchSystem(Network):
         return self.getSupportNode("Trigger")
 
     @property
-    def factor (self):
+    def factor(self):
         return self.getSupportNode("Factor")
 
     @property
