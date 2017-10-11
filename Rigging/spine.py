@@ -544,7 +544,7 @@ class SubControlSpine(IkSpine):
         for i in range(self.ikDriveCurve.numCVs()):
             ikCV = self.ikCurve.pynode.cv[i]
             # Set the subpart name
-            SubPart = "Sub%i" % i
+            SubPart = "{}Sub{}".format(self.part, i)
             # Get the CV position
             joint = self.jointSystem.joints[i].pynode
             npc.inPosition.set(libUtilities.get_world_space_pos(joint))
