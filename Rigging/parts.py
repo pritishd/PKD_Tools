@@ -271,6 +271,10 @@ class Rig(core.TransSubSystem):
         raise RuntimeError("Cannot be set at this {0} object level".format(self.__class__.__name__))
 
     @property
+    def allCtrls(self):
+        return self.mainCtrls
+
+    @property
     def twistAxis(self):
         return self.jointSystem.gimbalData["twist"].upper()
 

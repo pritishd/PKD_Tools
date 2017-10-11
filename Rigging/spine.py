@@ -207,7 +207,6 @@ class IkSpine(parts.Ik):
         if not ctrlList:
             raise RuntimeError("Please input a list of meta Ctrls")
         self.connectChildren(ctrlList, "MainCtrls", allowIncest=True, cleanCurrent=True)
-
     @property
     def helpJointSystem(self):
         return self.getSupportNode("HelpJointSystem")
@@ -626,6 +625,10 @@ class SubControlSpine(IkSpine):
         if ctrlList is None:
             return
         self.connectChildren(ctrlList, "SubCtrls", allowIncest=True, cleanCurrent=True)
+
+    @property
+    def allCtrls(self):
+        return self.mainCtrls + (self.SubCtrls or [])
 
     @property
     def ikSkin(self):

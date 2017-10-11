@@ -197,6 +197,10 @@ class LimbIk(parts.Ik):
         # TODO: Pass the slot number before and axis data
         self.addRigCtrl(data, ctrType="MainIK", mirrorData=self.mirrorData)
 
+    @property
+    def allCtrls(self):
+        return [ctrl for ctrl in self.getChildren(asMeta=True) or [] if isinstance(ctrl, core.Ctrl)]
+
 
 class Arm(LimbIk):
     """This is base IK System. with a three joint"""
