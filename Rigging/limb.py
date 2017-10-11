@@ -125,6 +125,8 @@ class LimbIk(parts.Ik):
 
         pm.poleVectorConstraint(self.pv.mNode, self.ikHandle.mNode, weight=1)
         self.ikHandle.twist = pvTwist
+        self.pv.lockRotate()
+        self.pv.lockScale()
 
     def alignControl(self):
         self.mainIK.snap(self.jointSystem.joints[self.endJointNumber].mNode, not self.ikControlToWorld)
@@ -232,6 +234,7 @@ class Hip(Arm):
         hipCtrl = core.Ctrl(part=self.jointSystem.joints[0].part, side=self.side)
         hipCtrl.ctrlShape = "Circle"
         hipCtrl.build()
+        hipCtrl.lockScale()
         hipCtrl.addGimbalMode()
         if self.hasParentMaster:
             hipCtrl.addParentMaster()
@@ -255,7 +258,7 @@ class Hip(Arm):
         second_joint_position = list(
             self.jointSystem.joints[self.startJointNumber + 1].pynode.getTranslation(space="world"))
         default_pole_vector = libVector.vector(list(self.ikHandle.poleVector))
-        aimPosition = (default_pole_vector * [30, 30, 30]) + libVector.vector(second_joint_position)
+        aimPosition = (default_pole_vector * [150, 150, 150]) + libVector.vector(second_joint_position)
         upVector = core.MovableSystem(part=firstJoint.part, side=self.side, endSuffix="UpVector")
         upVector.pynode.setTranslation(aimPosition)
         self.aimHelper.addSupportNode(upVector, "UpVector")
@@ -265,13 +268,13 @@ class Hip(Arm):
         pm.aimConstraint(self.mainIK.pynode, self.aimHelper.pynode, mo=1, wut="object", wuo=upVector.mNode)
 
         # Orient Constraint the Hip Constraint
-        ikJoint = core.Joint(part=self.part, side=self.side, endSuffix="HipIkJnt")
+        ikJoint = core.Joint(part=self.part, side=self.side, endSuffix="HipIkFollow")
         ikJoint.v = False
         ikJoint.rotateOrder = self.rotateOrder
         ikJoint.setParent(self.jointSystem.joints[0])
         ikJoint.snap(self.jointSystem.joints[0])
         libUtilities.freeze_rotation(ikJoint.pynode)
-        ikJoint.setParent(self.mainIK)
+        ikJoint.setParent(self.aimHelper)
         hipCtrl.addConstraint(ikJoint.pynode, "orient", mo=True, weightAlias="IK")
         hipCtrl.orientConstraint.pynode.w0.set(0)
         # Create a base joint
