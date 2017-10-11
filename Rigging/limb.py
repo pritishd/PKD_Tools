@@ -131,6 +131,7 @@ class LimbIk(parts.Ik):
 
     def buildControl(self):
         self.mainIK = self.createCtrlObj(self.part)
+        self.mainIK.lockScale()
         self.alignControl()
         self.mainIK.addChild(self.ikHandle.SUP_Prnt.pynode)
 
@@ -260,18 +261,26 @@ class Hip(Arm):
         pm.aimConstraint(self.mainIK.pynode, self.aimHelper.pynode, mo=1, wut="object", wuo=upVector.mNode)
 
         # Orient Constraint the Hip Constraint
-        hipCtrl.addConstraint(self.aimHelper.pynode, "orient", weightAlias="IK")
-
+        ikJoint = core.Joint(part=self.part, side=self.side, endSuffix="HipIkJnt")
+        ikJoint.v = False
+        ikJoint.rotateOrder = self.rotateOrder
+        ikJoint.setParent(self.jointSystem.joints[0])
+        ikJoint.snap(self.jointSystem.joints[0])
+        libUtilities.freeze_rotation(ikJoint.pynode)
+        ikJoint.setParent(self.mainIK)
+        hipCtrl.addConstraint(ikJoint.pynode, "orient", mo=True, weightAlias="IK")
+        hipCtrl.orientConstraint.pynode.w0.set(0)
         # Create a base joint
+
         homeJoint = core.Joint(part=self.part, side=self.side, endSuffix="HomeJnt")
         homeJoint.v = False
         homeJoint.rotateOrder = self.rotateOrder
-        homeJoint.setParent(self)
+        homeJoint.setParent(self.jointSystem.joints[0])
         homeJoint.snap(self.jointSystem.joints[0])
         libUtilities.freeze_rotation(homeJoint.pynode)
+        homeJoint.setParent(self)
         # Add another contraint
         hipCtrl.addConstraint(homeJoint, "orient", mo=True, weightAlias=self.part)
-
 
         # Blend between the two constraint
         self.inverse = core.MetaRig(side=self.side, part=self.part, endSuffix="Inverse", nodeType="reverse")
