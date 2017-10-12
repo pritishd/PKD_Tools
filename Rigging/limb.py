@@ -757,7 +757,7 @@ class Paw(Foot):
         self.ikHandle.setParent(ankleRoll)
 
         # Connect to the attributes to the rolls
-        self.mainIK.pynode.Ankle >> ankleRoll.pynode.attr("r%s" % self.bendAxis.upper())
+        self.mainIK.pynode.Ankle >> ankleRoll.pynode.attr("rotate%s" % self.bendAxis)
 
     @property
     def ankleIKHandle(self):
