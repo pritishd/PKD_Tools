@@ -177,8 +177,7 @@ def getCVInfo(allCtrls):
     ctrlInfo = {}
     for ctrl in allCtrls:
         ctrl = pm.PyNode(ctrl)
-        cvPos = [list(cv) for cv in ctrl.getCVs()]
-        ctrlInfo[ctrl.name()] = cvPos
+        ctrlInfo[ctrl.name()] = [list(cv) for cv in ctrl.getCVs(space="object")]
     return ctrlInfo
 
 
@@ -189,9 +188,11 @@ def setCVInfo(ctrlInfo):
     """
     for ctrl in ctrlInfo:
         if pm.objExists(ctrl):
+            CVs = ctrlInfo[ctrl]
             ctrl = pm.PyNode(ctrl)
-            for i, cvInfo in enumerate(CVs):
-                pm.xform(ctrl.cv[i], translate=cvInfo, objectSpace=True)
+            ctrl.setCVs(CVs, space="object")
+            pm.cluster(ctrl)
+            pm.delete(ctrl, constructionHistory = True)
 
 
 if __name__ == '__main__':
