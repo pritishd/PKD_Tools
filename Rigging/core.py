@@ -648,7 +648,7 @@ class Joint(MovableSystem):
 class SkinJoint(Joint):
     @property
     def trueName(self):
-        return "{0}_{1}".format(self.part, self.side)
+        return "{0}_{1}".format(self.pynode.mirrorSide.get(asString=True)[0], self.part)
 
 
 # noinspection PyMissingOrEmptyDocstring
@@ -916,8 +916,9 @@ class JointSystem(JointCollection):
                 # Copy the joint data
                 joint_data = self.jointData[startPosition:endPosition]
                 # Add the suffix to the name for support type
-                for jointInfo in joint_data:
-                    jointInfo["Name"] = jointInfo["Name"] + kwargs["supportType"]
+                if supportType != "Skin":
+                    for jointInfo in joint_data:
+                        jointInfo["Name"] = jointInfo["Name"] + kwargs["supportType"]
                 # Set the joint data
                 replicateJointSystem.jointData = joint_data
             else:
@@ -969,6 +970,7 @@ class SkinJointSystem(JointSystem):
         for joint in self.joints:
             joint.resetName()
 
+    @property
     def jointClass(self):
         return SkinJoint
 
