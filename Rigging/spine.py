@@ -628,7 +628,7 @@ class SubControlSpine(IkSpine):
 
     @property
     def allCtrls(self):
-        return self.mainCtrls + (self.SubCtrls or [])
+        return self.getChildren(asMeta=True, walk=True, cAttrs=["MainCtrls", '%s_*' % self.CTRL_Prefix, "SUP_SubCtrls"])
 
     @property
     def ikSkin(self):

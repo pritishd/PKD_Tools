@@ -413,6 +413,10 @@ class Generic(Rig):
         self.connectChildren(ctrlList, "MainCtrls", allowIncest=True, cleanCurrent=True)
 
     @property
+    def allCtrls(self):
+        return self.getChildren(asMeta=True, walk=True, cAttrs=["MainCtrls", '%s_*' % self.CTRL_Prefix])
+
+    @property
     def offsetJointSystem(self):
         return self.getSupportNode("OffsetJointSystem")
 
