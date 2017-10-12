@@ -468,13 +468,23 @@ class MovableSystem(MetaRig):
         else:
             libUtilities.logger.error("{0} is not a transform/joint node. Unable to parent".format(self.pynode))
 
+    def buildParent(self, parentSystem, part, side, endSuffix):
+        self.prnt = parentSystem(part=part, side=side, endSuffix=endSuffix)
+        self.prnt.rotateOrder = self.rotateOrder
+
     def addParent(self, **kwargs):
         """Add parent node for the transform node"""
+        pm.select(clear=True)
         snap = kwargs.get("snap", True)
         endSuffix = kwargs.get("endSuffix", "Prnt")
-        if not (self.part and self.side):
+        side = self.pynode.mirrorSide.get(asString=True)[0]
+        if not (self.part and side):
             raise ValueError("Part or Side is not defined: %s" % self.shortName())
-        self.prnt = MovableSystem(part=self.part, side=self.side, endSuffix=endSuffix)
+        parentSystem = kwargs.get("parentSystem", MovableSystem)
+        self.buildParent(parentSystem=parentSystem,
+                         part=self.part,
+                         side=side,
+                         endSuffix=endSuffix)
         if snap:
             libUtilities.snap(self.prnt.pynode, self.pynode)
         self.pynode.setParent(self.prnt.pynode)
@@ -643,6 +653,12 @@ class Joint(MovableSystem):
             # self.pynode.drawLabel.set(True)
             # self.pynode.otherType.set(self.part)
             #
+
+    def buildParent(self, parentSystem, part, side, endSuffix):
+        """Add parent node for the joint node. If the parent is a joint, then set the joint orient"""
+        super(Joint, self).buildParent(parentSystem, part, side, endSuffix)
+        if isinstance(self.prnt, Joint):
+            self.prnt.jointOrient = self.jointOrient
 
     def setParent(self, targetSystem):
         """
