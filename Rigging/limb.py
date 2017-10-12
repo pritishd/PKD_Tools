@@ -243,13 +243,14 @@ class Hip(Arm):
         self.hipIKHandle.SUP_Prnt.setParent(hipCtrl.parentDriver)
         # Create a helper joint
         pm.select(cl=1)
-        self.aimHelper = core.Joint(part=firstJoint.part, side=self.side, endSuffix="AimHelper")
+        self.aimHelper = core.MovableSystem(part=firstJoint.part, side=self.side, endSuffix="AimHelper")
+        # self.aimHelper.jointOrient = firstJoint.jointOrient
+        self.aimHelper.rotateOrder = firstJoint.rotateOrder
         # Align with the first joint
         self.aimHelper.snap(firstJoint.pynode)
 
         # Freeze the rotation on joint
         # self.aimHelper.pynode.jointOrient.set(firstJoint.pynode.jointOrient.get())
-        self.aimHelper.jointOrient = firstJoint.jointOrient
         # New upVector
         second_joint_position = list(
             self.jointSystem.joints[self.startJointNumber + 1].pynode.getTranslation(space="world"))
@@ -258,10 +259,17 @@ class Hip(Arm):
         upVector = core.MovableSystem(part=firstJoint.part, side=self.side, endSuffix="UpVector")
         upVector.pynode.setTranslation(aimPosition)
         self.aimHelper.addSupportNode(upVector, "UpVector")
-        self.aimHelper.v = False
 
         # Aim Constraint at mainIk Handle
-        pm.aimConstraint(self.mainIK.pynode, self.aimHelper.pynode, mo=1, wut="object", wuo=upVector.mNode)
+
+        aimConArgs = [self.mainIK.pynode, self.aimHelper.pynode]
+        aimConKwgs = {"mo": False, "wut": "object", "wuo": upVector.mNode}
+        aimCon = pm.aimConstraint(*aimConArgs, **aimConKwgs)
+        self.aimHelper.addParent(endSuffix="AimHelperPrnt")
+        #pm.delete(aimCon)
+        #aimConArgs[1] = self.aimHelper.pynode
+        #pm.aimConstraint(*aimConArgs, **aimConKwgs)
+        self.aimHelper.prnt.v = False
 
         # Orient Constraint the Hip Constraint
         ikJoint = core.Joint(part=self.part, side=self.side, endSuffix="HipIkFollow")
@@ -289,7 +297,7 @@ class Hip(Arm):
         self.inverse = core.MetaRig(side=self.side, part=self.part, endSuffix="Inverse", nodeType="reverse")
 
         # Attribute based on the system type
-        libUtilities.addDivAttr(hipCtrl.pynode,"SpaceSwitch")
+        libUtilities.addDivAttr(hipCtrl.pynode, "SpaceSwitch")
         attrName = "IK_Parent"
         libUtilities.addFloatAttr(hipCtrl.pynode, attrName)
         blendAttr = hipCtrl.pynode.attr(attrName)
@@ -833,7 +841,7 @@ if __name__ == '__main__':
     pm.newFile(f=1)
     mainSystem = parts.Blender(side="C", part="Core")
 
-    ikSystem = ArmHand(side="C", part="Core")
+    ikSystem = HipHoof(side="C", part="Core")
     system = "IK"
     mainSystem.addMetaSubSystem(ikSystem, system)
     # ikSystem.ikControlToWorld = True
@@ -841,17 +849,17 @@ if __name__ == '__main__':
     ikSystem.convertSystemToSubSystem(system)
     pm.refresh()
 
-    fkSystem = parts.FK(side="C", part="Core")
-    mainSystem.addMetaSubSystem(fkSystem, "FK")
-    fkJointSystem = ikSystem.jointSystem.replicate(part=mainSystem.part, side=mainSystem.side)
-    fkJointSystem.part = ikSystem.jointSystem.part
-    fkJointSystem.rigType = ikSystem.jointSystem.rigType
-    fkSystem.evaluateLastJoint = False
-    fkSystem.testBuild(jointSystem=fkJointSystem, buildProxy=False, buildMaster=False)
-    fkSystem.convertSystemToSubSystem(fkSystem.systemType)
-    mainSystem.subSystems = "IK_FK"
-    pm.refresh()
-    mainSystem.build()
+    # fkSystem = parts.FK(side="C", part="Core")
+    # mainSystem.addMetaSubSystem(fkSystem, "FK")
+    # fkJointSystem = ikSystem.jointSystem.replicate(part=mainSystem.part, side=mainSystem.side)
+    # fkJointSystem.part = ikSystem.jointSystem.part
+    # fkJointSystem.rigType = ikSystem.jointSystem.rigType
+    # fkSystem.evaluateLastJoint = False
+    # fkSystem.testBuild(jointSystem=fkJointSystem, buildProxy=False, buildMaster=False)
+    # fkSystem.convertSystemToSubSystem(fkSystem.systemType)
+    # mainSystem.subSystems = "IK_FK"
+    # pm.refresh()
+    # mainSystem.build()
     # fkSystem = parts.FK(side="C", part="Core")
     # mainSystem.addMetaSubSystem(fkSystem, "FK")
     # core.JointSystem.replicate()
