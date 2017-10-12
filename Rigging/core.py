@@ -23,7 +23,9 @@ conform to naming standards in maya, pyside, Red9 and pymel """
 
 import traceback
 from collections import OrderedDict
-import pymel.core as pm
+
+from pymel import core as pm
+
 from PKD_Tools import libUtilities, libJoint
 from PKD_Tools.Red9 import Red9_Meta
 from PKD_Tools.Rigging import utils
@@ -542,6 +544,18 @@ class MovableSystem(MetaRig):
             else:
                 libUtilities.snap(self.pynode, target, rotate=rotate)
 
+    def lockTranslate(self):
+        """Lock all the translate channels"""
+        libUtilities.lock_translate(self.pynode)
+
+    def lockRotate(self):
+        """Lock all the rotate channels"""
+        libUtilities.lock_rotate(self.pynode)
+
+    def lockScale(self):
+        """Lock all the scale channels"""
+        libUtilities.lock_scale(self.pynode)
+
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     @property
     def constrainedNode(self):
@@ -1006,8 +1020,68 @@ class SpaceLocator(MovableSystem):
         self.snap(cv.name(), rotate=False)
         libUtilities.cheap_point_constraint(self.pynode, cv)
 
+class SimpleCtrl(MovableSystem):
+    """Meta rig to create a simple nurbs shape"""
+    def __init__(self, *args, **kwargs):
+        kwargs["endSuffix"] = "Ctrl"
+        super(SimpleCtrl, self).__init__(*args, **kwargs)
+        # Define the control shape
+        self.ctrlShape = kwargs.get("shape", "Ball")
+        # Define the mirrorside
+        self.mirrorData = {'side': self.mirrorSide, 'slot': 1}
+        # @endcond
 
-class Ctrl(MovableSystem):
+    def build(self):
+        """Get the preset shape and build the ctrl"""
+        tempCtrlShape = utils.buildCtrlShape(self.ctrlShape)
+        libUtilities.transfer_shape(tempCtrlShape, self.mNode)
+        libUtilities.fix_shape_name(self.pynode)
+        pm.delete(tempCtrlShape)
+
+    def clusterShape(self, shapeCentric=True):
+        cluster = pm.cluster(self.pynode)[1]
+        transform = pm.createNode("transform", name="tempTransform")
+        transform.rotateOrder.set(self.rotateOrder)
+        translateSnap = True
+        if shapeCentric:
+            libUtilities.snap(transform, cluster, rotate=False)
+            translateSnap = False
+        libUtilities.snap(transform, self.pynode, translate=translateSnap)
+        cluster.setParent(transform)
+        prnt = libUtilities.parZero(transform)
+        prnt.rotateOrder.set(self.rotateOrder)
+        return transform
+
+    def cleanShapeHistory(self, transform=None):
+        pm.delete(self.pynode, constructionHistory=True)
+        if transform:
+            pm.delete(transform.getParent())
+
+    def scaleShape(self, scaleAmount, shapeCentric=True):
+        cluster = self.clusterShape(shapeCentric)
+        cluster.scale.set([scaleAmount, scaleAmount, scaleAmount])
+        self.cleanShapeHistory(cluster)
+
+    def twistShape(self, degrees, shapeCentric=True):
+        cluster = self.clusterShape(shapeCentric)
+        gimbal_data = libJoint.get_gimbal_data(self.primaryAxis)
+        cluster.attr("r{}".format(gimbal_data["twist"])).set(degrees)
+        self.cleanShapeHistory(cluster)
+
+    def rollShape(self, degrees, shapeCentric=True):
+        cluster = self.clusterShape(shapeCentric)
+        gimbal_data = libJoint.get_gimbal_data(self.primaryAxis)
+        cluster.attr("r{}".format(gimbal_data["roll"])).set(degrees)
+        self.cleanShapeHistory(cluster)
+
+    def bendShape(self, degrees, shapeCentric=True):
+        cluster = self.clusterShape(shapeCentric)
+        gimbal_data = libJoint.get_gimbal_data(self.primaryAxis)
+        cluster.attr("r{}".format(gimbal_data["bend"])).set(degrees)
+        self.cleanShapeHistory(cluster)
+
+
+class Ctrl(SimpleCtrl):
     """The meta rig for a control system.
     @details A typical control will have the following setup
     <ul>
@@ -1022,15 +1096,10 @@ class Ctrl(MovableSystem):
 
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     def __init__(self, *args, **kwargs):
-        kwargs["endSuffix"] = "Ctrl"
         super(Ctrl, self).__init__(*args, **kwargs)
         self.createXtra = kwargs.get("createXtra", True)
-        # Define the control shape
-        self.ctrlShape = kwargs.get("shape", "Ball")
         # Whether this is parent master system
         self.hasParentMaster = kwargs.get("parentMaster", False)
-        # Set the mirror data
-        self.mirrorData = {'side': self.mirrorSide, 'slot': 1}
         # @endcond
 
     # noinspection PyPropertyAccess
@@ -1079,15 +1148,12 @@ class Ctrl(MovableSystem):
 
     def build(self):
         """The core command that creates the control based on the parameter defined in the init"""
+        super(Ctrl, self).build()
         # Create the xtra grp
         if self.createXtra:
             self.xtra = MovableSystem(part=self.part, side=self.side, endSuffix="Xtra")
         # Create the Parent
         self.prnt = MovableSystem(part=self.part, side=self.side, endSuffix="Prnt")
-        tempCtrlShape = utils.buildCtrlShape(self.ctrlShape)
-        libUtilities.transfer_shape(tempCtrlShape, self.mNode)
-        libUtilities.fix_shape_name(self.pynode)
-        pm.delete(tempCtrlShape)
         if self.createXtra:
             # Parent the ctrl to the xtra
             self.pynode.setParent(self.xtra.mNode)
@@ -1307,48 +1373,6 @@ class Ctrl(MovableSystem):
             pynode = pmaMeta.pynode
             attr = "output3D"
         return pynode.attr("{0}{1}".format(attr, axis.lower()))
-
-    def clusterShape(self, shapeCentric=True):
-        cluster = pm.cluster(self.pynode)[1]
-        transform = pm.createNode("transform", name="tempTransform")
-        transform.rotateOrder.set(self.rotateOrder)
-        translateSnap = True
-        if shapeCentric:
-            libUtilities.snap(transform, cluster, rotate=False)
-            translateSnap = False
-        libUtilities.snap(transform, self.pynode, translate=translateSnap)
-        cluster.setParent(transform)
-        prnt = libUtilities.parZero(transform)
-        prnt.rotateOrder.set(self.rotateOrder)
-        return transform
-
-    def cleanShapeHistory(self, transform=None):
-        pm.delete(self.pynode, constructionHistory=True)
-        if transform:
-            pm.delete(transform.getParent())
-
-    def scaleShape(self, scaleAmount, shapeCentric=True):
-        cluster = self.clusterShape(shapeCentric)
-        cluster.scale.set([scaleAmount, scaleAmount, scaleAmount])
-        self.cleanShapeHistory(cluster)
-
-    def twistShape(self, degrees, shapeCentric=True):
-        cluster = self.clusterShape(shapeCentric)
-        gimbal_data = libJoint.get_gimbal_data(self.primaryAxis)
-        cluster.attr("r{}".format(gimbal_data["twist"])).set(degrees)
-        self.cleanShapeHistory(cluster)
-
-    def rollShape(self, degrees, shapeCentric=True):
-        cluster = self.clusterShape(shapeCentric)
-        gimbal_data = libJoint.get_gimbal_data(self.primaryAxis)
-        cluster.attr("r{}".format(gimbal_data["roll"])).set(degrees)
-        self.cleanShapeHistory(cluster)
-
-    def bendShape(self, degrees, shapeCentric=True):
-        cluster = self.clusterShape(shapeCentric)
-        gimbal_data = libJoint.get_gimbal_data(self.primaryAxis)
-        cluster.attr("r{}".format(gimbal_data["bend"])).set(degrees)
-        self.cleanShapeHistory(cluster)
 
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     @property
