@@ -286,9 +286,7 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
         """
         children = self.getChildren(walk=True, asMeta=self.returnNodesAsMeta,
                                     cAttrs=["%s_%s" % (self.CTRL_Prefix, target)])
-        if not children:
-            libUtilities.logger.warn("%s ctrl not found on %s" % (target, self.shortName()))
-        else:
+        if children:
             return children[0]
 
     def addRigCtrl(self, target, *args, **kwargs):
@@ -1158,15 +1156,15 @@ class Ctrl(MovableSystem):
     def addPivot(self):
         """Add animatable pivot to a control. Most useful in a @ref limb.Foot setup"""
         # @cond DOXYGEN_SHOULD_SKIP_THIS
-        self.pivot = Ctrl(name=utils.nameMe(self.side, self.part, "Pivot"),
-                          nodeType="transform", createXtra=False)
-        self.pivot.ctrlShape = "Locator"
+        self.pivot = MovableSystem(name=utils.nameMe(self.side, self.part, "Pivot"), nodeType="transform")
         self.pivot.part = self.part
         self.pivot.rigType = "pivot"
-        self.pivot.build()
         self.pivot.pynode.setParent(self.mNode)
-        self.pivot.prnt.delete()
         # Set the shape
+        tempCtrlShape = utils.buildCtrlShape("Locator")
+        libUtilities.transfer_shape(tempCtrlShape, self.pivot.pynode)
+        libUtilities.fix_shape_name(self.pivot.pynode)
+        pm.delete(tempCtrlShape)
         # Snap ctrl
         libUtilities.snap(self.pivot.mNode, self.mNode)
 
@@ -1384,11 +1382,11 @@ class Ctrl(MovableSystem):
 
     @property
     def gimbal(self):
-        return self.getSupportNode("Gimbal")
+        return self.getRigCtrl("Gimbal")
 
     @gimbal.setter
     def gimbal(self, data):
-        self.addSupportNode(data, "Gimbal")
+        self.addRigCtrl(data, "Gimbal")
 
     @property
     def hasGimbal(self):
@@ -1405,7 +1403,7 @@ class Ctrl(MovableSystem):
 
     @property
     def hasPivot(self):
-        return self.getSupportNode("Pivot") is not None
+        return self.pivot is not None
 
     @property
     def locator(self):
@@ -1418,7 +1416,7 @@ class Ctrl(MovableSystem):
 
     @property
     def hasLocator(self):
-        return self.getSupportNode("Locator") is not None
+        return self.locator is not None
 
     @property
     def parentMasterPH(self):
