@@ -31,6 +31,12 @@ class IkSpine(parts.Ik):
     def buildDevSolver(self):
         self.buildSolver()
 
+    def connectScale(self, attr):
+        attr >> self.ctrlGrp.pynode.scale
+        attr >> self.jointGrp.pynode.scale
+        if self.stretchSystem:
+            self.stretchSystem.connectGlobalScale(attr)
+
     def addStretch(self):
         super(IkSpine, self).addStretch()
         """
@@ -148,13 +154,20 @@ class IkSpine(parts.Ik):
     def connectToControl(self):
         pass
 
-    def reparentIkJoint(self):
+    def reparentIkJoint(self, jointParent):
+        targetJoint = self.helpJointSystem.joints[0]
+        jointParent.snap(targetJoint)
+
         # Reparent the Joint
-        self.helpJointSystem.joints[0].setParent(self)
+        targetJoint.setParent(jointParent)
 
     def cleanUp(self):
+        # joint Grp
+        jointGrp = core.MovableSystem(side=self.side, part=self.part, endSuffix="JointGrp")
+        jointGrp.setParent(self)
+        self.jointGrp = jointGrp
         # Reparent the Joint
-        self.reparentIkJoint()
+        self.reparentIkJoint(jointGrp)
         # Reparent the two curve and ik Handle
         for crv in [self.ikCurve, self.controlCurve, self.ikHandle.prnt]:
             if crv:
@@ -162,12 +175,15 @@ class IkSpine(parts.Ik):
                 crv.setParent(self.infoGrp)
 
         # Create the control grp
-        if self.mainCtrls:
-            self.ctrlGrp = core.MovableSystem(side=self.side, part=self.part, endSuffix="MainCtrlGrp")
-            self.ctrlGrp.rotateOrder = self.rotateOrder
-            self.ctrlGrp.setParent(self)
-            for ctrl in self.mainCtrls:
-                ctrl.setParent(self.ctrlGrp)
+        mainCtrls = self.mainCtrls
+        if mainCtrls:
+            ctrlGrp = core.MovableSystem(side=self.side, part=self.part, endSuffix="MainCtrlGrp")
+            ctrlGrp.rotateOrder = self.rotateOrder
+            ctrlGrp.snap(mainCtrls[0])
+            ctrlGrp.setParent(self)
+            for ctrl in mainCtrls:
+                ctrl.setParent(ctrlGrp)
+            self.ctrlGrp = ctrlGrp
 
     @property
     def ikJointSystem(self):
@@ -221,6 +237,14 @@ class IkSpine(parts.Ik):
             return self.controlCurve
         else:
             return self.ikCurve
+
+    @property
+    def jointGrp(self ):
+        return self.getSupportNode("JointGrp")
+
+    @jointGrp.setter
+    def jointGrp(self, data):
+        self.addSupportNode(data, "HelpJointSystem")
 
 
 class SimpleSpine(IkSpine):
@@ -282,6 +306,9 @@ class SubControlSpine(IkSpine):
         # List of weights [CV][JOINT]
         self.fallOffMethod = kwargs.get("fallOffMethod", "Distance")
         self.currentWeightMap = []
+        self.lockHead = kwargs.get("lockHead", False)
+        self.lockTail = kwargs.get("lockTail", False)
+
 
     def __bindData__(self, *args, **kwgs):
         super(SubControlSpine, self).__bindData__(*args, **kwgs)
@@ -289,9 +316,11 @@ class SubControlSpine(IkSpine):
         self.addAttr("preNormalisedMap", "")
         self.addAttr("fallOffMethod", "")
 
-    def reparentIkJoint(self):
+    def reparentIkJoint(self, jointParent):
+        targetJoint = self.jointSystem.joints[0]
+        jointParent.snap(targetJoint)
         # Reparent the Joint
-        self.jointSystem.joints[0].setParent(self)
+        targetJoint.setParent(jointParent)
 
     def buildHelperJoints(self):
         pass
@@ -807,8 +836,6 @@ class ComplexSpine(SubControlSpine):
     def __init__(self, *args, **kwargs):
         super(ComplexSpine, self).__init__(*args, **kwargs)
         self.numHighLevelCtrls = kwargs.get("numHighLevelCtrls", 3)
-        self.lockHead = kwargs.get("lockHead", False)
-        self.lockTail = kwargs.get("lockTail", False)
         self._evaluateLastJoint = kwargs.get("evaluateLastJoint", False)
 
     def __bindData__(self, *args, **kwgs):
@@ -828,8 +855,8 @@ class ComplexSpine(SubControlSpine):
         super(ComplexSpine, self).buildControl()
         self.buildMainControls()
 
-    def reparentIkJoint(self):
-        super(SubControlSpine, self).reparentIkJoint()
+    def reparentIkJoint(self, jointParent):
+        super(SubControlSpine, self).reparentIkJoint(jointParent)
 
     def buildMainControls(self):
         # Get the ctrl postion
@@ -876,7 +903,7 @@ class ComplexSpine(SubControlSpine):
         newRotate = prenormalisedTwistMap[0:1]
         # Zeroout the eggect
         newRotate[0] = libMath.redistribute_value(newRotate[0], -1)
-
+        start = int(not self.lockHead)
         for rotationMap in prenormalisedTwistMap[1:-1]:
             rotationMap = libMath.redistribute_value(rotationMap, 0)
             rotationMap = libMath.redistribute_value(rotationMap, -1)
