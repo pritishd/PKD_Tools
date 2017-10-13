@@ -1527,29 +1527,46 @@ class StretchSystem(Network):
         finalOutput = MetaRig(part=self.part, side=self.side, endSuffix="FinalOutput", nodeType="addDoubleLinear")
         supportNodes["FinalOutput"] = finalOutput
 
+        # Add Global inverse MD
+        inverseMD = MetaRig(part=self.part, side=self.side, endSuffix="GlobalInverse", nodeType="multiplyDivide")
+        supportNodes["GlobalInverse"] = inverseMD
+
+        # Global remainder
+        globRemainder = MetaRig(part=self.part, side=self.side, endSuffix="GlobalRemainder", nodeType="addDoubleLinear")
+        supportNodes["GlobalRemainder"] = globRemainder
+
+        # Global remainder
+        globRemove = MetaRig(part=self.part, side=self.side, endSuffix="GlobalRemove", nodeType="addDoubleLinear")
+        supportNodes["GlobalRemove"] = globRemove
+
         # Connect all the node as support nodes
         for supportType in supportNodes:
             self.addSupportNode(supportNodes[supportType], supportType)
 
-        # Set intial value
+        # Set initial value
         finalOutput.input2 = 1
         remainder.input1 = -1
+        finalOutput.input2X = -1
+        globRemainder.input1 = 1
+        inverseMD.input1X = 1
+        inverseMD.input2X = -1
 
         # Connect
+        inverseMD.pynode.outputX >> globRemainder.pynode.input2
+        globRemainder.pynode.output >> globRemove.pynode.input1
         triggerCondition.pynode.outputX >> remainder.pynode.input2
-        remainder.pynode.output >> factor.pynode.input2X
+        remainder.pynode.output >> globRemove.pynode.input2
+        globRemove.pynode.output >> factor.pynode.input2X
         factor.pynode.outputX >> finalOutput.pynode.input1
 
     def setInitialValue(self, value):
-        """
-        Set initial value
-        @param value: (float) The intial value
+        """Set initial value
+        @param value: (float) The intiFal value
         """
         self.trigger.input2X = value
 
     def connectTrigger(self, attr):
-        """
-        Connect the trigger attribute
+        """Connect the trigger attribute
         @param attr (pyattr) The incoming attribute
         """
         attr >> self.trigger.pynode.input1X
@@ -1557,13 +1574,18 @@ class StretchSystem(Network):
     def connectAmount(self, attr):
         attr >> self.factor.pynode.input1X
 
+    def connectGlobalScale(self,attr):
+        attr >> self.globalOffset.pynode.input1X
+
     def connectOutput(self, attr):
-        """
-         Connect the output scale attribute
+        """Connect the output scale attribute
          @param attr (pyattr) The target attribute
          """
-
         self.finalOutput.pynode.output >> attr
+
+    @property
+    def globalOffset(self):
+        return self.getSupportNode("GlobalInverse")
 
     @property
     def trigger(self):
