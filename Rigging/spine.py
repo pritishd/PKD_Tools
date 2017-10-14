@@ -4,12 +4,11 @@
 """
 
 import operator
+
 import pymel.core as pm
 
 from PKD_Tools import libUtilities, libVector, libMath
-from PKD_Tools.Rigging import core
-from PKD_Tools.Rigging import parts
-from PKD_Tools.Rigging import utils
+from PKD_Tools.Rigging import core, joints, parts, utils
 from PKD_Tools.libUtilities import output_window
 
 
@@ -62,8 +61,8 @@ class IkSpine(parts.Ik):
 
     def connectStretchJoints(self):
         scaleAxis = "s{}".format(self.twistAxis.lower())
-        joints = self.ikJointSystem.joints[1:(-1 - int(self.evaluateLastJointBool))]
-        for joint in joints:
+        ikJoints = self.ikJointSystem.joints[1:(-1 - int(self.evaluateLastJointBool))]
+        for joint in ikJoints:
             self.stretchSystem.connectOutput(joint.pynode.attr(scaleAxis))
 
     def buildSolver(self):
@@ -244,7 +243,7 @@ class IkSpine(parts.Ik):
 
     @jointGrp.setter
     def jointGrp(self, data):
-        self.addSupportNode(data, "HelpJointSystem")
+        self.addSupportNode(data, "JointGrp")
 
 
 class SimpleSpine(IkSpine):
@@ -366,16 +365,16 @@ class SubControlSpine(IkSpine):
             self.breakpoint("No Main controls found")
         for ctrl in self.mainCtrls:
             # Create Joint and snap and parent to the control
-            curveJoint = core.Joint(side=ctrl.side, part=ctrl.part, endSuffix="CurveJoint")
+            curveJoint = joints.Joint(side=ctrl.side, part=ctrl.part, endSuffix="CurveJoint")
             curveJoint.rotateOrder = self.rotateOrder
             curveJoint.snap(ctrl.mNode)
             ctrl.addChild(curveJoint.mNode)
             ctrl.addSupportNode(curveJoint, "IkSkinJoint")
             # Connect as support joint
             crvSkinJnts.append(curveJoint)
-        joints = [jnt.pynode for jnt in crvSkinJnts]
+        crvJoints = [jnt.pynode for jnt in crvSkinJnts]
 
-        skinCluster = libUtilities.skinGeo(self.ikDriveCurve, joints)
+        skinCluster = libUtilities.skinGeo(self.ikDriveCurve, crvJoints)
         skinClusterMeta = core.MetaRig(skinCluster.name())
         skinClusterMeta.part = self.part
         self.addSupportNode(skinClusterMeta, "IkSkin")
@@ -383,12 +382,12 @@ class SubControlSpine(IkSpine):
         skinClusterMeta.resetName()
 
         # Help Joint system
-        self.driveJointSystem = core.JointSystem(side=self.side, part="%sHelpJoints" % self.part)
+        self.driveJointSystem = joints.JointSystem(side=self.side, part="%sHelpJoints" % self.part)
         self.driveJointSystem.rigType = "Help"
         self.driveJointSystem.joints = crvSkinJnts
         self.driveJointSystem.rebuild_joint_data()
 
-    def _calcPositionFallOff_(self, center, overRideJoints=None):
+    def _calcPositionFallOff_(self, center, customNumJoints=None):
         """
         Calculate the falloff for the joints where the position becomes a new centre
         eg for the first position the weight will [1,.75,.25,0]
@@ -399,21 +398,21 @@ class SubControlSpine(IkSpine):
         if center < 1:
             raise ValueError('Centre must be positive')
         # Is there a overide of the joints
-        if overRideJoints:
-            joints = overRideJoints
+        if customNumJoints:
+            numJoints = customNumJoints
         else:
-            # Get the number of joints
-            joints = float(len(self.jointSystem))
+            # Get the number of numJoints
+            numJoints = float(len(self.jointSystem))
 
         # Init the weight list
         falloff = []
         # Will the fall off be mirrored if it goes beyond the centre
         mirrorFallOff = False
-        if center / joints <= 0.5:
-            center = (joints - center) + 1
+        if center / numJoints <= 0.5:
+            center = (numJoints - center) + 1
             mirrorFallOff = True
-        # Iterate thought all the joints
-        for i in range(1, int(joints) + 1):
+        # Iterate thought all the numJoints
+        for i in range(1, int(numJoints) + 1):
             val = round((center - (float(abs(center - i)))) / center, 3)
 
             falloff.append(round(val, 3))
@@ -421,17 +420,17 @@ class SubControlSpine(IkSpine):
             falloff.reverse()
         return falloff
 
-    def positionFallOff(self, overRideJoints=None, transpose=True):
-        if overRideJoints:
-            joints = overRideJoints
+    def positionFallOff(self, overrideNumJoints=None, transpose=True):
+        if overrideNumJoints:
+            numJoints = overrideNumJoints
         else:
-            joints = float(len(self.jointSystem))
-        spreadPosition = list(libMath.spread(1, joints, self.numHighLevelCtrls - 1))
+            numJoints = float(len(self.jointSystem))
+        spreadPosition = list(libMath.spread(1, numJoints, self.numHighLevelCtrls - 1))
 
         # Build [joint][CV] weightmap
         weightMap = []
         for sub in range(self.numHighLevelCtrls):
-            weightMap.append(self._calcPositionFallOff_(spreadPosition[sub], overRideJoints))
+            weightMap.append(self._calcPositionFallOff_(spreadPosition[sub], overrideNumJoints))
 
         if transpose:
             # Transpose the weightmap to [CV][joint]
@@ -701,7 +700,7 @@ class HumanSpine(SubControlSpine):
         for data in jointData:
             originalNames.append(data["Name"])
             data["Name"] = "{}Help".format(data["Name"])
-        helper = core.JointSystem(side=self.side, part="HelperJoints")
+        helper = joints.JointSystem(side=self.side, part="HelperJoints")
         helper.jointData = jointData
         helper.gimbalData = self.jointSystem.gimbalData
         helper.build()

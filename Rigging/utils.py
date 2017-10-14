@@ -101,19 +101,18 @@ def saveTestJoint(parentJoint, systemType):
 
 def createTestJoint(systemType):
     """
-    @param systemType: The test joint associated with the class
-    joint -e -zso -oj yzx -sao zup joint1;
+    @param systemType: The test joint associated with the class;
     """
     current_joint_data = libFile.load_json(TEST_JOINTS_INFO)[systemType]
-    joints = []
+    testJoints = []
     for joint, index in zip(current_joint_data, range(len(current_joint_data))):
         pm.select(cl=1)
         jnt = pm.joint(name=joint["name"], p=joint["position"])
         jnt.jointOrient.set(joint["orient"])
         if index:
-            jnt.setParent(joints[index - 1])
-        joints.append(jnt)
-    return joints
+            jnt.setParent(testJoints[index - 1])
+        testJoints.append(jnt)
+    return testJoints
 
 
 def orientJoint(target):

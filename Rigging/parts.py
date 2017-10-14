@@ -8,7 +8,7 @@ from pymel import core as pm
 
 from PKD_Tools import libUtilities, libJoint
 from PKD_Tools.Red9 import Red9_CoreUtils
-from PKD_Tools.Rigging import core, utils
+from PKD_Tools.Rigging import core, joints, utils
 
 if __name__ == '__main__':
     for mod in libUtilities, utils, core:
@@ -98,28 +98,28 @@ class Rig(core.TransSubSystem):
 
         if not jointSystem:
             # Build the help joints
-            jointSystem = core.JointSystem(side=self.side, part="%sJoints" % self.part)
+            jointSystem = joints.JointSystem(side=self.side, part="%sJoints" % self.part)
             self.jointSystem = jointSystem
             pm.refresh()
 
             # Build the joints
-            joints = None
+            testJoints = None
             currentClass = self.__class__
             originalClass = self.__class__
-            while not joints:
+            while not testJoints:
                 # Try to build for current class
                 try:
-                    joints = utils.createTestJoint(currentClass.__name__)
+                    testJoints = utils.createTestJoint(currentClass.__name__)
                 except:
                     # look in the parent class
                     if currentClass == object:
                         print originalClass.__name__
-                        joints = utils.createTestJoint(originalClass.__name__)
+                        testJoints = utils.createTestJoint(originalClass.__name__)
                     else:
                         currentClass = currentClass.__bases__[0]
 
             # Setup the joint system
-            self.jointSystem.joints = libUtilities.stringList(joints)
+            self.jointSystem.joints = libUtilities.stringList(testJoints)
             self.jointSystem.convertJointsToMetaJoints()
             self.jointSystem.setRotateOrder(self.rotateOrder)
         else:

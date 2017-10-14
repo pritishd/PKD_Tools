@@ -9,13 +9,10 @@ follows the Ik</i>
 
 Using these 3 system you can further add appendage such as Hand, Hoof, Foot or Paw
 """
-
-from PKD_Tools.Rigging import utils
-from PKD_Tools.Rigging import core
-from PKD_Tools.Rigging import parts
-from PKD_Tools import libUtilities
-from PKD_Tools import libVector
 import pymel.core as pm
+
+from PKD_Tools import libUtilities, libVector
+from PKD_Tools.Rigging import core, joints, parts, utils
 
 # if __name__ == '__main__':
 #     for mod in core, parts:
@@ -272,7 +269,7 @@ class Hip(Arm):
         self.aimHelper.prnt.v = False
 
         # Orient Constraint the Hip Constraint
-        ikJoint = core.Joint(part=self.part, side=self.side, endSuffix="HipIkFollow")
+        ikJoint = joints.Joint(part=self.part, side=self.side, endSuffix="HipIkFollow")
         ikJoint.v = False
         ikJoint.rotateOrder = self.rotateOrder
         ikJoint.setParent(self.jointSystem.joints[0])
@@ -283,7 +280,7 @@ class Hip(Arm):
         hipCtrl.orientConstraint.pynode.w0.set(0)
         # Create a base joint
 
-        homeJoint = core.Joint(part=self.part, side=self.side, endSuffix="HomeJnt")
+        homeJoint = joints.Joint(part=self.part, side=self.side, endSuffix="HomeJnt")
         homeJoint.v = False
         homeJoint.rotateOrder = self.rotateOrder
         homeJoint.setParent(self.jointSystem.joints[0])

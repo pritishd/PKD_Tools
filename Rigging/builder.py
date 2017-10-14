@@ -1,7 +1,7 @@
 import pymel.core as pm
 
 from PKD_Tools import libUtilities
-from PKD_Tools.Rigging import core, gui
+from PKD_Tools.Rigging import core, joints, gui
 
 
 # TODO: Annotated Nodes wichrome://extensionll have prn
@@ -191,7 +191,7 @@ class FootAnnotatedLocator(AnnotatedLocator):
         return self.getParentMetaNode().prnt.Joints[1]
 
 
-class BuilderJointSystem(core.JointCollection):
+class BuilderJointSystem(joints.JointCollection):
     _annotatedLocator = AnnotatedLocator
 
     def buildNewJoints(self, templateNames, currentPos=None):
@@ -308,7 +308,7 @@ class Builder(core.MovableSystem):
     def buildJointSystem(self):
         if not self.builderJointSystem:
             raise ValueError("No build system defined. Cannot make a joint system")
-        newJointSystem = core.JointSystem(part=self.part, side=self.side, endSuffix="JntSys")
+        newJointSystem = joints.JointSystem(part=self.part, side=self.side, endSuffix="JntSys")
         newJointSystem.jointData = self.builderJointSystem.jointData
         newJointSystem.gimbalData = self.builderJointSystem.gimbalData
         newJointSystem.build()
