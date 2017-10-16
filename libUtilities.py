@@ -303,7 +303,7 @@ def select_vertices(targetGeo, vertices):
     '''
     pm.select(cl=1)
     for index in vertices:
-        pm.select("%s.vtx[%i]" % (targetGeo, index), add=1)
+        pm.select("{}.vtx[{}]".format(targetGeo, index), add=1)
 
 
 def skin_objects(targets, jointInfluences):
