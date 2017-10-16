@@ -639,6 +639,15 @@ class TransSubSystem(MovableSystem):
         self.addAttr('systemType', "")
 
 
+class NoInheritsTransform(TransSubSystem):
+    """This transform does not inherit transform from the hierachy"""
+
+    def __init__(self, *args, **kwargs):
+        super(NoInheritsTransform, self).__init__(*args, **kwargs)
+        self.inheritsTransform = False
+        libUtilities.lock_attr(self.pynode.inheritsTransform)
+
+
 class Network(MetaRig):
     """@brief This is a MetaRig that doesn't create a transform node.
     @details Used for organising nodes and creating subsystem"""

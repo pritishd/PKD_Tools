@@ -142,11 +142,9 @@ class IkSpine(parts.Ik):
 
     def buildControl(self):
         # Create the info group which does not translate
-        infoGrp = core.MovableSystem(side=self.side, part=self.part, endSuffix="InfGrp")
+        infoGrp = core.NoInheritsTransform(side=self.side, part=self.part, endSuffix="InfGrp")
         # Reparent the info group
         infoGrp.setParent(self)
-        # Set the Meta Group
-        infoGrp.inheritsTransform = False
         # Set the main grp
         self.infoGrp = infoGrp
 
