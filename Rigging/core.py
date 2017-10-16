@@ -334,7 +334,6 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
 
         return self.metaCache[targetSupport]
 
-
     def addSupportNode(self, node, attr, boundData=None):
         """
         Add support node to the system
@@ -694,8 +693,10 @@ class SpaceLocator(MovableSystem):
         self.snap(cv.name(), rotate=False)
         libUtilities.cheap_point_constraint(self.pynode, cv)
 
+
 class SimpleCtrl(MovableSystem):
     """Meta rig to create a simple nurbs shape"""
+
     def __init__(self, *args, **kwargs):
         kwargs["endSuffix"] = "Ctrl"
         super(SimpleCtrl, self).__init__(*args, **kwargs)
@@ -870,15 +871,13 @@ class Ctrl(SimpleCtrl):
 
     def addGimbalMode(self):
         """Add a extra gimbal controller under the main ctrl."""
-        self.gimbal = MovableSystem(name=utils.nameMe(self.side, self.part, "Gimbal"), nodeType="transform")
+        self.gimbal = SimpleCtrl(name=utils.nameMe(self.side, self.part, "Gimbal"),
+                                 nodeType="transform",
+                                 shape="Spike")
         self.gimbal.part = self.part
         self.gimbal.rigType = "gimbalHelper"
         self.gimbal.pynode.setParent(self.mNode)
-        # Set the shape
-        tempCtrlShape = utils.buildCtrlShape("Spike")
-        libUtilities.transfer_shape(tempCtrlShape, self.gimbal.pynode)
-        libUtilities.fix_shape_name(self.gimbal.pynode)
-        pm.delete(tempCtrlShape)
+        self.gimbal.build()
         # Add Attribute control the visibility
         self.addDivAttr("Show", "gimbVis")
         self.addBoolAttr("Gimbal")
@@ -898,15 +897,13 @@ class Ctrl(SimpleCtrl):
     def addPivot(self):
         """Add animatable pivot to a control. Most useful in a @ref limb.Foot setup"""
         # @cond DOXYGEN_SHOULD_SKIP_THIS
-        self.pivot = MovableSystem(name=utils.nameMe(self.side, self.part, "Pivot"), nodeType="transform")
+        self.pivot = SimpleCtrl(name=utils.nameMe(self.side, self.part, "Pivot"),
+                                nodeType="transform",
+                                shape="Locator")
         self.pivot.part = self.part
         self.pivot.rigType = "pivot"
         self.pivot.pynode.setParent(self.mNode)
-        # Set the shape
-        tempCtrlShape = utils.buildCtrlShape("Locator")
-        libUtilities.transfer_shape(tempCtrlShape, self.pivot.pynode)
-        libUtilities.fix_shape_name(self.pivot.pynode)
-        pm.delete(tempCtrlShape)
+        self.pivot.build()
         # Snap ctrl
         libUtilities.snap(self.pivot.mNode, self.mNode)
 
@@ -1227,7 +1224,7 @@ class StretchSystem(Network):
     def connectAmount(self, attr):
         attr >> self.factor.pynode.input1X
 
-    def connectGlobalScale(self,attr):
+    def connectGlobalScale(self, attr):
         attr >> self.globalOffset.pynode.input1X
 
     def connectOutput(self, attr):
