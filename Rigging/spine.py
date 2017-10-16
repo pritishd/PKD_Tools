@@ -544,8 +544,9 @@ class SubControlSpine(IkSpine):
 
     def connectToMainControl(self):
         self.skinCtrlCurve()
-        self.calculateIkSkinFallOff()
-        self.calculateHeatPoints()
+        if not self.ikSkinWeightMap:
+            self.calculateIkSkinFallOff()
+            self.calculateHeatPoints()
         self.setIkWeights()
 
     def connectToControl(self):
@@ -910,40 +911,41 @@ class ComplexSpine(SubControlSpine):
         self.mainCtrls = metaCtrls
 
     def calculateTwistWeights(self):
-        # Position based twist as that gives the best falloff so far
-        numJoints = len(self.jointSystem) - int(self.evaluateLastJointBool) - int(self.lockHead) - int(self.lockTail)
-        self.positionFallOff(numJoints, False)
+        if not self.twistMap:
+            # Position based twist as that gives the best falloff so far
+            numJoints = len(self.jointSystem) - int(self.evaluateLastJointBool) - int(self.lockHead) - int(self.lockTail)
+            self.positionFallOff(numJoints, False)
 
-        # Get the currentMap
-        prenormalisedTwistMap = self.currentWeightMap
+            # Get the currentMap
+            prenormalisedTwistMap = self.currentWeightMap
 
-        newRotate = prenormalisedTwistMap[0:1]
-        # Zeroout the eggect
-        newRotate[0] = libMath.redistribute_value(newRotate[0], -1)
-        start = int(not self.lockHead)
-        for rotationMap in prenormalisedTwistMap[1:-1]:
-            rotationMap = libMath.redistribute_value(rotationMap, 0)
-            rotationMap = libMath.redistribute_value(rotationMap, -1)
-            newRotate.append(rotationMap)
+            newRotate = prenormalisedTwistMap[0:1]
+            # Zeroout the eggect
+            newRotate[0] = libMath.redistribute_value(newRotate[0], -1)
+            start = int(not self.lockHead)
+            for rotationMap in prenormalisedTwistMap[1:-1]:
+                rotationMap = libMath.redistribute_value(rotationMap, 0)
+                rotationMap = libMath.redistribute_value(rotationMap, -1)
+                newRotate.append(rotationMap)
 
-        newRotate.append(prenormalisedTwistMap[-1])
+            newRotate.append(prenormalisedTwistMap[-1])
 
-        newRotate[-1] = libMath.redistribute_value(newRotate[-1], 0)
-        # In case we want to lock the effect on the control like the tail start
-        # Zero out the effect of the first ctrl on the last joint
-        # prenormalisedTwistMap[0] = libMath.redistribute_value(prenormalisedTwistMap[0], -1)
-        # Zero out the the effect of the last ctrl on the first joint
-        # prenormalisedTwistMap[-1] = libMath.redistribute_value(prenormalisedTwistMap[-1], 0)
+            newRotate[-1] = libMath.redistribute_value(newRotate[-1], 0)
+            # In case we want to lock the effect on the control like the tail start
+            # Zero out the effect of the first ctrl on the last joint
+            # prenormalisedTwistMap[0] = libMath.redistribute_value(prenormalisedTwistMap[0], -1)
+            # Zero out the the effect of the last ctrl on the first joint
+            # prenormalisedTwistMap[-1] = libMath.redistribute_value(prenormalisedTwistMap[-1], 0)
 
-        # Transpose the weight
-        self.prenormalisedTwistMap = libUtilities.transpose(newRotate)
+            # Transpose the weight
+            self.prenormalisedTwistMap = libUtilities.transpose(newRotate)
 
-        # Normalise the weights
-        normalisedTwist = []
-        for weightMap in self.prenormalisedTwistMap:
-            normalisedTwist.append(libMath.calculate_proportions(weightMap, 1))
-        # Set the twistMap
-        self.twistMap = normalisedTwist
+            # Normalise the weights
+            normalisedTwist = []
+            for weightMap in self.prenormalisedTwistMap:
+                normalisedTwist.append(libMath.calculate_proportions(weightMap, 1))
+            # Set the twistMap
+            self.twistMap = normalisedTwist
 
     def connectTwist(self):
         self.calculateTwistWeights()
