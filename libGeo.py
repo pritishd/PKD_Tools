@@ -10,6 +10,7 @@ import os
 from maya import cmds, mel
 import pymel.core as pm
 from PKD_Tools import logger
+from PKD_Tools.Rigging import utils
 
 import libUtilities
 import libFile
@@ -568,7 +569,7 @@ def create_follicle(position, geo=None):
 
 
 # noinspection PyStatementEffect
-def create_point_on_mesh(geo, position, sticky_target):
+def create_point_on_mesh(geo, position, sticky_target, free_rotation=True):
     """
     Create point on mesh setup
     @param position:
@@ -594,21 +595,29 @@ def create_point_on_mesh(geo, position, sticky_target):
 
     pm.delete(pom)
     constraint = pm.listRelatives(locator, type="constraint")[0]
-    mel.eval('source channelBoxCommand;')
-    for attr in ["rx", "rz", "ry"]:
-        mel.eval('CBdeleteConnection "{0}.{1}";'.format(locator, attr))
-        locator.attr(attr).set(0)
+    if free_rotation:
+        mel.eval('source channelBoxCommand;')
+        for attr in ["rx", "rz", "ry"]:
+            mel.eval('CBdeleteConnection "{0}.{1}";'.format(locator, attr))
+            locator.attr(attr).set(0)
     return {"constraint": constraint, "locator": locator}
 
 
-def create_sticky_control(geo, position, name, setup_type="pointOnMesh"):
+def create_sticky_control(geo,
+                          position,
+                          name,
+                          setup_type="follicle",
+                          free_rotation=True):
     """
     Temp setup to create sticky control at position for given geometry
     @param setup_type:
     @param position (vector) The position in worldspace where this will created
     @param geo (pynode) The target geometry
     @param name (string) The prefix identifier given to this setup
+    @param free_rotation (bool) Whether the rotation are free
     @return: A dict of control object and object which is constraining.
+    TODO:
+
     """
 
     # Create space locator
@@ -616,13 +625,21 @@ def create_sticky_control(geo, position, name, setup_type="pointOnMesh"):
 
     # Create the ctrl obj
     new_ctrl = libUtilities.Ctrl(name)
+    tempCtrlShape = utils.buildCtrlShape("Spike")
+    libUtilities.transfer_shape(tempCtrlShape, new_ctrl.ctrl,True)
+    libUtilities.fix_shape_name(new_ctrl.ctrl)
+    pm.delete(tempCtrlShape)
+
     info = {"ctrl": new_ctrl}
     if setup_type == "follicle":
         new_ctrl.prnt.translate.set(position)
         # Create the follice and point constraint
         follicle = create_follicle(position, geo)
         follicle.rename("{}_fol".format(name))
-        pm.pointConstraint(follicle, new_ctrl.prnt)
+        if free_rotation:
+            pm.pointConstraint(follicle, new_ctrl.prnt)
+        else:
+            pm.parentConstraint(follicle, new_ctrl.prnt)
         # Create a translate cycle
         info["sticky_source"] = follicle
         md = pm.createNode("multiplyDivide", name=name + "_MD")
@@ -633,9 +650,13 @@ def create_sticky_control(geo, position, name, setup_type="pointOnMesh"):
 
         info["multiplyDivide"] = md
     else:
-        new_info = create_point_on_mesh(geo, position, new_ctrl.prnt)
+        new_info = create_point_on_mesh(geo, position, new_ctrl.prnt, free_rotation)
         info.update(new_info)
-        libUtilities.cheap_point_constraint(new_info["locator"], new_ctrl.prnt)
+        if free_rotation:
+            libUtilities.cheap_point_constraint(new_info["locator"],
+                                                new_ctrl.prnt)
+        else:
+            pm.parentConstraint(new_info["locator"], new_ctrl.prnt)
         new_info["locator"].rename("{}_loc".format(name))
         new_info["constraint"].rename("{}_popCon".format(name))
 
