@@ -596,9 +596,8 @@ def create_point_on_mesh(geo, position, sticky_target, free_rotation=True):
     pm.delete(pom)
     constraint = pm.listRelatives(locator, type="constraint")[0]
     if free_rotation:
-        mel.eval('source channelBoxCommand;')
         for attr in ["rx", "rz", "ry"]:
-            mel.eval('CBdeleteConnection "{0}.{1}";'.format(locator, attr))
+            libUtilities.break_connection(locator, attr)
             locator.attr(attr).set(0)
     return {"constraint": constraint, "locator": locator}
 

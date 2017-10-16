@@ -956,3 +956,13 @@ def transpose(collection):
     """
 
     return map(list, zip(*collection))
+
+
+def break_connection(node, attr):
+    """Break the connection on attribute in a node
+    @param node: The node that is being is worked on
+    @param node: The attr that needs to be disconnected
+    """
+
+    mel.eval('source channelBoxCommand;')
+    mel.eval('CBdeleteConnection "{0}.{1}";'.format(node, attr))
