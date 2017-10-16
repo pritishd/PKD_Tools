@@ -185,6 +185,9 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
 
         # Return connected as meta
         self.returnNodesAsMeta = True
+
+        # Initialise the meta cache dict
+        self.metaCache = {}
         # @endcond
 
     # noinspection PyPropertyAccess
@@ -286,10 +289,16 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
         @param target (string) The type of control that is being retrieved
         @return: The meta rig
         """
-        children = self.getChildren(walk=True, asMeta=self.returnNodesAsMeta,
-                                    cAttrs=["%s_%s" % (self.CTRL_Prefix, target)])
-        if children:
-            return children[0]
+
+        targetAttr = "{}_{}".format(self.CTRL_Prefix, target)
+
+        if not self.metaCache.setdefault(targetAttr, None):
+            children = self.getChildren(walk=True, asMeta=self.returnNodesAsMeta,
+                                        cAttrs=["{}_{}".format(self.CTRL_Prefix, target)])
+            if children:
+                return children[0]
+
+        return self.metaCache[targetAttr]
 
     def addRigCtrl(self, target, *args, **kwargs):
         """
@@ -302,6 +311,7 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
             # TODO: add ctrls to rig controls
             assert isinstance(target, Red9_Meta.MetaClass)
             super(MetaRig, self).addRigCtrl(target.mNode, *args, **kwargs)
+            self.metaCache["{}_{}".format(self.CTRL_Prefix, target)] = target
         except:
             raise AssertionError("Input must be MetaClass")
 
@@ -310,16 +320,20 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
         Return the type of support node that is connected to the rig system
         @param target (string) The type of support node that is being queried
         """
-        children = self.getChildren(walk=True, asMeta=self.returnNodesAsMeta, cAttrs=["SUP_%s" % target])
-        if not children:
-            if self.debugMode:
-                libUtilities.logger.warn("%s not support node found on %s" % (target, self.shortName()))
-                return ""
-        else:
-            if type(children[0]) == Red9_Meta.MetaClass:
-                children[0] = MetaRig(children[0].mNode)
+        targetSupport = "SUP_{}".format(target)
 
-            return children[0]
+        if not self.metaCache.setdefault(targetSupport, None):
+            children = self.getChildren(walk=True, asMeta=self.returnNodesAsMeta, cAttrs=[targetSupport])
+            if not children:
+                if self.debugMode:
+                    libUtilities.logger.warn("%s not support node found on %s" % (target, self.shortName()))
+            else:
+                if type(children[0]) == Red9_Meta.MetaClass:
+                    children[0] = MetaRig(children[0].mNode)
+                self.metaCache[targetSupport] = children[0]
+
+        return self.metaCache[targetSupport]
+
 
     def addSupportNode(self, node, attr, boundData=None):
         """
@@ -328,13 +342,20 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
         @param attr (string) The type of support node
         @param boundData (dict) Any data that is used by the metaRig superclass
         """
+        metaSupport = None
         if hasattr(node, "mNode"):
             supportNode = node.mNode
+            metaSupport = node
         elif isinstance(node, pm.PyNode):
             supportNode = node.name()
         else:
             supportNode = node
+
         super(MetaRig, self).addSupportNode(supportNode, attr, boundData=boundData)
+        if not metaSupport:
+            metaSupport = MetaRig(supportNode)
+        targetSupport = "SUP_{}".format(attr)
+        self.metaCache[targetSupport] = metaSupport
         # Test that the connection has been made
 
     def transferPropertiesToChild(self, childMeta, childType):

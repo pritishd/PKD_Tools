@@ -67,8 +67,6 @@ class JointCollection(core.Network):
         super(JointCollection, self).__init__(*args, **kwargs)
         if self._build_mode:
             self.jointData = []
-        self._jointDict = {}
-        self._jointList = []
         self._rotateOrder = None
 
     # @endcond
@@ -155,19 +153,28 @@ class JointCollection(core.Network):
 
     @property
     def joints(self):
-        return self.getChildren(asMeta=self.returnNodesAsMeta, cAttrs=["SUP_Joints"])
+        jointAttr = "SUP_Joints"
+        if not self.metaCache.setdefault(jointAttr, None):
+            self.metaCache[jointAttr] = self.getChildren(asMeta=self.returnNodesAsMeta, cAttrs=[jointAttr])
+        return self.metaCache[jointAttr]
 
     @joints.setter
     def joints(self, jointList):
         if not isinstance(jointList[0], basestring):
             jointList = [joint.mNode for joint in jointList]
-        self.connectChildren(jointList, "SUP_Joints", cleanCurrent=True)
+        jointAttr = "SUP_Joints"
+        self.connectChildren(jointList, jointAttr, cleanCurrent=True)
+        if isinstance(jointList[0], core.MetaRig):
+            self.metaCache[jointAttr] = jointList
+        else:
+            self.metaCache[jointAttr] = [core.MetaRig(joint) for joint in jointList]
 
     @property
     def jointList(self):
-        if not self._jointList:
-            self._jointList = [joint.shortName() for joint in self.joints]
-        return self._jointList
+        key = "jointList"
+        if not self.metaCache.setdefault(key, []):
+            self.metaCache[key] = [joint.shortName() for joint in self.joints]
+        return self.metaCache[key]
 
     @property
     def positions(self):
@@ -199,10 +206,11 @@ class JointCollection(core.Network):
 
     @property
     def jointDict(self):
-        if not self._jointDict:
+        key = "jointDict"
+        if not self.metaCache.setdefault(key, {}):
             for joint in self.joints:
-                self._jointDict[joint.part] = joint
-        return self._jointDict
+                self.metaCache[key][joint.part] = joint
+        return self.metaCache[key]
 
 
 class JointSystem(JointCollection):

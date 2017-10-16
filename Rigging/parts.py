@@ -264,7 +264,10 @@ class Rig(core.TransSubSystem):
 
     @property
     def mainCtrls(self):
-        return self.getChildren(asMeta=self.returnNodesAsMeta)
+        key = "mainCtrls"
+        if not self.metaCache.setdefault(key, None):
+            self.metaCache[key] = self.getChildren(asMeta=self.returnNodesAsMeta)
+        return self.metaCache[key]
 
     @mainCtrls.setter
     def mainCtrls(self, ctrlList):
@@ -404,17 +407,29 @@ class Generic(Rig):
 
     @property
     def mainCtrls(self):
-        return self.getChildren(asMeta=self.returnNodesAsMeta, walk=True, cAttrs=["MainCtrls"])
+        key = "mainCtrls"
+        if not self.metaCache.setdefault(key, None):
+            self.metaCache[key] = self.getChildren(asMeta=self.returnNodesAsMeta,
+                                                   walk=True,
+                                                   cAttrs=["MainCtrls"])
+        return self.metaCache[key]
 
     @mainCtrls.setter
     def mainCtrls(self, ctrlList):
         if not ctrlList:
             raise RuntimeError("Please input a list of meta Ctrls")
         self.connectChildren(ctrlList, "MainCtrls", allowIncest=True, cleanCurrent=True)
+        self.metaCache["mainCtrls"] = ctrlList
 
     @property
     def allCtrls(self):
-        return self.getChildren(asMeta=True, walk=True, cAttrs=["MainCtrls", '%s_*' % self.CTRL_Prefix])
+
+        attr = "allCtrls"
+        if self.metaCache.setdefault(attr):
+            self.metaCache[attr] = self.getChildren(asMeta=True,
+                                                    walk=True,
+                                                    cAttrs=["MainCtrls", '%s_*' % self.CTRL_Prefix])
+        return self.metaCache[attr]
 
     @property
     def offsetJointSystem(self):

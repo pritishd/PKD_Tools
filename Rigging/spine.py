@@ -215,13 +215,20 @@ class IkSpine(parts.Ik):
 
     @property
     def mainCtrls(self):
-        return self.getChildren(asMeta=self.returnNodesAsMeta, walk=True, cAttrs=["MainCtrls"])
+        key = "mainCtrls"
+        if not self.metaCache.setdefault(key, None):
+            self.metaCache[key] = self.getChildren(asMeta=self.returnNodesAsMeta,
+                                                          walk=True,
+                                                          cAttrs=["MainCtrls"])
+        return self.metaCache[key]
 
     @mainCtrls.setter
     def mainCtrls(self, ctrlList):
         if not ctrlList:
             raise RuntimeError("Please input a list of meta Ctrls")
         self.connectChildren(ctrlList, "MainCtrls", allowIncest=True, cleanCurrent=True)
+        self.metaCache["mainCtrls"] = ctrlList
+
     @property
     def helpJointSystem(self):
         return self.getSupportNode("HelpJointSystem")
@@ -631,7 +638,7 @@ class SubControlSpine(IkSpine):
         # Delete the nearest point on curve
         pm.delete(npc)
         # Append the control
-        self.SubCtrls = subCtrls
+        self.subCtrls = subCtrls
 
         # Disable the cycle check warning
         pm.cycleCheck(e=False)
@@ -645,18 +652,29 @@ class SubControlSpine(IkSpine):
 
 
     @property
-    def SubCtrls(self):
-        return self.getChildren(asMeta=self.returnNodesAsMeta, walk=True, cAttrs=["SUP_SubCtrls"])
+    def subCtrls(self):
+        key = "subCtrls"
+        if not self.metaCache.setdefault(key, None):
+            self.metaCache[key] = self.getChildren(asMeta=self.returnNodesAsMeta,
+                                                   walk=True,
+                                                   cAttrs=[libUtilities.capitalize(key)])
+        return self.metaCache[key]
 
-    @SubCtrls.setter
-    def SubCtrls(self, ctrlList):
+    @subCtrls.setter
+    def subCtrls(self, ctrlList):
         if ctrlList is None:
             return
         self.connectChildren(ctrlList, "SubCtrls", allowIncest=True, cleanCurrent=True)
+        self.metaCache["subCtrls"] = ctrlList
 
     @property
     def allCtrls(self):
-        return self.getChildren(asMeta=True, walk=True, cAttrs=["MainCtrls", '%s_*' % self.CTRL_Prefix, "SUP_SubCtrls"])
+        key = "allCtrls"
+        if not self.metaCache.setdefault(key, None):
+            self.metaCache[key] = self.getChildren(asMeta=True,
+                                                    walk=True,
+                                                    cAttrs=["MainCtrls", '%s_*' % self.CTRL_Prefix, "SubCtrls"])
+        return self.metaCache[key]
 
     @property
     def ikSkin(self):
