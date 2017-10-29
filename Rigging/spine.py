@@ -120,7 +120,7 @@ class IkSpine(parts.Ik):
         self.buildHelperJoints()
         # Build a single degree curve
         if self.devSpine:
-            self.build_solver_dev()
+            self.buildDevSolver()
         else:
             self.buildSolver()
         # Reparent to the skin joint to the helper joint
@@ -1016,7 +1016,7 @@ if __name__ == '__main__':
     # mainSystem = core.TransSubSystem(side="C", part="Core")
     ikSystem = HumanSpine(side="L", part="Core", numHighLevelCtrls=5, fallOffMethod="Position")
     ikSystem.ikControlToWorld = True
-    # ikSystem.devSpine = True
+    ikSystem.devSpine = True
     ikSystem.isStretchable = True
     ikSystem.testBuild()
     ikSystem.addStretch()
