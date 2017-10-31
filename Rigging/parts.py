@@ -71,14 +71,10 @@ class Rig(core.TransSubSystem):
         return cubeMeta
 
     def createCtrlObj(self, part, **kwargs):
-        shape = kwargs.get("shape")
+        shape = kwargs.get("shape", self.mainCtrlShape)
         createXtra = kwargs.get("createXtra", True)
         addGimbal = kwargs.get("addGimbal", True)
-        ctrl = core.Ctrl(part=part, side=self.side)
-        if not shape:
-            shape = self.mainCtrlShape
-        ctrl.ctrlShape = shape
-        ctrl.createXtra = createXtra
+        ctrl = core.Ctrl(part=part, side=self.side, createXtra=createXtra, shape=shape)
         ctrl.build()
         if addGimbal:
             ctrl.addGimbalMode()
@@ -143,7 +139,7 @@ class Rig(core.TransSubSystem):
 
     def buildProxy(self):
         # Build the proxy cube
-        proxyGrp = core.MovableSystem(side=self.side, part=self.part, endSuffix="ProxyGrp")
+        proxyGrp = core.NoInheritsTransform(side=self.side, part=self.part, endSuffix="ProxyGrp")
         proxyGrp.setParent(self)
         for i in range(len(self.jointSystem.joints) - 1):
             cubeMeta = self.createProxyCube(self.jointSystem.joints[i].pynode, self.jointSystem.joints[i + 1].pynode)
@@ -499,12 +495,11 @@ class Blender(Rig):
         self.addAttr("subSystems", "")
         self._subSystemA = None
         self._subSystemB = None
-        self._blendAttr = None
 
     # noinspection PyStatementEffect
     def buildBlendCtrl(self):
         # Build Blendcontrol
-        self.blender = self.createCtrlObj(self.part, createXtra=False, addGimbal=False)
+        self.blender = self.createCtrlObj('{}Blend'.format(self.part), createXtra=False, addGimbal=False)
 
         # Create reverse node
         self.inverse = core.MetaRig(side=self.side, part=self.part, endSuffix="Inverse", nodeType="reverse")
@@ -591,9 +586,7 @@ class Blender(Rig):
 
     @property
     def blendAttr(self):
-        if not self._blendAttr:
-            self._blendAttr = self.blender.pynode.attr(self.subSystems)
-        return self._blendAttr
+        return self.blender.pynode.attr(self.subSystems)
 
     @property
     def subSystemA(self):
