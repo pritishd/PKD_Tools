@@ -170,6 +170,14 @@ class JointCollection(core.Network):
             self.metaCache[jointAttr] = [core.MetaRig(joint) for joint in jointList]
 
     @property
+    def pyJoints(self):
+        key = "pyJoints"
+        if not self.metaCache.setdefault(key, []):
+            self.metaCache[key] = [joint.pynode for joint in self.joints]
+        return self.metaCache[key]
+
+
+    @property
     def jointList(self):
         key = "jointList"
         if not self.metaCache.setdefault(key, []):
@@ -193,6 +201,11 @@ class JointCollection(core.Network):
     @property
     def buildData(self):
         return {"GimbalData": self.gimbalData, "JointData": self.jointData}
+
+    @buildData.setter
+    def buildData(self, buildData):
+        self.gimbalData = buildData["GimbalData"]
+        self.jointData = buildData["JointData"]
 
     @property
     def rotateOrder(self):
