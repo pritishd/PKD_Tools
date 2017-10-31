@@ -233,15 +233,18 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
             # Parent the group
             subSystem.setParent(self)
         # Connect it as a child
-        self.connectChild(subSystem, '{0}_System'.format(system))
+        sys_attr = '{0}_System'.format(system)
+        self.connectChild(subSystem, sys_attr)
         subSystem.systemType = system
+        self.metaCache[sys_attr] = subSystem
 
-    def getMetaSubSystem(self, system="FK"):
+    def getMetaSubSystem(self, sys_attr="FK"):
         """Return a subsystem type"""
-        return (self.getChildren(walk=True,
-                                 asMeta=self.returnNodesAsMeta,
-                                 cAttrs=['{0}_System'.format(system)])
-                or [""])[0]
+        sys_attr = '{0}_System'.format(sys_attr)
+        if not self.metaCache.setdefault(sys_attr, None):
+            self.metaCache[sys_attr] = (self.getChildren(asMeta=self.returnNodesAsMeta, cAttrs=[sys_attr])
+                                        or [""])[0]
+        return self.metaCache[sys_attr]
 
     def convertToComponent(self, component="FK"):
         """
@@ -296,7 +299,7 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
             children = self.getChildren(walk=True, asMeta=self.returnNodesAsMeta,
                                         cAttrs=["{}_{}".format(self.CTRL_Prefix, target)])
             if children:
-                return children[0]
+                self.metaCache[targetAttr] = children[0]
 
         return self.metaCache[targetAttr]
 
@@ -770,7 +773,7 @@ class Ctrl(SimpleCtrl):
     @details A typical control will have the following setup
     <ul>
     <li>Prnt = The main parent control</li>
-        <li>Xtra = An extra transform where the animator can push contraints or set driven keys<l/i>
+        <li>Xtra = An extra transform where the animator can push constraints or set driven keys<l/i>
             <li>Ctrl - The actual control that is exposed to the animator<l/i>
                 <li>Gimbal - An extra controller to take handle gimbal lock issues</li>
     </ul>
