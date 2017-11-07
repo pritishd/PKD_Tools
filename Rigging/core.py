@@ -292,11 +292,9 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
         @param target (string) The type of control that is being retrieved
         @return: The meta rig
         """
-
         targetAttr = "{}_{}".format(self.CTRL_Prefix, target)
-
         if not self.metaCache.setdefault(targetAttr, None):
-            children = self.getChildren(walk=True, asMeta=self.returnNodesAsMeta,
+            children = self.getChildren(asMeta=self.returnNodesAsMeta,
                                         cAttrs=["{}_{}".format(self.CTRL_Prefix, target)])
             if children:
                 self.metaCache[targetAttr] = children[0]
@@ -314,7 +312,8 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
             # TODO: add ctrls to rig controls
             assert isinstance(target, Red9_Meta.MetaClass)
             super(MetaRig, self).addRigCtrl(target.mNode, *args, **kwargs)
-            self.metaCache["{}_{}".format(self.CTRL_Prefix, target)] = target
+            targetAttr = "{}_{}".format(self.CTRL_Prefix, kwargs.get("ctrType") or args[0])
+            self.metaCache[targetAttr] = target
         except:
             raise AssertionError("Input must be MetaClass")
 
@@ -564,9 +563,10 @@ class MovableSystem(MetaRig):
             constraintMeta.weightAliasInfo = weightAlias
         return constraintNodeName
 
-    def snap(self, target, rotate=True):
+    def snap(self, target, rotate=True, translate=True):
         """
         Match the position of the system to the target node
+        @param translate:
         @param target (pynode/string) Self descriptive
         @param rotate (bool) Whether to match rotation
         """
@@ -574,9 +574,9 @@ class MovableSystem(MetaRig):
         target = forcePyNode(target)
         if all(pm.objectType(node) in ["transform", "joint"] for node in [self.pynode, target]):
             if self.prnt:
-                libUtilities.snap(self.prnt.pynode, target, rotate=rotate)
+                libUtilities.snap(self.prnt.pynode, target, rotate=rotate, translate=translate)
             else:
-                libUtilities.snap(self.pynode, target, rotate=rotate)
+                libUtilities.snap(self.pynode, target, rotate=rotate, translate=translate)
 
     def lockTranslate(self):
         """Lock all the translate channels"""
@@ -589,6 +589,10 @@ class MovableSystem(MetaRig):
     def lockScale(self):
         """Lock all the scale channels"""
         libUtilities.lock_scale(self.pynode)
+
+    def lockDefaultAttributes(self):
+        """Lock all the default maya attributes channels"""
+        libUtilities.lock_default_attribute(self.pynode)
 
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     @property
@@ -631,6 +635,10 @@ class MovableSystem(MetaRig):
         """
         self.addSupportNode(data, "Prnt")
         # @e ndcond
+
+    @property
+    def prntPy(self):
+        return self.prnt.pynode
 
 
 class TransSubSystem(MovableSystem):
