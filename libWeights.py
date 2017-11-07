@@ -95,6 +95,8 @@ class Weights(object):
         By default we use the maya deformerWeights command to export the weight'''
         self._error_checks_()
 
+        # NOTE: While maya writes xml files, for the weight, to keep the data type unified we are using json extension
+        # for our files
         evalStatment = 'deformerWeights -export -method "index" -deformer "%s" -path "%s" "%s"' % (
             self.target_deformer, self.folder, self.file)
         libUtilities.melEval(evalStatment)
@@ -105,7 +107,7 @@ class Weights(object):
         if self.folder is None:
             raise RuntimeError("No Path Defined")
         if self.deformer is None:
-            raise RuntimeError("No Defomer Defined")
+            raise RuntimeError("No Deformer Defined")
 
     def _get_target_defomer_(self):
         '''Define the current deformer property'''
