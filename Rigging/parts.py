@@ -36,11 +36,10 @@ class Rig(core.TransSubSystem):
             self._evaluateLastJoint = kwargs.get("evaluateLastJoint", True)
             self.flipProxyCube = kwargs.get("flipProxyCube", False)
 
-    def createProxyCube(self, targetJoint, childJoint):
-        # Get the height
-        height = Red9_CoreUtils.distanceBetween(targetJoint.shortName(), childJoint.shortName())
-
+    def createProxyCube(self, targetJoint, count):
         # Create the cube of that height
+        height = self.jointSystem.lengths[count]
+
         cube = pm.polyCube(height=height, ch=False)[0]
 
         cubeMeta = core.MovableSystem(part=targetJoint.part.get(), side=self.side, endSuffix="Geo")
@@ -141,8 +140,9 @@ class Rig(core.TransSubSystem):
         # Build the proxy cube
         proxyGrp = core.NoInheritsTransform(side=self.side, part=self.part, endSuffix="ProxyGrp")
         proxyGrp.setParent(self)
-        for i in range(len(self.jointSystem.joints) - 1):
-            cubeMeta = self.createProxyCube(self.jointSystem.joints[i].pynode, self.jointSystem.joints[i + 1].pynode)
+
+        for count, joint in enumerate(self.jointSystem.pyJoints[:-1]):
+            cubeMeta = self.createProxyCube(joint, count)
             cubeMeta.setParent(proxyGrp)
 
     def cleanUp(self):
@@ -500,10 +500,10 @@ class Blender(Rig):
     def buildBlendCtrl(self):
         # Build Blendcontrol
         self.blender = self.createCtrlObj('{}Blend'.format(self.part), createXtra=False, addGimbal=False)
+        self.blender.lockDefaultAttributes()
 
         # Create reverse node
         self.inverse = core.MetaRig(side=self.side, part=self.part, endSuffix="Inverse", nodeType="reverse")
-        libUtilities.lock_default_attribute(self.blender.pynode)
 
         # Attribute based on the system type
         libUtilities.addFloatAttr(self.blender.pynode, self.subSystems)
@@ -521,13 +521,6 @@ class Blender(Rig):
         self.blender.pynode.attr("type") >> interpADL.pynode.input1
 
         self.blender.addSupportNode(interpADL, "InterpADL")
-        # mm.eval('setAttr -lock true "%s.Interp"' % ctrl)
-        # mm.eval('addAttr -ln "Type"  -at "enum" -en "Average:Shortest:Longest:"  %s;' % ctrl)
-        # mm.eval('setAttr -e-keyable true %s.Type;' % ctrl)
-        # addNode = mc.createNode("addDoubleLinear", n=ctrl.replace("Ctrl", "add"))
-        # mc.setAttr(addNode + ".input2", 1)
-        # mc.connectAttr(ctrl + ".Type", addNode + ".input1")
-        # for con in const: mc.connectAttr(addNode + ".output", con + ".interpType")
 
     def blendJoints(self):
         # Replicate the joint based off A
@@ -563,26 +556,23 @@ class Blender(Rig):
                 self.blendAttr >> joint.scaleConstraint.pynode.w1
 
     def blendVisibility(self):
-        pass
+        # Set the visibility set driven key
+        blendAttrName = self.blendAttr.name()
+        attrValues = [0, .5, 1]
+        subSysAVis = [1, 1, 0]
+        subSysBVis = [0, 1, 1]
+
+        for attrVis, system in zip([subSysAVis, subSysBVis], [self.subSystemA, self.subSystemA]):
+            for ctrl in system.allCtrls:
+                ctrlShape = ctrl.pynode.getShape()
+                if not (ctrlShape.v.isLocked() or ctrlShape.v.listConnections()):
+                    libUtilities.set_driven_key({blendAttrName: attrValues}, {ctrlShape.v.name(): attrVis}, "step")
 
     def build(self):
         super(Blender, self).build()
         self.buildBlendCtrl()
         self.blendJoints()
         self.blendVisibility()
-
-        # Set the visibility set driven key
-        blendAttrName = self.blendAttr.name()
-        attrValues = [0, .5, 1]
-        subSysAVis = [1, 1, 0]
-        subSysBVis = [0, 1, 1]
-        for ctrl in self.subSystemA.mainCtrls:
-            ctrlShapeName = ctrl.pynode.getShape().v.name()
-            libUtilities.set_driven_key({blendAttrName: attrValues}, {ctrlShapeName: subSysAVis}, "step")
-
-        for ctrl in self.subSystemB.mainCtrls:
-            ctrlShapeName = ctrl.pynode.getShape().v.name()
-            libUtilities.set_driven_key({blendAttrName: attrValues}, {ctrlShapeName: subSysBVis}, "step")
 
     @property
     def blendAttr(self):
