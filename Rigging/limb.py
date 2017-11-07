@@ -26,6 +26,7 @@ SOLVERS = {
 }
 
 
+# noinspection PyUnresolvedReferences
 def _build_ik_(metaClass, solver, handleSuffix, startJointNumber, endJointNumber):
     """A generic function to create a IK solver that is used by the various metaClasses.
     @param metaClass: The metaclass object
@@ -36,8 +37,8 @@ def _build_ik_(metaClass, solver, handleSuffix, startJointNumber, endJointNumber
     @return:
     """
     name = utils.nameMe(metaClass.side, metaClass.part, handleSuffix)
-    startJoint = metaClass.jointSystem.joints[startJointNumber].shortName()
-    endJoint = metaClass.jointSystem.joints[endJointNumber].shortName()
+    startJoint = metaClass.jointSystem.joints[startJointNumber].mNode
+    endJoint = metaClass.jointSystem.joints[endJointNumber].mNode
     ikHandle = pm.ikHandle(name=name, sj=startJoint, ee=endJoint, sol=solver, sticky="sticky")[0]
     ikHandleMeta = core.MovableSystem(ikHandle.name())
     metaClass.transferPropertiesToChild(ikHandleMeta, handleSuffix[0].lower() + handleSuffix[1:])
@@ -45,20 +46,27 @@ def _build_ik_(metaClass, solver, handleSuffix, startJointNumber, endJointNumber
     # IK Handle needs to be in it's own group in case the polevector is not set. Otherwise if you reparent it
     # the polevector value changes in relation to the parent space
     # Create the parent meta
-    ikHandleMeta.part = handleSuffix
-    ikHandleMeta.addParent(snap=False)
+    ikHandleMeta.part = metaClass.part
+    ikHandleMeta.addParent(snap=False, endSuffix="{}Prnt".format(handleSuffix))
     # Set the pivot to the endJoint
     libUtilities.snap_pivot(ikHandleMeta.prnt.mNode, endJoint)
     return ikHandleMeta
 
 
+# noinspection PyUnresolvedReferences,PyStatementEffect
 class LimbIk(parts.Ik):
     def __init__(self, *args, **kwargs):
         super(LimbIk, self).__init__(*args, **kwargs)
-        self.ikSolver = SOLVERS["Single"]
-        self.customPVPosition = None
+        if self._build_mode:
+            self.ikSolver = SOLVERS[kwargs.get("solver", "Single")]
+        self.pvPosition = kwargs.get("pvPosition")
         self.startJointNumber = 0
-        self.endJointNumber = 1
+        self.endJointNumber = -1
+
+    def __bindData__(self, *args, **kwgs):
+        super(LimbIk, self).__bindData__(*args, **kwgs)
+        self.addAttr("pvPosition", [])
+        self.addAttr("ikSolver", '')
 
     def loadIKPlugin(self):
         if self.ikSolver not in ["ikRPsolver", "ikSCsolver"]:
@@ -76,34 +84,35 @@ class LimbIk(parts.Ik):
         # Clean up the heirachy
         self.cleanUp()
 
-    def buildPv(self):
+    def buildPvControl(self):
         self.pv = core.Ctrl(part="%s_PV" % self.part, side=self.side)
         self.pv.ctrlShape = "Locator"
         self.pv.build()
         self.pv.setParent(self)
         self.pv.setRotateOrder(self.rotateOrder)
 
+    def buildPVConstraint(self):
         # Position And Align The Pole Vector Control
-
         default_pole_vector = libVector.vector(list(self.ikHandle.poleVector))
 
         # Check user user defined pos. If not then take then find the vector from the second joint in the chain
-        pv_position = self.customPVPosition
+        pv_position = self.pvPosition
         if not pv_position:
-            second_joint_position = self.jointSystem.joints[self.startJointNumber + 1].pynode.getTranslation(
+            second_joint_position = self.jointSystem.joints[self.absStartJointNumber + 1].pynode.getTranslation(
                 space="world")
-            pv_position = (default_pole_vector * [30, 30, 30]) + second_joint_position
+            self.pvPosition = list(
+                (default_pole_vector * [30, 30, 30] * ([self.scaleFactor] * 3)) + second_joint_position)
 
         # Get the Pole vector position that it wants to snap to
-        self.pv.prnt.pynode.setTranslation(pv_position, space="world")
+        self.pv.prnt.pynode.setTranslation(self.pvPosition, space="world")
         pvTwist = 0
 
-        # Find the twist of the new pole vector if to a new positiion
-        if self.customPVPosition:
+        # Find the twist of the new pole vector if to a new position
+        if self.pvPosition:
             pm.poleVectorConstraint(self.pv.mNode, self.ikHandle.mNode, w=1)
             offset_pole_vector = self.ikHandle.poleVector
 
-            # Delete the polevector
+            # Delete the pole vector
             pm.delete(self.ikHandle.mNode, cn=1)
             self.ikHandle.pynode.poleVector.set(default_pole_vector)
 
@@ -122,6 +131,13 @@ class LimbIk(parts.Ik):
 
         pm.poleVectorConstraint(self.pv.mNode, self.ikHandle.mNode, weight=1)
         self.ikHandle.twist = pvTwist
+
+    def buildPv(self):
+        self.buildPvControl()
+        self.buildPVConstraint()
+        self.finalisePV()
+
+    def finalisePV(self):
         self.pv.lockRotate()
         self.pv.lockScale()
 
@@ -129,10 +145,38 @@ class LimbIk(parts.Ik):
         self.mainIK.snap(self.jointSystem.joints[self.endJointNumber].mNode, not self.ikControlToWorld)
 
     def buildControl(self):
-        self.mainIK = self.createCtrlObj(self.part)
-        self.mainIK.lockScale()
-        self.alignControl()
-        self.mainIK.addChild(self.ikHandle.SUP_Prnt.pynode)
+        if not self.mainIK:
+            self.mainIK = self.createCtrlObj(self.part)
+            self.mainIK.lockScale()
+            self.alignControl()
+            self.mainIK.addChild(self.ikHandle.SUP_Prnt.pynode)
+
+        # Is it a spring solver
+        # Adding control control the spring solver
+        if self.ikSolver == "ikSpringSolver":
+            pm.refresh()
+            ikHandle = pm.PyNode(self.ikHandle.mNode)
+            if hasattr(ikHandle, "springAngleBias"):
+                springAngleBias = ikHandle.springAngleBias
+                numBias = springAngleBias.numElements()
+
+                self.springBiasCtrl.addDivAttr("SpringBias", "lblSpringBias")
+                self.springBiasCtrl.addFloatAttr("Start", sn="StartBias", df=0.5)
+                self.springBiasCtrl.pynode.StartBias >> springAngleBias[0].springAngleBias_FloatValue
+
+                if numBias > 2:
+                    for i in range(1, numBias - 1):
+                        attr = "MidBias{}".format(i)
+                        self.springBiasCtrl.addFloatAttr("Mid{}".format(i), sn=attr, df=0.5)
+                        self.springBiasCtrl.pynode.attr(attr) >> springAngleBias[i].springAngleBias_FloatValue
+
+                self.springBiasCtrl.addFloatAttr("End", sn="EndBias", df=0.5)
+                self.springBiasCtrl.pynode.EndBias >> springAngleBias[numBias - 1].springAngleBias_FloatValue
+            else:
+                print "Could not find srpingAngleBias in {}".format(self.ikHandle.pynode)
+
+        else:
+            pass
 
     def buildIk(self):
         # Setup the IK handle RP solver
@@ -196,13 +240,50 @@ class LimbIk(parts.Ik):
         # TODO: Pass the slot number before and axis data
         self.addRigCtrl(data, ctrType="MainIK", mirrorData=self.mirrorData)
 
+    @property
+    def springBiasCtrl(self):
+        springBiasCtrl = self.getRigCtrl("SpringBias")
+        if springBiasCtrl:
+            return springBiasCtrl
+        else:
+            return self.mainIK
+
+    @springBiasCtrl.setter
+    def springBiasCtrl(self, data):
+        self.addRigCtrl(data, ctrType="SpringBias", mirrorData=self.mirrorData)
+
+    @property
+    def absEndJointNumber(self):
+        return self.jointSystem.jointList.index(self.jointSystem.jointList[self.endJointNumber])
+
+    @property
+    def absStartJointNumber(self):
+        return self.jointSystem.jointList.index(self.jointSystem.jointList[self.startJointNumber])
+
+    @property
+    def scaleFactor(self):
+        key = "scaleFactor"
+        if not self.metaCache.setdefault(key, []):
+            total = sum(self.jointSystem.lengths[self.absStartJointNumber:self.absEndJointNumber])
+            self.metaCache[key] = total / 17.575
+        return self.metaCache[key]
+
+
+class Spring(LimbIk):
+    def __init__(self, *args, **kwargs):
+        super(Spring, self).__init__(*args, **kwargs)
+        if self._build_mode:
+            self.ikSolver = SOLVERS[kwargs.get("solver", "Spring")]
+        self.endJointNumber = -1
+
 
 class Arm(LimbIk):
     """This is base IK System. with a three joint"""
 
     def __init__(self, *args, **kwargs):
         super(Arm, self).__init__(*args, **kwargs)
-        self.ikSolver = SOLVERS["2Bone"]
+        if self._build_mode:
+            self.ikSolver = SOLVERS[kwargs.get("solver", "RotatePlane")]
         self.endJointNumber = 2
 
     def testBuild(self, **kwargs):
@@ -214,7 +295,7 @@ class Hip(Arm):
     def __init__(self, *args, **kwargs):
         super(Hip, self).__init__(*args, **kwargs)
         self.startJointNumber = 1
-        self.endJointNumber = 3
+        self.endJointNumber = -1
 
     def buildIk(self):
         super(Hip, self).buildIk()
@@ -263,9 +344,9 @@ class Hip(Arm):
         aimConKwgs = {"mo": False, "wut": "object", "wuo": upVector.mNode}
         aimCon = pm.aimConstraint(*aimConArgs, **aimConKwgs)
         self.aimHelper.addParent(endSuffix="AimHelperPrnt")
-        #pm.delete(aimCon)
-        #aimConArgs[1] = self.aimHelper.pynode
-        #pm.aimConstraint(*aimConArgs, **aimConKwgs)
+        # pm.delete(aimCon)
+        # aimConArgs[1] = self.aimHelper.pynode
+        # pm.aimConstraint(*aimConArgs, **aimConKwgs)
         self.aimHelper.prnt.v = False
 
         # Orient Constraint the Hip Constraint
@@ -363,24 +444,12 @@ class Hip(Arm):
 class Quad(LimbIk):
     def __init__(self, *args, **kwargs):
         super(Quad, self).__init__(self, *args, **kwargs)
-        self.endJointNumber = 3
-        self.ikSolver = SOLVERS["Spring"]
-
-    def buildControl(self):
-        super(Quad, self).buildControl()
-        # Adding controls to the sprink bias
-        self.mainIK.addDivAttr("SpringBias", "lblSpringBias")
-        self.mainIK.addFloatAttr("Start", sn="StartBias", df=0.5)
-        self.mainIK.addFloatAttr("End", sn="EndBias", df=0.5)
-        self.mainIK.pynode.StartBias >> self.ikHandle.pynode.springAngleBias[0].springAngleBias_FloatValue
-        self.mainIK.pynode.EndBias >> self.ikHandle.pynode.springAngleBias[1].springAngleBias_FloatValue
-
-    def testBuild(self, **kwargs):
-        super(Quad, self).testBuild(**kwargs)
-        self.buildPv()
+        if self._build_mode:
+            self.endJointNumber = 3
+            self.ikSolver = SOLVERS[kwargs.get("solver", "Spring")]
 
 
-# noinspection PyUnresolvedReferences
+# noinspection PyUnresolvedReferences,PyTypeChecker
 class Hand(object):
     def build_ik(self):
         self.palmIKHandle = _build_ik_(self, SOLVERS["Single"], "PalmIKHandle", self.endJointNumber,
@@ -480,13 +549,13 @@ class Hoof(object):
             # Create the 2 rotate system
         tipToeRoll = core.MovableSystem(part=self.part, side=self.side, endSuffix="TipToeRoll")
         tipToeRoll.addParent(snap=False, endSuffix="TipToeRollPrnt")
-        tipToeRoll.snap(self.jointSystem.joints[-1].mNode)
+        tipToeRoll.snap(self.jointSystem.joints[-2].mNode)
         libUtilities.snap(tipToeRoll.prnt.mNode, self.jointSystem.joints[self.endJointNumber].mNode, translate=False)
 
         # self.toeRoll.setParent(self.jointSystem.Joints[-1])
         heelRoll = core.MovableSystem(part=self.part, side=self.side, endSuffix="HeelRoll")
         heelRoll.addParent(snap=False, endSuffix="HeelRollPrnt")
-        heelRoll.snap(self.jointSystem.joints[-2].mNode)
+        heelRoll.snap(self.jointSystem.joints[-1].mNode)
         libUtilities.snap(heelRoll.prnt.mNode, self.jointSystem.joints[self.endJointNumber].mNode, translate=False)
 
         # Create a negative multiply divide for the heel
@@ -729,8 +798,7 @@ class Paw(Foot):
         self.rollAttrs = ["Heel", "Ball", "Ankle", "Toe", "TipToe"]
 
     def reparentJoints(self):
-        self.jointSystem.joints[-1].setParent(
-            self.jointSystem.joints[self.endJointNumber + 1])
+        self.jointSystem.joints[-1].setParent(self.jointSystem.joints[self.endJointNumber + 1])
 
     def buildIk(self):
         # Reparent the toe
@@ -830,21 +898,222 @@ class QuadPaw(Quad, Paw):
         Paw.align_control(self)
 
 
+class BlendIK(LimbIk):
+    def __init__(self, *args, **kwargs):
+        super(BlendIK, self).__init__(*args, **kwargs)
+        # TODO: Need to validate this
+        self.ikTypes = kwargs.get("ikSystemType", ["Hip", "Spring"])
+        self._subIKA = self._subIKB = None
+
+    def __bindData__(self, *args, **kwgs):
+        super(BlendIK, self).__bindData__(*args, **kwgs)
+        self.addAttr("subIKs", "")
+
+    def buildIk(self):
+        self.ikHandle = _build_ik_(self, SOLVERS["Single"], "IkHandle", self.endJointNumber - 1, self.endJointNumber)
+        for label, ikType in zip(self.subIKNames, self.ikTypes):
+            ikMeta = globals()[ikType](part="{}{}".format(self.part, label), side=self.side, solver="Spring")
+            ikMeta.endJointNumber = self.endJointNumber
+            ikJointSystem = joints.JointSystem(part="{}{}".format(self.part, label), side=self.side)
+            ikJointSystem.buildData = self.jointSystem.buildData
+            jointData = ikJointSystem.jointData
+            for jointInfo in jointData:
+                jointInfo["Name"] = "{}{}".format(jointInfo["Name"], label)
+            ikJointSystem.jointData = jointData
+            self.addMetaSubSystem(ikMeta, label)
+            ikJointSystem.build()
+            ikMeta.jointSystem = ikJointSystem
+            ikMeta.loadIKPlugin()
+            ikMeta.buildIk()
+
+    def parseLabels(self):
+        labels = []
+        for ikType in self.ikTypes:
+            capitalChar = list(set(ikType) - set(ikType.capitalize()))
+            labels.append(ikType.split(capitalChar[0])[0] if capitalChar else ikType)
+        self.subIKs = "_".join(labels)
+
+    def buildControl(self):
+        # self.ikHandle = self.subIKA.ikHandle
+        super(BlendIK, self).buildControl()
+        # self.delAttr("SUP_IKHandle")
+        for count, system, sysType in zip(range(len(self.subIKNames)), self.subIKSystems, self.subIKNames):
+            self.mainIK.addChild(system.ikHandle.prnt.pynode)
+            if system.ikSolver == "ikSpringSolver":
+                part = "SpringBias"
+                if "Spring" not in sysType:
+                    part = "{}{}".format(sysType, part)
+
+                ctrl = self.createCtrlObj(part=part, createXtra=False, addGimbal=False, shape="Circle")
+                ctrl.snap(self.mainIK)
+                translateValue = 5 * self.scaleFactor * (1 if count else -1)
+                ctrl.prnt.pynode.attr("translate{}".format(self.rollAxis)).set(translateValue)
+                ctrl.setParent(self.mainIK)
+                system.springBiasCtrl = ctrl
+            system.mainIK = self.mainIK
+            system.buildControl()
+            system.delAttr("{}_MainIK".format(self.CTRL_Prefix ))
+        self.mainIK.setParent(self)
+
+    def cleanUp(self):
+        super(BlendIK, self).cleanUp()
+        for system in self.subIKSystems:
+            system.cleanUp()
+            system.setParent(self)
+
+    def build(self):
+        self.parseLabels()
+        super(BlendIK, self).build()
+        self.blendSystems()
+
+    def blendSystems(self):
+        self.buildBlendCtrl()
+        self.blendJoints()
+        self.blendVisibility()
+
+    def blendVisibility(self):
+        # Set the visibility set driven key
+        blendAttrName = self.blendAttr.name()
+        attrValues = [0, .5, 1]
+        subSysAVis = [1, 1, 0]
+        subSysBVis = [0, 1, 1]
+
+        for attrVis, system in zip([subSysAVis, subSysBVis], self.subIKSystems):
+            for ctrl in system.allCtrls:
+                ctrlShape = ctrl.pynode.getShape()
+                if not (ctrlShape.v.isLocked() or ctrlShape.v.listConnections()):
+                    libUtilities.set_driven_key({blendAttrName: attrValues}, {ctrlShape.v.name(): attrVis}, "step")
+
+    def blendJoints(self):
+        # for jointA, jointB, joint, count in zip(self.subIKA.jointSystem.pyJoints,
+        #                                         self.subIKB.jointSystem.pyJoints,
+        #                                         self.jointSystem.joints,
+        #                                         range(len(self.jointSystem.joints))):
+        jointRange = range(len(self.jointSystem.jointList[0:self.endJointNumber]))
+        for count in jointRange:
+            jointA = self.subIKA.jointSystem.pyJoints[count]
+            jointB = self.subIKB.jointSystem.pyJoints[count]
+            joint = self.jointSystem.joints[count]
+            pairBlend = core.MetaRig(part=joint.part, side=self.side, endSuffix='PairBlend', nodeType='pairBlend')
+            pairPyNode = pairBlend.pynode
+
+            connectAttrs = ['Rotate', 'Translate']
+
+            if count == jointRange[-1]:
+                connectAttrs.remove('Rotate')
+
+            for attr in connectAttrs:
+                attrLower = attr.lower()
+                jointA.attr(attrLower) >> pairPyNode.attr('in{}1'.format(attr))
+                jointB.attr(attrLower) >> pairPyNode.attr('in{}2'.format(attr))
+                pairPyNode.attr('out{}'.format(attr)) >> joint.pynode.attr(attrLower     )
+
+            self.blendAttr >> pairPyNode.weight
+
+    def buildBlendCtrl(self):
+        # Build Blendcontrol
+        self.blender = self.createCtrlObj("{}Blend".format(self.part), createXtra=False, addGimbal=False, shape="Star")
+
+        self.blender.prntPy.translate.set(self.jointSystem.midPoint)
+
+        transRollAttr = self.blender.prntPy.attr("translate{}".format(self.rollAxis))
+        transRollAttr.set(transRollAttr.get() + 5 * self.scaleFactor)
+
+        self.blender.snap(self.jointSystem.joints[self.absEndJointNumber], translate=False)
+
+        # Attribute based on the system type
+        libUtilities.addFloatAttr(self.blender.pynode, self.subIKs)
+        self.blender.lockDefaultAttributes()
+
+    @property
+    def blendAttr(self):
+        return self.blender.pynode.attr(self.subIKs)
+
+    @property
+    def inverse(self):
+        return self.blender.getSupportNode("Reverse")
+
+    @inverse.setter
+    def inverse(self, data):
+        self.blender.addSupportNode(data, "Reverse")
+
+    @property
+    def blender(self):
+        return self.getRigCtrl("Blender")
+
+    @blender.setter
+    def blender(self, data):
+        # TODO: Pass the slot number before and axis data
+        self.addRigCtrl(data, ctrType="Blender", mirrorData=self.mirrorData)
+
+    def testBuild(self, **kwargs):
+        super(BlendIK, self).testBuild(**kwargs)
+        self.buildPv()
+
+    def buildPVConstraint(self):
+
+        pvPosition = []
+        for system in self.subIKSystems:
+            system.pv = self.pv
+            if pvPosition:
+                system.pvPosition = pvPosition
+            system.buildPVConstraint()
+            pvPosition = system.pvPosition
+            system.delAttr("{}_PV".format(self.CTRL_Prefix))
+
+    def buildPv(self):
+        self.buildPvControl()
+        self.buildPVConstraint()
+        self.finalisePV()
+
+    def _getSubIk(self, subIK):
+        if not self.metaCache.setdefault(subIK, None):
+            self.metaCache[subIK] = self.getMetaSubSystem(subIK)
+        return self.metaCache[subIK]
+
+    @property
+    def subIKNames(self):
+        return self.subIKs.split("_")
+
+    @property
+    def subIKA(self):
+        return self._getSubIk(self.subIKNames[0])
+
+    @property
+    def subIKB(self):
+        return self._getSubIk(self.subIKNames[1])
+
+    @property
+    def subIKSystems(self):
+        return [self.subIKA, self.subIKB]
+
+
+class SpringDev(Hip):
+    def __init__(self, *args, **kwargs):
+        super(SpringDev, self).__init__(*args, **kwargs)
+        self.ikSolver = SOLVERS[kwargs.get("solver", "Spring")]
+        self.endJointNumber = -1
+
+
 core.Red9_Meta.registerMClassInheritanceMapping()
 core.Red9_Meta.registerMClassNodeMapping(nodeTypes=['ikHandle',
                                                     'multiplyDivide',
-                                                    "clamp"])
+                                                    'clamp',
+                                                    'pairBlend'])
 if __name__ == '__main__':
     pm.newFile(f=1)
-    mainSystem = parts.Blender(side="C", part="Core")
+    # mainSystem = parts.Blender(side="C", part="Core")
 
-    ikSystem = HipHoof(side="C", part="Core")
-    system = "IK"
-    mainSystem.addMetaSubSystem(ikSystem, system)
+    ikSystem = BlendIK(side="C", part="Core")
+    # system = "IK"
+    # mainSystem.addMetaSubSystem(ikSystem, system)
     # ikSystem.ikControlToWorld = True
-    ikSystem.testBuild(buildProxy=False, buildMaster=False)
-    ikSystem.convertSystemToSubSystem(system)
+    ikSystem.testBuild(buildMaster=False)
+    # ikSystem.convertSystemToSubSystem(system)
+    # ikSystem.buildPv()
     pm.refresh()
+
+
 
     # fkSystem = parts.FK(side="C", part="Core")
     # mainSystem.addMetaSubSystem(fkSystem, "FK")
