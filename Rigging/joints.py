@@ -5,7 +5,7 @@
 
 from pymel import core as pm
 
-from PKD_Tools import libUtilities, libJoint
+from PKD_Tools import libUtilities, libJoint, libVector
 from PKD_Tools.Rigging import core
 
 
@@ -176,7 +176,6 @@ class JointCollection(core.Network):
             self.metaCache[key] = [joint.pynode for joint in self.joints]
         return self.metaCache[key]
 
-
     @property
     def jointList(self):
         key = "jointList"
@@ -186,12 +185,30 @@ class JointCollection(core.Network):
 
     @property
     def positions(self):
-        positionList = []
-        if self.jointData:
-            positionList = [joint["Position"] for joint in self.jointData]
-        else:
-            libUtilities.logger.error("No joint data found")
-        return positionList
+        key = "positions"
+        if not self.metaCache.setdefault(key, []):
+            if self.jointData:
+                self.metaCache[key] = [joint["Position"] for joint in self.jointData]
+            else:
+                libUtilities.logger.error("No joint data found")
+        return self.metaCache[key]
+
+    @property
+    def midPoint(self):
+        key = "midPoint"
+        if not self.metaCache.setdefault(key, None):
+            self.metaCache[key] = libVector.average(self.positions)
+        return self.metaCache[key]
+
+    @property
+    def lengths(self):
+        key = "lengths"
+        if not self.metaCache.setdefault(key, []):
+            lengths = []
+            for i, position in enumerate(self.positions[:-1]):
+                lengths.append(round(libVector.distanceBetween(position, self.positions[i + 1]), 3))
+            self.metaCache[key] = lengths
+        return self.metaCache[key]
 
     @property
     def jointClass(self):
@@ -394,3 +411,6 @@ class SkinJointSystem(JointSystem):
     @property
     def jointClass(self):
         return SkinJoint
+
+
+core.Red9_Meta.registerMClassInheritanceMapping()
