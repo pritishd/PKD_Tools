@@ -25,6 +25,7 @@ import traceback
 from collections import OrderedDict
 
 from pymel import core as pm
+from maya import cmds
 
 from PKD_Tools import libUtilities, libJoint
 from PKD_Tools.Red9 import Red9_Meta
@@ -639,6 +640,10 @@ class MovableSystem(MetaRig):
     @property
     def prntPy(self):
         return self.prnt.pynode
+
+    @property
+    def matrix(self):
+        return [round(value, 3) for value in cmds.xform(self.mNode, query=1, worldSpace=1, matrix=1)]
 
 
 class TransSubSystem(MovableSystem):
