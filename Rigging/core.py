@@ -549,6 +549,9 @@ class MovableSystem(MetaRig):
             del kwargs["weightAlias"]
 
         # Set the constraint
+        if self.roundMatrix != MetaRig(target.longName()).roundMatrix:
+            print("Matrix different: {} {}".format(self.shortName(), target.shortName()))
+
         constraintNodeName = consFunc(target, self.constrainedNode, **kwargs).name()
         supportNodeType = "%sConstraint" % conType.title()
         if not eval("self.%sConstraint" % conType):
@@ -642,8 +645,8 @@ class MovableSystem(MetaRig):
         return self.prnt.pynode
 
     @property
-    def matrix(self):
-        return [round(value, 3) for value in cmds.xform(self.mNode, query=1, worldSpace=1, matrix=1)]
+    def roundMatrix(self):
+        return [round(value, 6) for value in cmds.xform(self.mNode, query=1, worldSpace=1, matrix=1)]
 
 
 class TransSubSystem(MovableSystem):
