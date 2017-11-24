@@ -52,6 +52,20 @@ def _fullSide_(side):
     return sideDict[side]
 
 
+def jointOrMovable(target):
+    """Return the joint class or movable class based on the target evaluated metanode
+    @param target: MetaRig object
+    @return: @ref joints.Joints or MovableSystem metaNode
+    """
+
+    import PKD_Tools
+    # noinspection PyUnresolvedReferences
+    potentialClass = getattr(PKD_Tools.Rigging.joints, "Joint")
+    if not isinstance(target, potentialClass):
+        potentialClass = MovableSystem
+    return potentialClass
+
+
 _SUBCOMPONENTS_ = ["FK", "IK", "DYN"]
 
 
@@ -295,8 +309,7 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
         """
         targetAttr = "{}_{}".format(self.CTRL_Prefix, target)
         if not self.metaCache.setdefault(targetAttr, None):
-            children = self.getChildren(asMeta=self.returnNodesAsMeta,
-                                        cAttrs=["{}_{}".format(self.CTRL_Prefix, target)])
+            children = self.getChildren(walk=False, asMeta=self.returnNodesAsMeta, cAttrs=[targetAttr])
             if children:
                 self.metaCache[targetAttr] = children[0]
 
@@ -326,7 +339,7 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
         targetSupport = "SUP_{}".format(target)
 
         if not self.metaCache.setdefault(targetSupport, None):
-            children = self.getChildren(walk=True, asMeta=self.returnNodesAsMeta, cAttrs=[targetSupport])
+            children = self.getChildren(walk=False, asMeta=self.returnNodesAsMeta, cAttrs=[targetSupport])
             if not children:
                 if self.debugMode:
                     libUtilities.logger.warn("%s not support node found on %s" % (target, self.shortName()))
@@ -407,7 +420,14 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
     def side(self):
         """Return the current mirror side as string"""
         return self.pynode.mirrorSide.get(asString=True)[0]
-        # @endcond
+
+    @property
+    def mirSide(self):
+        """Return the current mirror side as string"""
+        return self.pynode.mirrorSide.get(asString=True)[0]
+    # @endcond
+
+
 
 
 class ConstraintSystem(MetaRig):
@@ -458,6 +478,8 @@ class MovableSystem(MetaRig):
         """
         @property constrainedNode
         @brief By default the movable node is the one that will be constrained
+        @property constrainedNodePy
+        @brief The pynode of the constraint object
         @property orientConstraint
         @brief Get orient constraint metaclass
         @property pointConstraint
@@ -472,10 +494,19 @@ class MovableSystem(MetaRig):
         @brief Get the pole vector constraint metaclass
         @property prnt
         @brief Get the parent node
+        @property prntPy
+        @brief Get the parent node as as PyNode
+        @property globalMatrix
+        @brief Get the rounded matrix value in world space
+        @property isZeroOut
+        @brief Are all the rotation and transform values set to zero
+        @property zeroGrp
+        @brief The transform node which will zero out the rotation and transform value
         """
         super(MovableSystem, self)._doxygenHelper()
-        self.constrainedNode = self.orientConstraint = self.pointConstraint = self.aimConstraint = \
-            self.parentConstraint = self.scaleConstraint = self.poleVectorConstraint = self.prnt = None
+        self.constrainedNode = self.constrainedNode = self.orientConstraint = self.pointConstraint = \
+            self.aimConstraint = self.parentConstraint = self.scaleConstraint = self.poleVectorConstraint = \
+            self.prnt = self.globalMatrix = self.isZeroOut = self.prntPy = self.zeroPrnt
 
     def setParent(self, targetSystem):
         """
@@ -485,16 +516,26 @@ class MovableSystem(MetaRig):
         """
         targetNode = forcePyNode(targetSystem)
         # Does it has parent. Then we we reparent that
-        if hasattr(self, "SUP_Prnt"):
+        if targetNode in [self.zeroPrntPy, self.prntPy]:
+            return
+        if hasattr(self, 'SUP_ZeroPrnt'):
+            self.zeroPrntPy.setParent(targetNode)
+        elif hasattr(self, "SUP_Prnt"):
             self.prnt.pynode.setParent(targetNode)
         elif self.pynode.type() in ["transform", "joint"]:
             self.pynode.setParent(targetNode)
         else:
             libUtilities.logger.error("{0} is not a transform/joint node. Unable to parent".format(self.pynode))
 
-    def buildParent(self, parentSystem, part, side, endSuffix):
-        self.prnt = parentSystem(part=part, side=side, endSuffix=endSuffix)
-        self.prnt.rotateOrder = self.rotateOrder
+    def buildParent(self, parentClass, side, endSuffix):
+        """Build a parent meta system. This should inherit rotate order
+        @param parentClass: (metaRig) The parent class that we are trying to create
+        @param side: (str) The side side for this parent
+        @param endSuffix: (str) The endSuffix for this parent
+        @return MetaRig
+        """
+        prnt = parentClass(part=self.part, side=side, endSuffix=endSuffix)
+        return prnt
 
     def addParent(self, **kwargs):
         """Add parent node for the transform node"""
@@ -504,14 +545,31 @@ class MovableSystem(MetaRig):
         side = self.pynode.mirrorSide.get(asString=True)[0]
         if not (self.part and side):
             raise ValueError("Part or Side is not defined: %s" % self.shortName())
-        parentSystem = kwargs.get("parentSystem", MovableSystem)
-        self.buildParent(parentSystem=parentSystem,
-                         part=self.part,
-                         side=side,
-                         endSuffix=endSuffix)
+        parentClass = kwargs.get("parentSystem", MovableSystem)
+        self.prnt = self.buildParent(parentClass, side, endSuffix)
         if snap:
-            libUtilities.snap(self.prnt.pynode, self.pynode)
+            libUtilities.snap(self.prntPy, self.pynode)
         self.pynode.setParent(self.prnt.pynode)
+
+    def addZeroPrnt(self):
+        """Add the zero group for this parent"""
+        pm.select(clear=True)
+        parentClass = jointOrMovable(self)
+        self.zeroPrnt = self.buildParent(parentClass, self.mirSide, "ZeroPrnt")
+
+        if self.zeroPrnt.pynode.nodeType() == "joint":
+            self.zeroPrnt.rigType = "ZeroJointPrnt"
+            self.zeroPrnt.resetName()
+
+        node = self.prnt or self.constrainedNode
+        self.zeroPrnt.snap(node)
+        parentPy = node.pynode.getParent()
+        # This ensures that if it is a joint then a joint inverse scale are set
+        node.setParent(self.zeroPrnt)
+        if node.pynode.getParent() != self.zeroPrntPy:
+            node.pynode.setParent(self.zeroPrntPy)
+        if parentPy:
+            self.zeroPrntPy.setParent(parentPy)
 
     def addConstraint(self, target, conType="parent", **kwargs):
         """
@@ -528,20 +586,20 @@ class MovableSystem(MetaRig):
             kwargs["mo"] = kwargs.get("mo", True)
 
         # Ensure that we are dealing with a pynode
-        target = forcePyNode(target)
+        targetPy = forcePyNode(target)
 
         # Debug statement
         if self.debugMode:
             libUtilities.logger.warning("%sConstrainting %s to %s. Maintain offset is %s "
-                                        % (conType, self.constrainedNode, target, kwargs["mo"]))
+                                        % (conType, self.constrainedNodePy, targetPy, kwargs["mo"]))
 
         # Get the constraint function from the library
         consFunc = getattr(pm, "%sConstraint" % conType)
 
         # Check the constraint type
-        if self.constrainedNode.nodeType() not in ["transform", "joint"]:
+        if self.constrainedNodePy.nodeType() not in ["transform", "joint"]:
             libUtilities.logger.error(
-                "%s is not a transform/joint node. Unable to add constraint" % self.constrainedNode)
+                "%s is not a transform/joint node. Unable to add constraint" % self.constrainedNodePy)
 
         # Delete the weightAlias keywords from the kwargs list before passing it to Maya
         weightAlias = kwargs.get("weightAlias")
@@ -549,19 +607,39 @@ class MovableSystem(MetaRig):
             del kwargs["weightAlias"]
 
         # Set the constraint
-        if self.roundMatrix != MetaRig(target.longName()).roundMatrix:
-            print("Matrix different: {} {}".format(self.shortName(), target.shortName()))
 
-        constraintNodeName = consFunc(target, self.constrainedNode, **kwargs).name()
+        target = MovableSystem(target.shortName())
+        if self.globalMatrix != target.globalMatrix:
+            print("Matrix different: {} {}".format(self.shortName(), targetPy.shortName()))
+            offsetClass = jointOrMovable(target)
+            part = self.part
+            if weightAlias:
+                part += weightAlias
+            else:
+                part += target.part
+            part += "Offset"
+            newTarget = offsetClass(part=part, side=self.mirSide)
+            newTarget.addParent()
+            newTarget.snap(self)
+            newTarget.setParent(target)
+            targetPy = newTarget.pynode
+
+            # Zero out the transform
+        if not self.constrainedNode.isZeroOut:
+            self.addZeroPrnt()
+
+        constraintNodeName = consFunc(targetPy, self.constrainedNodePy, **kwargs).name()
         supportNodeType = "%sConstraint" % conType.title()
         if not eval("self.%sConstraint" % conType):
             constraintMeta = ConstraintSystem(constraintNodeName)
             constraintMeta.rigType = "{0}{1}Con".format(self.rigType, libUtilities.capitalize(conType))
             constraintMeta.mirrorSide = self.mirrorSide
             constraintMeta.part = self.part
+            constraintMeta.resetName()
+            constraintNodeName = constraintMeta.trueName
             self.addSupportNode(constraintMeta, supportNodeType)
 
-        # Store information about multi targeted weights
+        # Store information about multi targeted aliases
         if weightAlias:
             constraintMeta = self.getSupportNode(supportNodeType)
             constraintMeta.weightAliasInfo = weightAlias
@@ -577,10 +655,8 @@ class MovableSystem(MetaRig):
         # Check that we are only applying to joint/transform
         target = forcePyNode(target)
         if all(pm.objectType(node) in ["transform", "joint"] for node in [self.pynode, target]):
-            if self.prnt:
-                libUtilities.snap(self.prnt.pynode, target, rotate=rotate, translate=translate)
-            else:
-                libUtilities.snap(self.pynode, target, rotate=rotate, translate=translate)
+            snapTarget = self.zeroPrnt or self.prnt or self
+            libUtilities.snap(snapTarget.pynode, target, rotate=rotate, translate=translate)
 
     def lockTranslate(self):
         """Lock all the translate channels"""
@@ -601,7 +677,11 @@ class MovableSystem(MetaRig):
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     @property
     def constrainedNode(self):
-        return self.pynode
+        return self
+
+    @property
+    def constrainedNodePy(self):
+        return self.constrainedNode.pynode
 
     @property
     def orientConstraint(self):
@@ -633,20 +713,35 @@ class MovableSystem(MetaRig):
 
     @prnt.setter
     def prnt(self, data):
-        """
-        Set the parent node
-        @param data (metaRig) The parent meta class
-        """
         self.addSupportNode(data, "Prnt")
-        # @e ndcond
 
     @property
     def prntPy(self):
-        return self.prnt.pynode
+        return self.prnt.pynode if self.prnt else None
 
     @property
-    def roundMatrix(self):
-        return [round(value, 6) for value in cmds.xform(self.mNode, query=1, worldSpace=1, matrix=1)]
+    def globalMatrix(self):
+        return [round(value, 6) for value in cmds.xform(self.mNode, query=True, worldSpace=True, matrix=True)]
+
+    @property
+    def isZeroOut(self):
+        trans = cmds.xform(self.mNode, query=True, translation=True)
+        rotate = cmds.xform(self.mNode, query=True, rotation=True)
+
+        return all(not round(value, 4) for value in (trans + rotate))
+
+    @property
+    def zeroPrnt(self):
+        return self.getSupportNode("ZeroPrnt")
+
+    @zeroPrnt.setter
+    def zeroPrnt(self, data):
+        self.addSupportNode(data, "ZeroPrnt")
+
+    @property
+    def zeroPrntPy(self):
+        return self.zeroPrnt.pynode if self.zeroPrnt else None
+        # @endcond
 
 
 class TransSubSystem(MovableSystem):
@@ -956,8 +1051,11 @@ class Ctrl(SimpleCtrl):
             pm.parent(targetNode, self.mNode)
 
     def setParent(self, targetSystem):
-        """Overwritten function to ensure that the @ref prnt is always parented instead of the control node itself"""
-        self.prnt.setParent(targetSystem)
+        """Overwritten function to ensure that the @ref zeroPrnt #ref prnt is always parented instead of the control node itself"""
+        if self.zeroPrnt:
+            self.zeroPrnt.setParent(targetSystem)
+        else:
+            self.prnt.setParent(targetSystem)
 
     def setRotateOrder(self, rotateOrder):
         """Set the rotate order of the various controls"""
@@ -1087,7 +1185,7 @@ class Ctrl(SimpleCtrl):
 
     @property
     def constrainedNode(self):
-        return self.prnt.pynode
+        return self.prnt
 
     @property
     def parentDriver(self):
@@ -1518,5 +1616,10 @@ if __name__ == '__main__':
     # pm.newFile(f=1)
     # SpaceLocator(part="main", side="C")
 
-    toon = CartoonySystem(side="C", part="Cora")
+    toon = Ctrl(side="C", part="Cora", shape="Ball")
     toon.build()
+    toon.addZeroPrnt()
+    toon2 = Ctrl(side="C", part="Cora2", shape="Ball")
+    toon2.build()
+    toon2.scaleShape(.8)
+    toon.addConstraint(toon2)
