@@ -25,11 +25,16 @@ class Joint(core.MovableSystem):
             # self.pynode.otherType.set(self.part)
             #
 
-    def buildParent(self, parentSystem, part, side, endSuffix):
-        """Add parent node for the joint node. If the parent is a joint, then set the joint orient"""
-        super(Joint, self).buildParent(parentSystem, part, side, endSuffix)
-        if isinstance(self.prnt, Joint):
-            self.prnt.jointOrient = self.jointOrient
+    def buildParent(self, parentClass, side, endSuffix):
+        """Add parent node for the joint node. If the parent is a joint, then set the joint orient
+        @param parentClass: (metaRig) The parent class that we are trying to create
+        @param side: (str) The side side for this parent
+        @param endSuffix: (str) The endSuffix for this parent
+        """
+        prntObj = super(Joint, self).buildParent(parentClass, side, endSuffix)
+        if isinstance(prntObj, Joint):
+            prntObj.jointOrient = self.jointOrient
+        return prntObj
 
     def setParent(self, targetSystem):
         """
