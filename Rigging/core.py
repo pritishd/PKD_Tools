@@ -674,6 +674,20 @@ class MovableSystem(MetaRig):
         """Lock all the default maya attributes channels"""
         libUtilities.lock_default_attribute(self.pynode)
 
+    def constraintToMetaConstraint(self, pyConstraint, endSuffix, supportType):
+        """
+        Convert a pynode constraint to meta constraint
+
+        @param pyConstraint: (pynode) The constraint node as a pymel object
+        @param endSuffix: (str) The rigtype for this meta node
+        @param supportType: (str) The support type for this node
+        """
+        constraintMeta = ConstraintSystem(pyConstraint.name())
+        self.transferPropertiesToChild(constraintMeta, endSuffix)
+        constraintMeta.part = self.part
+        constraintMeta.resetName()
+        self.addSupportNode(constraintMeta, supportType)
+
     # @cond DOXYGEN_SHOULD_SKIP_THIS
     @property
     def constrainedNode(self):
