@@ -7,12 +7,7 @@
 from pymel import core as pm
 
 from PKD_Tools import libUtilities, libJoint
-from PKD_Tools.Red9 import Red9_CoreUtils
 from PKD_Tools.Rigging import core, joints, utils
-
-if __name__ == '__main__':
-    for mod in libUtilities, utils, core:
-        reload(mod)
 
 
 class Rig(core.TransSubSystem):
@@ -365,21 +360,34 @@ class Generic(Rig):
         # Build the help joint system
         self.offsetJointSystem = self.jointSystem.replicate(side=self.side,
                                                             part=self.part,
-                                                            endPosition=-1 - int(bool(self.evaluateLastJoint)),
-                                                            supportType="OffsetJoints")
+                                                            startPosition=1,
+                                                            endPosition=self.evaluateLastJoint,
+                                                            supportType="Offset")
+
+        offsetJointPrntSystem = self.jointSystem.replicate(side=self.side,
+                                                            part=self.part,
+                                                            startPosition=1,
+                                                            endPosition=self.evaluateLastJoint,
+                                                            supportType="OffsetPrnt")
+
+        self.addSupportNode(offsetJointPrntSystem, "OffsetPrntJointSystem")
 
         # snap each offset joint to the same position as the next joint
         for i in range(len(self.offsetJointSystem)):
             # Alias the current node
             currentJoint = self.offsetJointSystem.joints[i]
+            # Alias for the parent joint
+            prntJoint = offsetJointPrntSystem.joints[i]
+            currentJoint.setParent(prntJoint)
+            currentJoint.prnt = prntJoint
             # Alias the child joint
-            childJoint = self.jointSystem.joints[i + 1]
+            trgJoint = self.jointSystem.joints[i + 1]
             # Snap to the next joint
-            currentJoint.snap(self.jointSystem.joints[i + 1].mNode, rotate=False)
+            prntJoint.snap(self.jointSystem.joints[i + 1].mNode, rotate=False)
             # Parent the next joint to the this joint
-            childJoint.setParent(currentJoint)
+            trgJoint.setParent(currentJoint)
             # Parent the offjoint to current joint
-            currentJoint.setParent(self.jointSystem.joints[i])
+            prntJoint.setParent(self.jointSystem.joints[i])
 
     def cleanUp(self):
         # Setup the parent of tjoint
@@ -453,12 +461,13 @@ class Fk(Generic):
 
             for i in range(len(self.mainCtrls)):
                 libUtilities.lock_translate(self.mainCtrls[i].pynode)
-                libUtilities.lock_scale(self.mainCtrls[i].pynode)
+                if not self.isDeformable:
+                    libUtilities.lock_scale(self.mainCtrls[i].pynode)
 
             # Lock the elbow
             for position in self.lockCtrlPositions:
-                for attr in self.bendAxis:
-                    attrName = "rotate{0}".format(attr.upper())
+                for attr in [self.rollAxis, self.rollAxis]:
+                    attrName = "rotate{0}".format(attr)
                     self.mainCtrls[position].pynode.attr(attrName).set(lock=True, keyable=False, channelBox=False)
         else:
             raise RuntimeError("Main controls are empty")
