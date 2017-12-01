@@ -62,6 +62,7 @@ class LimbIk(parts.Ik):
         self.pvPosition = kwargs.get("pvPosition")
         self.startJointNumber = 0
         self.endJointNumber = -1
+        self.kwargs = kwargs
 
     def __bindData__(self, *args, **kwgs):
         super(LimbIk, self).__bindData__(*args, **kwgs)
@@ -124,12 +125,13 @@ class LimbIk(parts.Ik):
                                                     self.ikHandle.mNode)
 
         # Pole vector points at second joint
-        pm.aimConstraint(self.jointSystem.joints[self.startJointNumber + 1].pynode,
-                         self.pv.pynode,
-                         aimVector=self.upVector,
-                         upVector=self.upVector)
-
-        pm.poleVectorConstraint(self.pv.mNode, self.ikHandle.mNode, weight=1)
+        aimCon = pm.aimConstraint(self.jointSystem.joints[self.startJointNumber + 1].pynode,
+                                  self.pv.pynode,
+                                  aimVector=self.upVector,
+                                  upVector=self.upVector)
+        self.constraintToMetaConstraint(aimCon, "AimCon{}".format(self.pv.rigType), "PVAim")
+        pvCon = pm.poleVectorConstraint(self.pv.mNode, self.ikHandle.mNode, weight=1)
+        self.constraintToMetaConstraint(pvCon, "PVCon", "poleVectorConstraint")
         self.ikHandle.twist = pvTwist
 
     def buildPv(self):
@@ -296,54 +298,94 @@ class Hip(Arm):
         super(Hip, self).__init__(*args, **kwargs)
         self.startJointNumber = 1
         self.endJointNumber = -1
+        self.hipIkSolver = kwargs.get('hipIkSolver', 'Single')
+        self.hipEndJointNumber = kwargs.get('hipEndJointNumber', 1)
+        # Ensure the next start joint number of the main always start from the next joint
+        self.startJointNumber = self.hipEndJointNumber
 
     def buildIk(self):
         super(Hip, self).buildIk()
-        self.hipIKHandle = _build_ik_(self, SOLVERS["Single"], "ClavIkHandle", 0, 1)
+        self.hipIKHandle = _build_ik_(self, SOLVERS[self.hipIkSolver], "ClavIkHandle", 0, self.hipEndJointNumber)
 
     # noinspection PyArgumentList
     def buildControl(self):
         super(Hip, self).buildControl()
+
         # Build the Hip Control
-        hipCtrl = core.Ctrl(part=self.jointSystem.joints[0].part, side=self.side)
-        hipCtrl.ctrlShape = "Circle"
+        hipCtrl = core.Ctrl(part=self.jointSystem.joints[0].part, side=self.side, shape="Circle")
+
         hipCtrl.build()
         hipCtrl.lockScale()
         hipCtrl.addGimbalMode()
         if self.hasParentMaster:
             hipCtrl.addParentMaster()
         hipCtrl.setRotateOrder(self.rotateOrder)
+        # Cleanup
+        self.hipIK = hipCtrl
+
         # First joint alias
-        firstJoint = self.jointSystem.joints[0]
+        aimJoint = self.jointSystem.joints[0]
+
         # Align with first joint
-        hipCtrl.snap(firstJoint.pynode)
+        self.hipIK.snap(aimJoint.pynode)
         # Parent the hip IkControl
-        self.hipIKHandle.SUP_Prnt.setParent(hipCtrl.parentDriver)
+        if self.hipIkSolver == "RotatePlane":
+            snapJoint = self.jointSystem.joints[self.hipEndJointNumber]
+            hipIKCtrl = core.Ctrl(part=snapJoint.part, side=self.side, shape=self.mainCtrlShape)
+            hipIKCtrl.build()
+            hipCtrl.setRotateOrder(self.rotateOrder)
+            hipIKCtrl.lockScale()
+            hipIKCtrl.lockRotate()
+            hipIKCtrl.snap(snapJoint)
+            hipIKCtrl.setParent(self.hipIK)
+            self.hipIKHandle.setParent(hipIKCtrl)
+            self.addRigCtrl(hipIKCtrl, ctrType="secondHipIK", mirrorData=self.mirrorData)
+
+        else:
+            self.hipIKHandle.setParent(self.hipIK.parentDriver)
         # Create a helper joint
         pm.select(cl=1)
-        self.aimHelper = core.MovableSystem(part=firstJoint.part, side=self.side, endSuffix="AimHelper")
+        self.aimHelper = core.MovableSystem(part=aimJoint.part, side=self.side, endSuffix="AimHelper")
         # self.aimHelper.jointOrient = firstJoint.jointOrient
-        self.aimHelper.rotateOrder = firstJoint.rotateOrder
+        self.aimHelper.rotateOrder = aimJoint.rotateOrder
         # Align with the first joint
-        self.aimHelper.snap(firstJoint.pynode)
+        self.aimHelper.snap(aimJoint.pynode)
 
         # Freeze the rotation on joint
         # self.aimHelper.pynode.jointOrient.set(firstJoint.pynode.jointOrient.get())
         # New upVector
-        second_joint_position = list(
-            self.jointSystem.joints[self.startJointNumber + 1].pynode.getTranslation(space="world"))
-        default_pole_vector = libVector.vector(list(self.ikHandle.poleVector))
-        aimPosition = (default_pole_vector * [150, 150, 150]) + libVector.vector(second_joint_position)
-        upVector = core.MovableSystem(part=firstJoint.part, side=self.side, endSuffix="UpVector")
-        upVector.pynode.setTranslation(aimPosition)
-        self.aimHelper.addSupportNode(upVector, "UpVector")
+
+        second_joint_position = self.jointSystem.positions[self.hipEndJointNumber]
+
+        hipIkPoleVector = self.hipIKHandle.poleVector if getattr(self.hipIKHandle, "poleVector") else None
+        default_pole_vector = libVector.vector(list(hipIkPoleVector or self.ikHandle.poleVector))
+        # noinspection PyTypeChecker
+        aimPosition = list(((default_pole_vector * [30, 30, 30] * ([self.scaleFactor] * 3)) + second_joint_position))
+        if hipIkPoleVector:
+            upVector = core.Ctrl(part="{}PV".format(aimJoint.part),
+                                 side=self.side,
+                                 endSuffix="HipPV",
+                                 shape="Locator")
+            upVector.build()
+            self.addRigCtrl(upVector, "HipPV")
+            pvCon = pm.poleVectorConstraint(upVector.mNode, self.hipIKHandle.mNode, weight=1)
+            self.constraintToMetaConstraint(pvCon, "HipPVCon", "poleVectorConstraint")
+        else:
+            upVector = core.MovableSystem(part=aimJoint.part, side=self.side, endSuffix="UpVector")
+            self.aimHelper.addSupportNode(upVector, "UpVector")
+        upVector.constrainedNode.pynode.setTranslation(aimPosition)
 
         # Aim Constraint at mainIk Handle
-
         aimConArgs = [self.mainIK.pynode, self.aimHelper.pynode]
         aimConKwgs = {"mo": False, "wut": "object", "wuo": upVector.mNode}
-        aimCon = pm.aimConstraint(*aimConArgs, **aimConKwgs)
+        pm.delete(pm.aimConstraint(*aimConArgs, **aimConKwgs))
         self.aimHelper.addParent(endSuffix="AimHelperPrnt")
+        aimCon = pm.aimConstraint(*aimConArgs, **aimConKwgs)
+        self.constraintToMetaConstraint(aimCon, "HipAimCon", "HipAim")
+
+        constraintType = 'orient'
+        if self.hipIkSolver != "Single":
+            constraintType = "parent"
         # pm.delete(aimCon)
         # aimConArgs[1] = self.aimHelper.pynode
         # pm.aimConstraint(*aimConArgs, **aimConKwgs)
@@ -353,46 +395,44 @@ class Hip(Arm):
         ikJoint = joints.Joint(part=self.part, side=self.side, endSuffix="HipIkFollow")
         ikJoint.v = False
         ikJoint.rotateOrder = self.rotateOrder
-        ikJoint.setParent(self.jointSystem.joints[0])
-        ikJoint.snap(self.jointSystem.joints[0])
+        ikJoint.setParent(aimJoint)
+        ikJoint.snap(aimJoint)
         libUtilities.freeze_rotation(ikJoint.pynode)
         ikJoint.setParent(self.aimHelper)
-        hipCtrl.addConstraint(ikJoint.pynode, "orient", mo=True, weightAlias="IK")
-        hipCtrl.orientConstraint.pynode.w0.set(0)
+        self.hipIK.addConstraint(ikJoint.pynode, constraintType, mo=True, weightAlias="IK")
         # Create a base joint
+        hipIKCon = getattr(self.hipIK, "{}Constraint".format(constraintType))
+        hipIKCon.pynode.w0.set(0)
 
         homeJoint = joints.Joint(part=self.part, side=self.side, endSuffix="HomeJnt")
         homeJoint.v = False
         homeJoint.rotateOrder = self.rotateOrder
-        homeJoint.setParent(self.jointSystem.joints[0])
-        homeJoint.snap(self.jointSystem.joints[0])
+        homeJoint.setParent(aimJoint)
+        homeJoint.snap(aimJoint)
         libUtilities.freeze_rotation(homeJoint.pynode)
         homeJoint.setParent(self)
         # Add another contraint
-        hipCtrl.addConstraint(homeJoint, "orient", mo=True, weightAlias=self.part)
+        self.hipIK.addConstraint(homeJoint, constraintType, mo=True, weightAlias=self.part)
 
         # Blend between the two constraint
         self.inverse = core.MetaRig(side=self.side, part=self.part, endSuffix="Inverse", nodeType="reverse")
 
         # Attribute based on the system type
-        libUtilities.addDivAttr(hipCtrl.pynode, "SpaceSwitch")
+        libUtilities.addDivAttr(self.hipIK.pynode, "SpaceSwitch")
         attrName = "IK_Parent"
-        libUtilities.addFloatAttr(hipCtrl.pynode, attrName)
-        blendAttr = hipCtrl.pynode.attr(attrName)
+        libUtilities.addFloatAttr(self.hipIK.pynode, attrName)
+        blendAttr = self.hipIK.pynode.attr(attrName)
         # Connect the inverse node
         blendAttr >> self.inverse.pynode.inputX
-        self.inverse.pynode.outputX >> hipCtrl.orientConstraint.pynode.w0
-        blendAttr >> hipCtrl.orientConstraint.pynode.w1
+        self.inverse.pynode.outputX >> hipIKCon.pynode.w0
+        blendAttr >> hipIKCon.pynode.w1
 
         # Point constrain the first joint
-        pm.pointConstraint(hipCtrl.mNode, firstJoint.mNode, mo=1)
-
-        # Cleanup
-        self.hipIK = hipCtrl
+        aimJoint.addConstraint(self.hipIK, 'point')
 
         # Create main grp
-        mainGrp = core.MovableSystem(part=self.part + "Main", side=self.side)
-        hipGrp = core.MovableSystem(part=self.part + "Hip", side=self.side)
+        mainGrp = core.MovableSystem(part="{}Main".format(self.part), side=self.side)
+        hipGrp = core.MovableSystem(part="{}Hip".format(self.part), side=self.side)
 
         # Reparent
         self.addSupportNode(mainGrp, "MainGrp")
@@ -403,13 +443,13 @@ class Hip(Arm):
         hipGrp.setParent(self)
 
         # Parent the hip control
-        hipCtrl.setParent(hipGrp)
+        self.hipIK.setParent(hipGrp)
         self.aimHelper.setParent(hipGrp)
         upVector.setParent(hipGrp)
 
-        # Parent the gro
+        # Parent the group
         self.mainIK.setParent(mainGrp)
-        firstJoint.setParent(mainGrp)
+        aimJoint.setParent(mainGrp)
 
     def buildPv(self):
         super(Hip, self).buildPv()
@@ -912,7 +952,11 @@ class BlendIK(LimbIk):
     def buildIk(self):
         self.ikHandle = _build_ik_(self, SOLVERS["Single"], "IkHandle", self.endJointNumber - 1, self.endJointNumber)
         for label, ikType in zip(self.subIKNames, self.ikTypes):
-            ikMeta = globals()[ikType](part="{}{}".format(self.part, label), side=self.side, solver="Spring")
+            ikMetaClass = globals()[ikType]
+            kwargs = self.kwargs.copy()
+            kwargs['part'] = "{}{}".format(self.part, label)
+            kwargs['solver'] = "Spring"
+            ikMeta = ikMetaClass(**kwargs)
             ikMeta.endJointNumber = self.endJointNumber
             ikJointSystem = joints.JointSystem(part="{}{}".format(self.part, label), side=self.side)
             ikJointSystem.buildData = self.jointSystem.buildData
@@ -952,7 +996,7 @@ class BlendIK(LimbIk):
                 system.springBiasCtrl = ctrl
             system.mainIK = self.mainIK
             system.buildControl()
-            system.delAttr("{}_MainIK".format(self.CTRL_Prefix ))
+            system.delAttr("{}_MainIK".format(self.CTRL_Prefix))
         self.mainIK.setParent(self)
 
     def cleanUp(self):
@@ -1006,7 +1050,7 @@ class BlendIK(LimbIk):
                 attrLower = attr.lower()
                 jointA.attr(attrLower) >> pairPyNode.attr('in{}1'.format(attr))
                 jointB.attr(attrLower) >> pairPyNode.attr('in{}2'.format(attr))
-                pairPyNode.attr('out{}'.format(attr)) >> joint.pynode.attr(attrLower     )
+                pairPyNode.attr('out{}'.format(attr)) >> joint.pynode.attr(attrLower)
 
             self.blendAttr >> pairPyNode.weight
 
@@ -1103,12 +1147,18 @@ core.Red9_Meta.registerMClassNodeMapping(nodeTypes=['ikHandle',
 if __name__ == '__main__':
     pm.newFile(f=1)
     # mainSystem = parts.Blender(side="C", part="Core")
-
-    ikSystem = BlendIK(side="C", part="Core")
+    ikSystem = Hip(side="C", part="Core", hipIkSolver='RotatePlane', hipEndJointNumber=2)
+    # ikSystem = BlendIK(side="C", part="Core", hipIkSolver='RotatePlane', hipEndJointNumber=2)
     # system = "IK"
     # mainSystem.addMetaSubSystem(ikSystem, system)
     # ikSystem.ikControlToWorld = True
-    ikSystem.testBuild(buildMaster=False)
+
+    jointSystem = joints.JointSystem(side="C", part="CoreJoints")
+    testJoints = utils.createTestJoint("BlendIK")
+    jointSystem.joints = libUtilities.stringList(testJoints)
+    jointSystem.convertJointsToMetaJoints()
+    ikSystem.testBuild(buildMaster=False, jointSystem=jointSystem)
+
     # ikSystem.convertSystemToSubSystem(system)
     # ikSystem.buildPv()
     pm.refresh()
