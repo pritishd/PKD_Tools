@@ -143,7 +143,7 @@ class Rig(core.TransSubSystem):
     def cleanUp(self):
         if not self.jointSystem.joints[0].pynode.getParent():
             # Setup the parent of joint
-            self.jointSystem.joints[0].pynode.setParent(self.pynode)
+            self.jointSystem.joints[0].setParent(self)
 
     def build(self):
         self.rotateOrder = self.jointSystem.rotateOrder
