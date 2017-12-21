@@ -1012,6 +1012,7 @@ class Ctrl(SimpleCtrl):
                                  nodeType="transform",
                                  shape="Spike")
         self.gimbal.part = self.part
+        self.gimbal.mirrorSide = self.mirrorSide
         self.gimbal.rigType = "gimbalHelper"
         self.gimbal.pynode.setParent(self.mNode)
         self.gimbal.build()
@@ -1038,6 +1039,7 @@ class Ctrl(SimpleCtrl):
                                 nodeType="transform",
                                 shape="Locator")
         self.pivot.part = self.part
+        self.gimbal.mirrorSide = self.mirrorSide
         self.pivot.rigType = "pivot"
         self.pivot.pynode.setParent(self.mNode)
         self.pivot.build()

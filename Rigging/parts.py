@@ -156,8 +156,10 @@ class Rig(core.TransSubSystem):
                 # Parent Constraint the ctrl to the previous joint
                 ctrl.addConstraint(driveJoint.pynode, maintainOffset=True)
             # Connect the scale lenght
-            scaleAxis = "s{0}".format(self.t)
+            scaleAxis = "scale{0}".format(self.twistAxis)
             # Connect the stretch axis
+            self.jointSystem.joints[position].pynode.attr(scaleAxis)
+
             ctrl.pynode.attr(scaleAxis) >> self.jointSystem.joints[position].pynode.attr(scaleAxis)
 
     def addSquash(self):
@@ -197,9 +199,9 @@ class Rig(core.TransSubSystem):
                                                           supportType="Skin")
 
         # Connect joints
-        for skinJoint, finalJoint in zip(self.skinJointSystem, self.jointSystem):
+        for skinJoint, finalJoint in zip(self.skinJointSystem.joints, self.jointSystem.joints):
             skinJoint.addConstraint(finalJoint, mo=True)
-            if self.isDeformable:
+            if self.isCartoony:
                 for attr in ["sx", "sz", "sz"]:
                     scaleAttr = skinJoint.pynode.attr(attr)
                     if scaleAttr.listConnections():
@@ -571,11 +573,15 @@ class Blender(Rig):
         subSysAVis = [1, 1, 0]
         subSysBVis = [0, 1, 1]
 
-        for attrVis, system in zip([subSysAVis, subSysBVis], [self.subSystemA, self.subSystemA]):
-            for ctrl in system.allCtrls:
-                ctrlShape = ctrl.pynode.getShape()
-                if not (ctrlShape.v.isLocked() or ctrlShape.v.listConnections()):
-                    libUtilities.set_driven_key({blendAttrName: attrValues}, {ctrlShape.v.name(): attrVis}, "step")
+        for visValue, subSystem in zip([subSysAVis, subSysBVis], [self.subSystemA, self.subSystemB]):
+            for ctrl in subSystem.mainCtrls:
+                visAttr = ctrl.pynode.getShape().v
+                if not pm.listConnections(visAttr) and not visAttr.isLocked():
+                    ctrlShapeName = visAttr.name()
+                    try:
+                        libUtilities.set_driven_key({blendAttrName: attrValues}, {ctrlShapeName: visValue}, "step")
+                    except RuntimeError:
+                        print("Skipping Blending of {}".format(ctrlShapeName))
 
     def build(self):
         super(Blender, self).build()
@@ -637,5 +643,5 @@ if __name__ == '__main__':
     fkSystem.evaluateLastJoint = True
     fkSystem.testBuild()
     fkSystem.convertSystemToSubSystem("FK")
-    # fkSystem.buildSquashStretch()
+    fkSystem.buildSquashStretch()
     print "Done"
