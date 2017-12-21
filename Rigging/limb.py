@@ -480,13 +480,13 @@ class Hoof(object):
             # Create the 2 rotate system
         tipToeRoll = core.MovableSystem(part=self.part, side=self.side, endSuffix="TipToeRoll")
         tipToeRoll.addParent(snap=False, endSuffix="TipToeRollPrnt")
-        tipToeRoll.snap(self.jointSystem.joints[-1].mNode)
+        tipToeRoll.snap(self.jointSystem.joints[-2].mNode)
         libUtilities.snap(tipToeRoll.prnt.mNode, self.jointSystem.joints[self.endJointNumber].mNode, translate=False)
 
         # self.toeRoll.setParent(self.jointSystem.Joints[-1])
         heelRoll = core.MovableSystem(part=self.part, side=self.side, endSuffix="HeelRoll")
         heelRoll.addParent(snap=False, endSuffix="HeelRollPrnt")
-        heelRoll.snap(self.jointSystem.joints[-2].mNode)
+        heelRoll.snap(self.jointSystem.joints[-1].mNode)
         libUtilities.snap(heelRoll.prnt.mNode, self.jointSystem.joints[self.endJointNumber].mNode, translate=False)
 
         # Create a negative multiply divide for the heel

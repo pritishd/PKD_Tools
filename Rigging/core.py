@@ -311,7 +311,8 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
             # TODO: add ctrls to rig controls
             assert isinstance(target, Red9_Meta.MetaClass)
             super(MetaRig, self).addRigCtrl(target.mNode, *args, **kwargs)
-            self.metaCache["{}_{}".format(self.CTRL_Prefix, target)] = target
+            ctrlType = kwargs.get("ctrType") or args[0]
+            self.metaCache["{}_{}".format(self.CTRL_Prefix, ctrlType)] = target
         except:
             raise AssertionError("Input must be MetaClass")
 
@@ -884,6 +885,7 @@ class Ctrl(SimpleCtrl):
                                  nodeType="transform",
                                  shape="Spike")
         self.gimbal.part = self.part
+        self.gimbal.mirrorSide = self.mirrorSide
         self.gimbal.rigType = "gimbalHelper"
         self.gimbal.pynode.setParent(self.mNode)
         self.gimbal.build()
@@ -910,6 +912,7 @@ class Ctrl(SimpleCtrl):
                                 nodeType="transform",
                                 shape="Locator")
         self.pivot.part = self.part
+        self.gimbal.mirrorSide = self.mirrorSide
         self.pivot.rigType = "pivot"
         self.pivot.pynode.setParent(self.mNode)
         self.pivot.build()

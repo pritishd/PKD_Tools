@@ -276,11 +276,12 @@ class JointSystem(JointCollection):
         """Rebuild the joint data if it is orientated"""
         super(JointSystem, self).build()
         if self.mirrorMode != "None":
-            libJoint.orient_joint(joint=self.joints[0].pynode,
-                                  up=self.gimbalData["twist"],
-                                  forward=self.gimbalData["roll"],
-                                  **self.gimbalData
-                                  )
+            if self.mirrorMode == "Orientation":
+                libJoint.orient_joint(joint=self.joints[0].pynode,
+                                      up=self.gimbalData["twist"],
+                                      forward=self.gimbalData["roll"],
+                                      **self.gimbalData
+                                      )
             self.rebuild_joint_data()
 
     def setParent(self, targetSystem):
@@ -366,6 +367,7 @@ class JointSystem(JointCollection):
         metaJoint.snap(mirroredJoint)
         libUtilities.freeze_rotation(metaJoint.pynode)
         pm.delete(mirroredJoint)
+
 
     @property
     def jointClass(self):
