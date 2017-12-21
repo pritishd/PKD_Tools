@@ -357,7 +357,7 @@ class Hip(Arm):
 
         second_joint_position = self.jointSystem.positions[self.hipEndJointNumber]
 
-        hipIkPoleVector = self.hipIKHandle.poleVector if getattr(self.hipIKHandle, "poleVector") else None
+        hipIkPoleVector = self.hipIKHandle.poleVector if self.hipIkSolver == "RotatePlane" else None
         default_pole_vector = libVector.vector(list(hipIkPoleVector or self.ikHandle.poleVector))
         # noinspection PyTypeChecker
         aimPosition = list(((default_pole_vector * [30, 30, 30] * ([self.scaleFactor] * 3)) + second_joint_position))
@@ -797,6 +797,7 @@ class HipFoot(Hip, Foot):
     def __init__(self, *args, **kwargs):
         Hip.__init__(self, *args, **kwargs)
         Foot.__init__(self, *args, **kwargs)
+        self.endJointNumber = -4
 
     def buildControl(self):
         self.hasPivot = True
@@ -1147,17 +1148,17 @@ core.Red9_Meta.registerMClassNodeMapping(nodeTypes=['ikHandle',
 if __name__ == '__main__':
     pm.newFile(f=1)
     # mainSystem = parts.Blender(side="C", part="Core")
-    ikSystem = Hip(side="C", part="Core", hipIkSolver='RotatePlane', hipEndJointNumber=2)
+    ikSystem = HipFoot(side="C", part="Core")
     # ikSystem = BlendIK(side="C", part="Core", hipIkSolver='RotatePlane', hipEndJointNumber=2)
     # system = "IK"
     # mainSystem.addMetaSubSystem(ikSystem, system)
     # ikSystem.ikControlToWorld = True
 
-    jointSystem = joints.JointSystem(side="C", part="CoreJoints")
-    testJoints = utils.createTestJoint("BlendIK")
-    jointSystem.joints = libUtilities.stringList(testJoints)
-    jointSystem.convertJointsToMetaJoints()
-    ikSystem.testBuild(buildMaster=False, jointSystem=jointSystem)
+    # jointSystem = joints.JointSystem(side="C", part="CoreJoints")
+    # testJoints = utils.createTestJoint("BlendIK")
+    # jointSystem.joints = libUtilities.stringList(testJoints)
+    # jointSystem.convertJointsToMetaJoints()
+    ikSystem.testBuild(buildMaster=False)
 
     # ikSystem.convertSystemToSubSystem(system)
     # ikSystem.buildPv()
