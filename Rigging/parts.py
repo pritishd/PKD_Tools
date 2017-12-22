@@ -536,7 +536,6 @@ class Blender(Rig):
     def blendJoints(self):
         # Replicate the joint based off A
         self.jointSystem = self.subSystemA.jointSystem.replicate(part=self.part, side=self.side, endSuffix=self.rigType)
-
         # Constraints System
         for i in range(len(self.jointSystem) - 1):
             # Joint Aliases
@@ -549,8 +548,8 @@ class Blender(Rig):
             jointB.v = 0
 
             # Constraints the nodes
-            joint.addConstraint(jointA)
-            joint.addConstraint(jointB)
+            joint.addConstraint(jointA, zeroOut=False)
+            joint.addConstraint(jointB, zeroOut=False)
 
             # Reverse node in first
             self.inverse.pynode.outputX >> joint.parentConstraint.pynode.w0
@@ -560,11 +559,18 @@ class Blender(Rig):
 
             # Direct connection in second
             self.blendAttr >> joint.parentConstraint.pynode.w1
+
             if self.subSystemA.isDeformable:
-                joint.addConstraint(jointA, conType="scale")
-                joint.addConstraint(jointB, conType="scale")
-                self.inverse.pynode.outputX >> joint.scaleConstraint.pynode.w0
-                self.blendAttr >> joint.scaleConstraint.pynode.w1
+                pairBlend = core.MetaRig(part=joint.part, side=self.side,
+                                         endSuffix='PairBlend',
+                                         nodeType='pairBlend')
+                pairPyNode = pairBlend.pynode
+                attrLower = attr.lower()
+                jointA.attr(attrLower) >> pairPyNode.attr('inTranslate1'.format(attr))
+                jointB.attr(attrLower) >> pairPyNode.attr('inTranslate2'.format(attr))
+                pairPyNode.attr('outTranslate'.format(attr)) >> joint.pynode.attr(scale)
+
+                self.blendAttr >> pairPyNode.weight
 
     def blendVisibility(self):
         # Set the visibility set driven key
@@ -587,7 +593,9 @@ class Blender(Rig):
         super(Blender, self).build()
         self.buildBlendCtrl()
         self.blendJoints()
+        self.rotateOrder = self.jointSystem.rotateOrder
         self.blendVisibility()
+
 
     @property
     def blendAttr(self):
@@ -631,6 +639,8 @@ class Blender(Rig):
     def testBuild(self, **kwargs):
         pass
 
+core.Red9_Meta.registerMClassInheritanceMapping()
+core.Red9_Meta.registerMClassNodeMapping(nodeTypes=['pairBlend'])
 
 if __name__ == '__main__':
     pm.newFile(f=1)
