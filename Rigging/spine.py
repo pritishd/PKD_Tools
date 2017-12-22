@@ -1011,6 +1011,8 @@ class ComplexSpine(SubControlSpine):
         return self.helpJointSystem
 
 
+core.Red9_Meta.registerMClassInheritanceMapping()
+
 if __name__ == '__main__':
     pm.newFile(f=1)
     # mainSystem = core.TransSubSystem(side="C", part="Core")
