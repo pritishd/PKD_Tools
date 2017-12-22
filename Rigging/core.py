@@ -428,8 +428,6 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
     # @endcond
 
 
-
-
 class ConstraintSystem(MetaRig):
     """A constraint meta rig"""
 
@@ -571,11 +569,12 @@ class MovableSystem(MetaRig):
         if parentPy:
             self.zeroPrntPy.setParent(parentPy)
 
-    def addConstraint(self, target, conType="parent", **kwargs):
+    def addConstraint(self, target, conType="parent", zeroOut=True, **kwargs):
         """
         Add constaint to the movable node and attach as support node
         @param target (metaRig/pynode) The node that will contraint this metaRig
         @param conType (string) The constraint type eg rotate, parent, point etc
+        @param zeroOut (bool) Whether to zero out the dag node before appliying a contraint
         @param kwargs (dict) Any keywords arguments to pass on the default maya function
         @return: name of the constraint node
         """
@@ -625,7 +624,7 @@ class MovableSystem(MetaRig):
             targetPy = newTarget.pynode
 
             # Zero out the transform
-        if not self.constrainedNode.isZeroOut:
+        if not self.constrainedNode.isZeroOut and zeroOut:
             self.addZeroPrnt()
 
         constraintNodeName = consFunc(targetPy, self.constrainedNodePy, **kwargs).name()
