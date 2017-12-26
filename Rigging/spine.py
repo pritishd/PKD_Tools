@@ -216,8 +216,8 @@ class IkSpine(parts.Ik):
         key = "mainCtrls"
         if not self.metaCache.setdefault(key, None):
             self.metaCache[key] = self.getChildren(asMeta=self.returnNodesAsMeta,
-                                                          walk=True,
-                                                          cAttrs=["MainCtrls"])
+                                                   walk=True,
+                                                   cAttrs=["MainCtrls"])
         return self.metaCache[key]
 
     @mainCtrls.setter
@@ -243,7 +243,7 @@ class IkSpine(parts.Ik):
             return self.ikCurve
 
     @property
-    def jointGrp(self ):
+    def jointGrp(self):
         return self.getSupportNode("JointGrp")
 
     @jointGrp.setter
@@ -284,13 +284,21 @@ class SimpleSpine(IkSpine):
                 skipAxis.append(axis)
         controlCurve = self.mainCurve
         # Iterate through all the joints
-        for pos in range(len(self.jointSystem)):
+        totalJoints = len(self.jointSystem)
+        for pos in range(totalJoints):
             # Cluster the CV point on the control curve
             self.mainCtrls[pos].locator.clusterCV(controlCurve.pynode.cv[pos])
 
             # OrientConstraint the Joint
-            pm.orientConstraint(self.mainCtrls[pos].parentDriver.pynode, self.jointSystem.joints[pos].pynode, mo=True,
-                                skip=skipAxis)
+            kwargs = {"mo": True, "skip": skipAxis}
+
+            # Lock the ends orientations
+            if pos == totalJoints -1:
+                del kwargs["skip"]
+
+            self.jointSystem.joints[pos].addConstraint(self.mainCtrls[pos], 'orient', False, **kwargs)
+            # pm.orientConstraint(self.mainCtrls[pos].parentDriver.pynode, self.jointSystem.joints[pos].pynode, mo=True,
+            #                     skip=skipAxis)
 
     def cleanUp(self):
         super(SimpleSpine, self).cleanUp()
@@ -312,7 +320,6 @@ class SubControlSpine(IkSpine):
         self.currentWeightMap = []
         self.lockHead = kwargs.get("lockHead", False)
         self.lockTail = kwargs.get("lockTail", False)
-
 
     def __bindData__(self, *args, **kwgs):
         super(SubControlSpine, self).__bindData__(*args, **kwgs)
@@ -642,13 +649,11 @@ class SubControlSpine(IkSpine):
         # Disable the cycle check warning
         pm.cycleCheck(e=False)
 
-
     def cleanUp(self):
         super(SubControlSpine, self).cleanUp()
         self.controlCurve.v = False
         self.ikCurve.overrideEnabled = True
         self.ikCurve.overrideDisplayType = 2
-
 
     @property
     def subCtrls(self):
@@ -671,8 +676,8 @@ class SubControlSpine(IkSpine):
         key = "allCtrls"
         if not self.metaCache.setdefault(key, None):
             self.metaCache[key] = self.getChildren(asMeta=True,
-                                                    walk=True,
-                                                    cAttrs=["MainCtrls", '%s_*' % self.CTRL_Prefix, "SubCtrls"])
+                                                   walk=True,
+                                                   cAttrs=["MainCtrls", '%s_*' % self.CTRL_Prefix, "SubCtrls"])
         return self.metaCache[key]
 
     @property
@@ -911,7 +916,8 @@ class ComplexSpine(SubControlSpine):
     def calculateTwistWeights(self):
         if not self.twistMap:
             # Position based twist as that gives the best falloff so far
-            numJoints = len(self.jointSystem) - int(self.evaluateLastJointBool) - int(self.lockHead) - int(self.lockTail)
+            numJoints = len(self.jointSystem) - int(self.evaluateLastJointBool) - int(self.lockHead) - int(
+                self.lockTail)
             self.positionFallOff(numJoints, False)
 
             # Get the currentMap
@@ -1016,7 +1022,8 @@ core.Red9_Meta.registerMClassInheritanceMapping()
 if __name__ == '__main__':
     pm.newFile(f=1)
     # mainSystem = core.TransSubSystem(side="C", part="Core")
-    ikSystem = HumanSpine(side="L", part="Core", numHighLevelCtrls=5, fallOffMethod="Position")
+    # ikSystem = HumanSpine(side="L", part="Core", numHighLevelCtrls=5, fallOffMethod="Position")
+    ikSystem = SimpleSpine(side="L", part="Core")
     ikSystem.ikControlToWorld = True
     ikSystem.devSpine = True
     ikSystem.isStretchable = True
