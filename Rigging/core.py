@@ -197,12 +197,6 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
         if hasattr(self, "systemType"):
             if self.systemType in _SUBCOMPONENTS_:
                 self.isSubComponent = True
-
-        # Return connected as meta
-        self.returnNodesAsMeta = True
-
-        # Initialise the meta cache dict
-        self.metaCache = {}
         # @endcond
 
     # noinspection PyPropertyAccess
@@ -241,6 +235,10 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
         self.addAttr('mirrorSide', enumName='Centre:Left:Right',
                      attrType='enum', hidden=True)
         self.addAttr('rigType', '')
+        # Initialise the meta cache dict
+        self.metaCache = {}
+        # Return connected as meta
+        self.returnNodesAsMeta = True
 
     def addMetaSubSystem(self, subSystem, system="FK", **kwargs):
         """Override red 9 add function """
@@ -574,7 +572,6 @@ class MovableSystem(MetaRig):
         Add constaint to the movable node and attach as support node
         @param target (metaRig/pynode) The node that will contraint this metaRig
         @param conType (string) The constraint type eg rotate, parent, point etc
-        @param zeroOut (bool) Whether to zero out the dag node before appliying a contraint
         @param kwargs (dict) Any keywords arguments to pass on the default maya function
         @return: name of the constraint node
         """
@@ -624,7 +621,7 @@ class MovableSystem(MetaRig):
             targetPy = newTarget.pynode
 
             # Zero out the transform
-        if not self.constrainedNode.isZeroOut and zeroOut:
+        if not self.constrainedNode.isZeroOut:
             self.addZeroPrnt()
 
         constraintNodeName = consFunc(targetPy, self.constrainedNodePy, **kwargs).name()
@@ -1077,20 +1074,22 @@ class Ctrl(SimpleCtrl):
         for node in self.createdNodes:
             node.rotateOrder = rotateOrder
 
-    def addDivAttr(self, label, ln):
+    def addDivAttr(self, label, ln=""):
         """Add a divider label"""
+        if not ln:
+            ln = label[0].lower() + label[1:]
         libUtilities.addDivAttr(self.mNode, label=label, ln=ln)
 
     def addBoolAttr(self, label, sn=""):
         """Add a boolean atrbiture"""
         libUtilities.addBoolAttr(self.mNode, label=label, sn=sn)
 
-    def addFloatAttr(self, attrName="", attrMax=1, attrMin=0, SV=0, sn="", df=0):
+    def addFloatAttr(self, attrName="", attrMax=1, attrMin=0, SV=0, sn="", dv=0):
         """
         Add a float attribute. Same arguments as @ref libUtilities.addFloatAttr "addFloatAttr"
         """
         libUtilities.addFloatAttr(self.mNode, attrName=attrName, attrMax=attrMax, attrMin=attrMin, softValue=SV,
-                                  shortName=sn, defaultValue=df)
+                                  shortName=sn, defaultValue=dv)
 
     def lockTranslate(self):
         """Lock all the translate channels"""
@@ -1552,8 +1551,122 @@ class CartoonySystem(Network):
         # @endcond
 
 
+# noinspection PyStatementEffect
+class MeasureSystem(Network):
+    """System to measure items"""
+
+    def __init__(self, *args, **kwargs):
+        super(MeasureSystem, self).__init__(*args, **kwargs)
+        if self._build_mode:
+            dbNode = MetaRig(part=self.part,
+                             side=self.side,
+                             endSuffix="distanceBetween",
+                             nodeType="distanceBetween")
+            locStart = SpaceLocator(part="{}compressStart".format(self.part),
+                                    side=self.side,
+                                    endSuffix="loc")
+            locEnd = SpaceLocator(part="{}compressEnd".format(self.part),
+                                  side=self.side,
+                                  endSuffix="loc")
+            locStart.pynode.getShape().worldPosition >> dbNode.pynode.point1
+            locEnd.pynode.getShape().worldPosition >> dbNode.pynode.point2
+
+            self.addSupportNode(locStart, "Point1")
+            self.addSupportNode(locEnd, "Point2")
+            self.addSupportNode(dbNode, "Distance")
+
+    @property
+    def point1(self):
+        return self.getSupportNode("Point1")
+
+    @property
+    def point2(self):
+        return self.getSupportNode("Point2")
+
+    @property
+    def distance(self):
+        return self.getSupportNode("Distance").distance
+
+    @property
+    def distanceAttr(self):
+        return self.getSupportNode("Distance").pynode.distance
+
+
+# noinspection PyStatementEffect
+class MathNode(MetaRig):
+    """@brief This is a MetaRig that doesn't math node node."""
+
+    def __init__(self, *args, **kwargs):
+        kwargs["nodeType"] = "asdkMathNode"
+        kwargs["endSuffix"] = kwargs.get("endSuffix", "Maths")
+        super(MathNode, self).__init__(*args, **kwargs)
+        if self._build_mode:
+            self.addAttr("output", 0.0)
+            self.pynode.result >> self.pynode.output
+
+
+# noinspection PyStatementEffect
+class DistanceMove(MeasureSystem):
+    """Move a transform object in the translate attribute based on the distance change"""
+
+    def __init__(self, *args, **kwargs):
+        super(DistanceMove, self).__init__(*args, **kwargs)
+        if self._build_mode:
+            self.mathNode = MathNode(part=self.part,
+                                     side=self.side)
+            self.mathNode.b = 1
+            self.distanceAttr >> self.mathNode.pynode.a
+            self.mathNode.addAttr("relativeMeasure", 0.0)
+            self.mathNode.addAttr("biDirection", True)
+            self.mathNode.addAttr("inverse", False)
+            self.mathNode.addAttr("output", 0.0)
+            self.mathNode.expr = self.formula
+
+    def reset(self):
+        self.mathNode.expr = self.formula
+
+    def connectDisable(self, attr):
+        """
+        Connect the disable attribute
+        @param attr (pyattr) The incoming attribute
+        """
+        attr >> self.mathNode.pynode.b
+
+    def connectOutput(self, attr):
+        """
+         Connect the output scale attribute
+         @param attr (pyattr) The target attribute
+         """
+        self.mathNode.pynode.output >> attr
+
+    @property
+    def mathNode(self):
+        return self.getSupportNode("MathNode")
+
+    @mathNode.setter
+    def mathNode(self, data):
+        self.addSupportNode(data, "MathNode")
+
+    @property
+    def formula(self):
+        formula = "({0:.3f} - round(a, 3)) * b ".format(self.distance)
+        if self.mathNode.relativeMeasure:
+            formula += "* ({1:.3f} / {0:.3f}) ".format(self.distance, self.mathNode.relativeMeasure)
+        if not self.mathNode.biDirection:
+            formula += ("if round(a, 3) < {0:.3f} "
+                        "else 0".format(self.distance))
+        if self.mathNode.inverse:
+            formula = "({}) * -1".format(formula)
+        return formula
+
+
+# Force load the math plugin
+pm.loadPlugin("asdkMathNode",quiet=True)
+# noinspection PyUnresolvedReferences
 Red9_Meta.registerMClassInheritanceMapping()
 Red9_Meta.registerMClassNodeMapping(nodeTypes=['transform',
+                                               'asdkMathNode',
+                                               'distanceBetween',
                                                'camera',
                                                'joint',
                                                'reverse',
@@ -1575,7 +1688,7 @@ if __name__ == '__main__':
     # pm.openFile(filePath)
     # cam = Red9_Meta.MetaClass("MyCam")
     # print cam.mNode
-    # print cam.item
+    # print cam.itemq
     #
 
     # pm.newFile(f=1)
@@ -1631,10 +1744,12 @@ if __name__ == '__main__':
     # pm.newFile(f=1)
     # SpaceLocator(part="main", side="C")
 
-    toon = Ctrl(side="C", part="Cora", shape="Ball")
-    toon.build()
-    toon.addZeroPrnt()
-    toon2 = Ctrl(side="C", part="Cora2", shape="Ball")
-    toon2.build()
-    toon2.scaleShape(.8)
-    toon.addConstraint(toon2)
+    # toon = Ctrl(side="C", part="Cora", shape="Ball")
+    # toon.build()
+    # toon.addZeroPrnt()
+    # toon2 = Ctrl(side="C", part="Cora2", shape="Ball")
+    # toon2.build()
+    # toon2.scaleShape(.8)
+    # toon.addConstraint(toon2)
+
+    meas = DistanceMove(side="C", part="Cora", shape="Ball")
