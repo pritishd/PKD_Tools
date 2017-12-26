@@ -966,3 +966,20 @@ def break_connection(node, attr):
 
     mel.eval('source channelBoxCommand;')
     mel.eval('CBdeleteConnection "{0}.{1}";'.format(node, attr))
+
+
+# noinspection PyStatementEffect
+def connect_override(node, target):
+    """Connect the drawing override for target from a control node
+    @param node: The node that will control the drawing overrides
+    @param target: The node that will have their drawing overridden
+    """
+
+    node = force_pynode(node)
+    target = force_pynode(target)
+    addDivAttr(node, label="Model", ln="model")
+    pm.addAttr(node, ln="displayType", nn="Display Type", at="enum",
+               en="normal:template:reference:", dv=2)
+    node.displayType.set(e=True, keyable=True)
+    target.overrideEnabled.set(True)
+    node.displayType >> target.overrideDisplayType
