@@ -9,6 +9,7 @@ from PKD_Tools import libUtilities, libJoint, libVector
 from PKD_Tools.Rigging import core
 
 
+# noinspection PyStatementEffect
 class Joint(core.MovableSystem):
     """
     This meta class which creates a joint by default.
