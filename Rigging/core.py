@@ -197,6 +197,12 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
         if hasattr(self, "systemType"):
             if self.systemType in _SUBCOMPONENTS_:
                 self.isSubComponent = True
+
+        # Return connected as meta
+        self.returnNodesAsMeta = True
+
+        # Initialise the meta cache dict
+        self.metaCache = {}
         # @endcond
 
     # noinspection PyPropertyAccess
@@ -467,7 +473,8 @@ class MovableSystem(MetaRig):
 
     def __init__(self, *args, **kwargs):
         super(MovableSystem, self).__init__(*args, **kwargs)
-        libUtilities.lock_attr(self.pynode.v)
+        if self._build_mode:
+            libUtilities.lock_attr(self.pynode.v)
 
     # noinspection PyPropertyAccess
     def _doxygenHelper(self):
@@ -572,6 +579,7 @@ class MovableSystem(MetaRig):
         Add constaint to the movable node and attach as support node
         @param target (metaRig/pynode) The node that will contraint this metaRig
         @param conType (string) The constraint type eg rotate, parent, point etc
+        @param zeroOut (bool) Whether to zero out the dag node before applying a constraint
         @param kwargs (dict) Any keywords arguments to pass on the default maya function
         @return: name of the constraint node
         """
@@ -621,7 +629,7 @@ class MovableSystem(MetaRig):
             targetPy = newTarget.pynode
 
             # Zero out the transform
-        if not self.constrainedNode.isZeroOut:
+        if not self.constrainedNode.isZeroOut and zeroOut:
             self.addZeroPrnt()
 
         constraintNodeName = consFunc(targetPy, self.constrainedNodePy, **kwargs).name()
@@ -1688,7 +1696,7 @@ if __name__ == '__main__':
     # pm.openFile(filePath)
     # cam = Red9_Meta.MetaClass("MyCam")
     # print cam.mNode
-    # print cam.itemq
+    # print cam.item
     #
 
     # pm.newFile(f=1)

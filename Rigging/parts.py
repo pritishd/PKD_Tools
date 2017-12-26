@@ -203,12 +203,14 @@ class Rig(core.TransSubSystem):
 
         # Connect joints
         for skinJoint, finalJoint in zip(self.skinJointSystem.joints, self.jointSystem.joints):
-            skinJoint.addConstraint(finalJoint, mo=True)
-            if self.isCartoony:
+            skinJoint.addConstraint(finalJoint, zeroOut=False, mo=True)
+            if self.isDeformable:
                 for attr in ["sx", "sz", "sz"]:
-                    scaleAttr = skinJoint.pynode.attr(attr)
-                    if scaleAttr.listConnections():
-                        finalJoint.pynode.attr(attr) >> scaleAttr
+                    skinScaleAttr = skinJoint.pynode.attr(attr)
+                    finalScaleAttr = finalJoint.pynode.attr(attr)
+
+                    if finalScaleAttr.listConnections():
+                        finalScaleAttr >> skinScaleAttr
 
     @property
     def jointDict(self):
@@ -550,28 +552,32 @@ class Blender(Rig):
             jointA.v = 0
             jointB.v = 0
 
-            # Constraints the nodes
-            joint.addConstraint(jointA, zeroOut=False)
-            joint.addConstraint(jointB, zeroOut=False)
+            if i:
+                pairConstraint = pm.PyNode(
+                    joint.addConstraint(jointA, "orient", zeroOut=False))
+                joint.addConstraint(jointB,  "orient", zeroOut=False)
+            else:
+                # Constraints the first node
+                pairConstraint = pm.PyNode(joint.addConstraint(jointA, zeroOut=False))
+                joint.addConstraint(jointB, zeroOut=False)
 
             # Reverse node in first
-            self.inverse.pynode.outputX >> joint.parentConstraint.pynode.w0
+            self.inverse.pynode.outputX >> pairConstraint.w0
 
             # Connect the interpType
-            self.interpAttr >> joint.parentConstraint.pynode.interpType
+            self.interpAttr >> pairConstraint.interpType
 
             # Direct connection in second
-            self.blendAttr >> joint.parentConstraint.pynode.w1
+            self.blendAttr >> pairConstraint.w1
 
             if self.subSystemA.isDeformable:
                 pairBlend = core.MetaRig(part=joint.part, side=self.side,
                                          endSuffix='PairBlend',
                                          nodeType='pairBlend')
                 pairPyNode = pairBlend.pynode
-                attrLower = attr.lower()
-                jointA.attr(attrLower) >> pairPyNode.attr('inTranslate1'.format(attr))
-                jointB.attr(attrLower) >> pairPyNode.attr('inTranslate2'.format(attr))
-                pairPyNode.attr('outTranslate'.format(attr)) >> joint.pynode.attr(scale)
+                jointA.pynode.attr("scale") >> pairPyNode.attr('inTranslate1')
+                jointB.pynode.attr("scale") >> pairPyNode.attr('inTranslate2')
+                pairPyNode.attr('outTranslate') >> joint.pynode.attr("scale")
 
                 self.blendAttr >> pairPyNode.weight
 
@@ -593,7 +599,6 @@ class Blender(Rig):
                         print("Skipping Blending of {}".format(ctrlShapeName))
 
     def build(self):
-        super(Blender, self).build()
         self.buildBlendCtrl()
         self.blendJoints()
         self.rotateOrder = self.jointSystem.rotateOrder
