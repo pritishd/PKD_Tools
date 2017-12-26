@@ -33,7 +33,10 @@ class Rig(core.TransSubSystem):
 
     def createProxyCube(self, targetJoint, count):
         # Create the cube of that height
-        height = self.jointSystem.lengths[count]
+        try:
+            height = self.jointSystem.lengths[count]
+        except IndexError:
+            height = self.jointSystem.lengths[count - 1]
 
         cube = pm.polyCube(height=height, ch=False)[0]
 
@@ -136,7 +139,7 @@ class Rig(core.TransSubSystem):
         proxyGrp = core.NoInheritsTransform(side=self.side, part=self.part, endSuffix="ProxyGrp")
         proxyGrp.setParent(self)
 
-        for count, joint in enumerate(self.jointSystem.pyJoints[:-1]):
+        for count, joint in enumerate(self.jointSystem.pyJoints):
             cubeMeta = self.createProxyCube(joint, count)
             cubeMeta.setParent(proxyGrp)
 
@@ -596,7 +599,6 @@ class Blender(Rig):
         self.rotateOrder = self.jointSystem.rotateOrder
         self.blendVisibility()
 
-
     @property
     def blendAttr(self):
         return self.blender.pynode.attr(self.subSystems)
@@ -653,5 +655,5 @@ if __name__ == '__main__':
     fkSystem.evaluateLastJoint = True
     fkSystem.testBuild()
     fkSystem.convertSystemToSubSystem("FK")
-    fkSystem.buildSquashStretch()
+    # fkSystem.buildSquashStretch()
     print "Done"
