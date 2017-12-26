@@ -11,6 +11,7 @@ Using these 3 system you can further add appendage such as Hand, Hoof, Foot or P
 """
 import pymel.core as pm
 
+from PKD_Tools.Red9 import Red9_CoreUtils
 from PKD_Tools import libUtilities, libVector
 from PKD_Tools.Rigging import core, joints, parts, utils
 
@@ -163,16 +164,16 @@ class LimbIk(parts.Ik):
                 numBias = springAngleBias.numElements()
 
                 self.springBiasCtrl.addDivAttr("SpringBias", "lblSpringBias")
-                self.springBiasCtrl.addFloatAttr("Start", sn="StartBias", df=0.5)
+                self.springBiasCtrl.addFloatAttr("Start", sn="StartBias", dv=0.5)
                 self.springBiasCtrl.pynode.StartBias >> springAngleBias[0].springAngleBias_FloatValue
 
                 if numBias > 2:
                     for i in range(1, numBias - 1):
                         attr = "MidBias{}".format(i)
-                        self.springBiasCtrl.addFloatAttr("Mid{}".format(i), sn=attr, df=0.5)
+                        self.springBiasCtrl.addFloatAttr("Mid{}".format(i), sn=attr, dv=0.5)
                         self.springBiasCtrl.pynode.attr(attr) >> springAngleBias[i].springAngleBias_FloatValue
 
-                self.springBiasCtrl.addFloatAttr("End", sn="EndBias", df=0.5)
+                self.springBiasCtrl.addFloatAttr("End", sn="EndBias", dv=0.5)
                 self.springBiasCtrl.pynode.EndBias >> springAngleBias[numBias - 1].springAngleBias_FloatValue
             else:
                 print "Could not find srpingAngleBias in {}".format(self.ikHandle.pynode)
@@ -293,6 +294,7 @@ class Arm(LimbIk):
         self.buildPv()
 
 
+# noinspection PyStatementEffect
 class Hip(Arm):
     def __init__(self, *args, **kwargs):
         super(Hip, self).__init__(*args, **kwargs)
@@ -307,11 +309,7 @@ class Hip(Arm):
         super(Hip, self).buildIk()
         self.hipIKHandle = _build_ik_(self, SOLVERS[self.hipIkSolver], "ClavIkHandle", 0, self.hipEndJointNumber)
 
-    # noinspection PyArgumentList
-    def buildControl(self):
-        super(Hip, self).buildControl()
-
-        # Build the Hip Control
+    def positionHipControl(self, aimJoint):
         hipCtrl = core.Ctrl(part=self.jointSystem.joints[0].part, side=self.side, shape="Circle")
 
         hipCtrl.build()
@@ -322,9 +320,6 @@ class Hip(Arm):
         hipCtrl.setRotateOrder(self.rotateOrder)
         # Cleanup
         self.hipIK = hipCtrl
-
-        # First joint alias
-        aimJoint = self.jointSystem.joints[0]
 
         # Align with first joint
         self.hipIK.snap(aimJoint.pynode)
@@ -339,10 +334,11 @@ class Hip(Arm):
             hipIKCtrl.snap(snapJoint)
             hipIKCtrl.setParent(self.hipIK)
             self.hipIKHandle.setParent(hipIKCtrl)
-            self.addRigCtrl(hipIKCtrl, ctrType="secondHipIK", mirrorData=self.mirrorData)
-
+            self.secondHipIK = hipIKCtrl
         else:
             self.hipIKHandle.setParent(self.hipIK.parentDriver)
+
+    def buildHipSpaceSwitch(self, aimJoint):
         # Create a helper joint
         pm.select(cl=1)
         self.aimHelper = core.MovableSystem(part=aimJoint.part, side=self.side, endSuffix="AimHelper")
@@ -351,12 +347,8 @@ class Hip(Arm):
         # Align with the first joint
         self.aimHelper.snap(aimJoint.pynode)
 
-        # Freeze the rotation on joint
-        # self.aimHelper.pynode.jointOrient.set(firstJoint.pynode.jointOrient.get())
-        # New upVector
-
+        # Figure out the up vector position.
         second_joint_position = self.jointSystem.positions[self.hipEndJointNumber]
-
         hipIkPoleVector = self.hipIKHandle.poleVector if self.hipIkSolver == "RotatePlane" else None
         default_pole_vector = libVector.vector(list(hipIkPoleVector or self.ikHandle.poleVector))
         # noinspection PyTypeChecker
@@ -368,12 +360,19 @@ class Hip(Arm):
                                  shape="Locator")
             upVector.build()
             self.addRigCtrl(upVector, "HipPV")
+            upVector.constrainedNode.pynode.setTranslation(aimPosition)
             pvCon = pm.poleVectorConstraint(upVector.mNode, self.hipIKHandle.mNode, weight=1)
             self.constraintToMetaConstraint(pvCon, "HipPVCon", "poleVectorConstraint")
+            self.secondHipIK.addDivAttr("Show", "showPV")
+            self.secondHipIK.addBoolAttr("PoleVector","pvVis")
+            self.secondHipIK.pynode.pvVis >> upVector.pynode.getShape().visibility
+            upVector.lockRotate()
+            upVector.lockScale()
+
         else:
             upVector = core.MovableSystem(part=aimJoint.part, side=self.side, endSuffix="UpVector")
             self.aimHelper.addSupportNode(upVector, "UpVector")
-        upVector.constrainedNode.pynode.setTranslation(aimPosition)
+            upVector.constrainedNode.pynode.setTranslation(aimPosition)
 
         # Aim Constraint at mainIk Handle
         aimConArgs = [self.mainIK.pynode, self.aimHelper.pynode]
@@ -383,12 +382,10 @@ class Hip(Arm):
         aimCon = pm.aimConstraint(*aimConArgs, **aimConKwgs)
         self.constraintToMetaConstraint(aimCon, "HipAimCon", "HipAim")
 
+        # Setup the space switching
         constraintType = 'orient'
         if self.hipIkSolver != "Single":
             constraintType = "parent"
-        # pm.delete(aimCon)
-        # aimConArgs[1] = self.aimHelper.pynode
-        # pm.aimConstraint(*aimConArgs, **aimConKwgs)
         self.aimHelper.prnt.v = False
 
         # Orient Constraint the Hip Constraint
@@ -429,6 +426,65 @@ class Hip(Arm):
 
         # Point constrain the first joint
         aimJoint.addConstraint(self.hipIK, 'point')
+        return upVector
+
+    def buildAutoCompress(self):
+        autoCompressSys = core.NetSubSystem(part="{}HipCompress".format(self.part), side=self.side)
+
+        autoCompress = core.DistanceMove(part="{}HipCompress".format(self.part), side=self.side)
+        self.addSupportNode(autoCompressSys, "AutoCompressSys")
+        autoCompressSys.addSupportNode(autoCompress, "DistanceMove")
+        autoCompress.point1.setParent(self.hipIK)
+        autoCompress.point1.v = False
+        autoCompress.point1.snap(self.hipIK)
+        autoCompress.point2.setParent(self.mainIK)
+        autoCompress.point2.snap(self.mainIK)
+        autoCompress.point2.v = False
+        autoCompress.mathNode.relativeMeasure = Red9_CoreUtils.distanceBetween(self.hipIK.mNode,
+                                                                               self.secondHipIK.mNode)
+        autoCompress.mathNode.biDirection = False
+        autoCompress.reset()
+
+        aimCompressGrp = core.MovableSystem(part="{}HipCompress".format(self.part),
+                                            side=self.side)
+        aimCompressGrp.setParent(self.hipIK.parentDriver)
+
+        compressAimHelper = core.MovableSystem(part="{}HipCompress".format(self.part),
+                                               side=self.side,
+                                               endSuffix="AimHelper")
+
+        compressAimHelper.setParent(aimCompressGrp)
+        compressAimHelper.snap(self.secondHipIK)
+        self.secondHipIK.addConstraint(compressAimHelper, "point")
+        aimKwargs = {"mo": False,
+                     "aimVector": [0, 1, 0],
+                     "upVector": [1, 0, 0],
+                     "worldUpType": "scene"}
+
+        pm.delete(pm.aimConstraint(self.hipIK.pynode, compressAimHelper.pynode, **aimKwargs))
+        compressAimHelper.addZeroPrnt()
+
+        aimCon = pm.aimConstraint(self.hipIK.pynode, compressAimHelper.pynode, **aimKwargs)
+        self.constraintToMetaConstraint(aimCon, "CompressCon", "CompressAim")
+
+        autoCompress.connectOutput(compressAimHelper.pynode.ty)
+
+        self.secondHipIK.addDivAttr("AutoCompress")
+        self.secondHipIK.addFloatAttr("Factor", 10, 0, sn="autoCompressFactor", dv=1)
+        autoCompress.connectDisable(self.secondHipIK.pynode.autoCompressFactor)
+
+
+    # noinspection PyArgumentList
+    def buildControl(self):
+        super(Hip, self).buildControl()
+        # First joint alias
+        aimJoint = self.jointSystem.joints[0]
+
+        self.positionHipControl(aimJoint)
+        upVector = self.buildHipSpaceSwitch(aimJoint)
+
+        if self.hipIkSolver != "Single":
+            self.buildAutoCompress()
 
         # Create main grp
         mainGrp = core.MovableSystem(part="{}Main".format(self.part), side=self.side)
@@ -463,6 +519,15 @@ class Hip(Arm):
     def hipIK(self, data):
         # TODO: Pass the slot number before and axis data
         self.addRigCtrl(data, ctrType="hipIK", mirrorData=self.mirrorData)
+
+    @property
+    def secondHipIK(self):
+        return self.getRigCtrl("secondHipIK")
+
+    @secondHipIK.setter
+    def secondHipIK(self, data):
+        # TODO: Pass the slot number before and axis data
+        self.addRigCtrl(data, ctrType="secondHipIK", mirrorData=self.mirrorData)
 
     @property
     def hipIKHandle(self):
@@ -1142,23 +1207,24 @@ class SpringDev(Hip):
 
 core.Red9_Meta.registerMClassInheritanceMapping()
 core.Red9_Meta.registerMClassNodeMapping(nodeTypes=['ikHandle',
+                                                    'distanceBetween',
                                                     'multiplyDivide',
                                                     'clamp',
                                                     'pairBlend'])
 if __name__ == '__main__':
     pm.newFile(f=1)
     # mainSystem = parts.Blender(side="C", part="Core")
-    ikSystem = HipFoot(side="C", part="Core")
+    ikSystem = Hip(side="C", part="Core", hipIkSolver='RotatePlane', hipEndJointNumber=2)
     # ikSystem = BlendIK(side="C", part="Core", hipIkSolver='RotatePlane', hipEndJointNumber=2)
     # system = "IK"
     # mainSystem.addMetaSubSystem(ikSystem, system)
     # ikSystem.ikControlToWorld = True
 
-    # jointSystem = joints.JointSystem(side="C", part="CoreJoints")
-    # testJoints = utils.createTestJoint("BlendIK")
-    # jointSystem.joints = libUtilities.stringList(testJoints)
-    # jointSystem.convertJointsToMetaJoints()
-    ikSystem.testBuild(buildMaster=False)
+    jointSystem = joints.JointSystem(side="C", part="CoreJoints")
+    testJoints = utils.createTestJoint("BlendIK")
+    jointSystem.joints = libUtilities.stringList(testJoints)
+    jointSystem.convertJointsToMetaJoints()
+    ikSystem.testBuild(buildMaster=False, jointSystem=jointSystem)
 
     # ikSystem.convertSystemToSubSystem(system)
     # ikSystem.buildPv()
