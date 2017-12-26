@@ -469,7 +469,8 @@ class MovableSystem(MetaRig):
 
     def __init__(self, *args, **kwargs):
         super(MovableSystem, self).__init__(*args, **kwargs)
-        libUtilities.lock_attr(self.pynode.v)
+        if self._build_mode:
+            libUtilities.lock_attr(self.pynode.v)
 
     # noinspection PyPropertyAccess
     def _doxygenHelper(self):
