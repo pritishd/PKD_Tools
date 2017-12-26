@@ -537,13 +537,6 @@ class Blender(Rig):
     def blendJoints(self):
         # Replicate the joint based off A
         self.jointSystem = self.subSystemA.jointSystem.replicate(part=self.part, side=self.side, endSuffix=self.rigType)
-
-        def createPairBlend(joint):
-            """Internal function to create a pair blend"""
-            return core.MetaRig(part=joint.part,
-                                side=self.side,
-                                endSuffix='PairBlend',
-                                nodeType='pairBlend')
         # Constraints System
         for i in range(len(self.jointSystem) - 1):
             # Joint Aliases
