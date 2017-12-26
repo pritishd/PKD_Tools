@@ -574,9 +574,10 @@ class MovableSystem(MetaRig):
         Add constaint to the movable node and attach as support node
         @param target (metaRig/pynode) The node that will contraint this metaRig
         @param conType (string) The constraint type eg rotate, parent, point etc
-        @param zeroOut (bool) Whether to zero out the dag node before appliying a contraint
+        @param zeroOut (bool) Whether to zero out the dag node before applying a contraint
         @param kwargs (dict) Any keywords arguments to pass on the default maya function
         @return: name of the constraint node
+
         """
         if kwargs.has_key("maintainOffset"):
             kwargs["mo"] = kwargs["maintainOffset"]
