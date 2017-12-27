@@ -366,9 +366,6 @@ class JointSystem(JointCollection):
                         jointInfo["Name"] = jointInfo["Name"] + kwargs["supportType"]
                 # Set the joint data
                 replicateJointSystem.jointData = joint_data
-            else:
-                # Copy the data across
-                replicateJointSystem.jointData = self.jointData
 
             # Get the gimbal data
             replicateJointSystem.gimbalData = self.gimbalData
@@ -378,6 +375,8 @@ class JointSystem(JointCollection):
 
             # Build the joints
             if kwargs.get("build", True):
+                # Copy the data across
+                replicateJointSystem.jointData = replicateJointSystem.jointData or self.jointData
                 replicateJointSystem.build()
 
             # Return the joint system
