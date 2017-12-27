@@ -24,8 +24,8 @@ conform to naming standards in maya, pyside, Red9 and pymel """
 import traceback
 from collections import OrderedDict
 
-from maya import cmds
 from pymel import core as pm
+from maya import cmds
 
 from PKD_Tools import libUtilities, libJoint
 from PKD_Tools.Red9 import Red9_Meta
@@ -1049,7 +1049,7 @@ class Ctrl(SimpleCtrl):
                                 nodeType="transform",
                                 shape="Locator")
         self.pivot.part = self.part
-        self.gimbal.mirrorSide = self.mirrorSide
+        self.pivot.mirrorSide = self.mirrorSide
         self.pivot.rigType = "pivot"
         self.pivot.pynode.setParent(self.mNode)
         self.pivot.build()
@@ -1674,21 +1674,27 @@ class DistanceMove(MeasureSystem):
         return formula
 
 
+# Nodes to register
 # Force load the math plugin
-pm.loadPlugin("asdkMathNode", quiet=True)
+nodes =  ['transform',
+          'distanceBetween',
+          'camera',
+          'joint',
+          'reverse',
+          'plusMinusAverage',
+          'multiplyDivide',
+          'condition',
+          'clamp',
+          'addDoubleLinear']
+try:
+    pm.loadPlugin("asdkMathNode", quiet=True)
+    nodes.append('asdkMathNode')
+except RuntimeError:
+    print ("MATHS NODE PLUGIN NOT FOUND")
+
 # noinspection PyUnresolvedReferences
 Red9_Meta.registerMClassInheritanceMapping()
-Red9_Meta.registerMClassNodeMapping(nodeTypes=['transform',
-                                               'asdkMathNode',
-                                               'distanceBetween',
-                                               'camera',
-                                               'joint',
-                                               'reverse',
-                                               'plusMinusAverage',
-                                               'multiplyDivide',
-                                               'condition',
-                                               'clamp',
-                                               'addDoubleLinear'])
+Red9_Meta.registerMClassNodeMapping(nodeTypes=nodes)
 
 if __name__ == '__main__':
     pm.newFile(f=1)
