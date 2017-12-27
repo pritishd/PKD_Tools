@@ -24,8 +24,8 @@ conform to naming standards in maya, pyside, Red9 and pymel """
 import traceback
 from collections import OrderedDict
 
-from pymel import core as pm
 from maya import cmds
+from pymel import core as pm
 
 from PKD_Tools import libUtilities, libJoint
 from PKD_Tools.Red9 import Red9_Meta
@@ -429,7 +429,7 @@ class MetaRig(Red9_Meta.MetaRig, MetaEnhanced):
     def mirSide(self):
         """Return the current mirror side as string"""
         return self.pynode.mirrorSide.get(asString=True)[0]
-    # @endcond
+        # @endcond
 
 
 class ConstraintSystem(MetaRig):
@@ -817,9 +817,7 @@ class SpaceLocator(MovableSystem):
             # Create a new temp locator
             tempLoc = pm.spaceLocator()
             # Transfer the locator shape to the main node
-            libUtilities.transfer_shape(tempLoc, self.mNode)
-            # Rename the shape node
-            libUtilities.fix_shape_name(self.pynode)
+            libUtilities.transfer_shape(tempLoc, self.mNode, fix_name=True)
             # Delete the temp loc
             pm.delete(tempLoc)
 
@@ -835,24 +833,8 @@ class SpaceLocator(MovableSystem):
         libUtilities.cheap_point_constraint(self.pynode, cv)
 
 
-class SimpleCtrl(MovableSystem):
-    """Meta rig to create a simple nurbs shape"""
-
-    def __init__(self, *args, **kwargs):
-        kwargs["endSuffix"] = "Ctrl"
-        super(SimpleCtrl, self).__init__(*args, **kwargs)
-        # Define the control shape
-        self.ctrlShape = kwargs.get("shape", "Ball")
-        # Define the mirrorside
-        self.mirrorData = {'side': self.mirrorSide, 'slot': 1}
-        # @endcond
-
-    def build(self):
-        """Get the preset shape and build the ctrl"""
-        tempCtrlShape = utils.buildCtrlShape(self.ctrlShape)
-        libUtilities.transfer_shape(tempCtrlShape, self.mNode)
-        libUtilities.fix_shape_name(self.pynode)
-        pm.delete(tempCtrlShape)
+class MetaShape(MovableSystem):
+    """A class with shape centric functions such as rolling, scaling etc"""
 
     def clusterShape(self, shapeCentric=True):
         cluster = pm.cluster(self.pynode)[1]
@@ -895,6 +877,30 @@ class SimpleCtrl(MovableSystem):
         gimbal_data = libJoint.get_gimbal_data(self.primaryAxis)
         cluster.attr("r{}".format(gimbal_data["bend"])).set(degrees)
         self.cleanShapeHistory(cluster)
+
+    def transferShape(self, target):
+        target = forcePyNode(target)
+        libUtilities.transfer_shape(target, self.pynode, fix_name=True)
+        pm.delete(target)
+
+
+class SimpleCtrl(MetaShape):
+    """Meta rig to create a simple nurbs shape"""
+
+    # @cond DOXYGEN_SHOULD_SKIP_THIS
+    def __init__(self, *args, **kwargs):
+        kwargs["endSuffix"] = "Ctrl"
+        super(SimpleCtrl, self).__init__(*args, **kwargs)
+        # Define the control shape
+        self.ctrlShape = kwargs.get("shape", "Ball")
+        # Define the mirrorside
+        self.mirrorData = {'side': self.mirrorSide, 'slot': 1}
+        # @endcond
+
+    def build(self):
+        """Get the preset shape and build the ctrl"""
+        tempCtrlShape = utils.buildCtrlShape(self.ctrlShape)
+        self.transferShape(tempCtrlShape)
 
 
 class Ctrl(SimpleCtrl):
@@ -1669,7 +1675,7 @@ class DistanceMove(MeasureSystem):
 
 
 # Force load the math plugin
-pm.loadPlugin("asdkMathNode",quiet=True)
+pm.loadPlugin("asdkMathNode", quiet=True)
 # noinspection PyUnresolvedReferences
 Red9_Meta.registerMClassInheritanceMapping()
 Red9_Meta.registerMClassNodeMapping(nodeTypes=['transform',

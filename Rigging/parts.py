@@ -10,6 +10,22 @@ from PKD_Tools import libUtilities, libJoint
 from PKD_Tools.Rigging import core, joints, utils
 
 
+class ProxyCube(core.MetaShape):
+    """A proxy cube system, which allows you to manipulate shape. This maintains the skinning data whenenever the
+    shape is changed."""
+    joint = None
+
+    def clusterShape(self, shapeCentric=True):
+        self.joint = pm.skinCluster(self.pynode, inf=True, query=True)
+        libUtilities.detach_skin(self.pynode)
+        return super(ProxyCube, self).clusterShape(shapeCentric)
+
+    def cleanShapeHistory(self, transform=None):
+        super(ProxyCube, self).cleanShapeHistory(transform)
+        libUtilities.skinGeo(self.pynode, self.joint)
+
+
+
 class Rig(core.TransSubSystem):
     """This is a basic rig system. In order to build a rig component you must provide a valid JointSystem. Once a valid
     joint system is provided it will know what to do with that, eg if you provide a three joints to @ref limb.Arm it
@@ -40,10 +56,8 @@ class Rig(core.TransSubSystem):
 
         cube = pm.polyCube(height=height, ch=False)[0]
 
-        cubeMeta = core.MovableSystem(part=targetJoint.part.get(), side=self.side, endSuffix="Geo")
-        libUtilities.transfer_shape(cube, cubeMeta.pynode)
-        libUtilities.fix_shape_name(cubeMeta.pynode)
-        pm.delete(cube)
+        cubeMeta = ProxyCube(part=targetJoint.part.get(), side=self.side, endSuffix="Geo")
+        cubeMeta.transferShape(cube)
         cube = cubeMeta.pynode
         cube.translateY.set(height * .5)
 
@@ -138,10 +152,13 @@ class Rig(core.TransSubSystem):
         # Build the proxy cube
         proxyGrp = core.NoInheritsTransform(side=self.side, part=self.part, endSuffix="ProxyGrp")
         proxyGrp.setParent(self)
-
+        cubeMetaList = []
         for count, joint in enumerate(self.jointSystem.pyJoints):
             cubeMeta = self.createProxyCube(joint, count)
             cubeMeta.setParent(proxyGrp)
+            cubeMetaList.append(cubeMeta)
+
+        self.metaCache["ProxyGeo"] = cubeMetaList
 
     def cleanUp(self):
         if not self.jointSystem.joints[0].pynode.getParent():

@@ -316,6 +316,15 @@ def skin_objects(targets, jointInfluences):
         skinGeo(geo, jointInfluences)
 
 
+def detach_skin(target):
+    """
+    @param target (string/pynode) the geometery which the skinning will be removed
+    """
+    target = force_pynode(target)
+    pm.select(target)
+    mel.eval('doDetachSkin "2" { "1","1" };')
+
+
 def skinGeo(target, jointInfluences, **kwargs):
     """
     Skin a list of geo to the specified joints
@@ -340,8 +349,7 @@ def skinGeo(target, jointInfluences, **kwargs):
     # Detach the skin if there is one.
     currentSkin = get_target_defomer(target, "skinCluster")
     if currentSkin:
-        pm.select(target)
-        mel.eval('doDetachSkin "2" { "1","1" };')
+        detach_skin(target)
 
     # Skin to Joints
     pm.select(jnts, target)
@@ -405,12 +413,13 @@ def strip_integer_in_string(name):
     return name[0:i]
 
 
-def transfer_shape(source, target, snap_to_target=True):
+def transfer_shape(source, target, snap_to_target=True, fix_name=False):
     """
     Reparent a shape node from one parent to another
     @param source: The source dag which contains the shape
     @param target: The source dag which will have the new shape the shape
     @param snap_to_target: Should be we reparent with world space or object space
+    @param fix_name: Should we match the name of the shape to the new target
     @return:
     """
     source = force_pynode(source)
@@ -427,6 +436,8 @@ def transfer_shape(source, target, snap_to_target=True):
 
     oldShape = source.getShape()
     pm.parent(oldShape, target, shape=1, relative=1)
+    if fix_name:
+        fix_shape_name(target)
     return oldShape
 
 
