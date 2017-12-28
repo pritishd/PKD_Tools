@@ -641,17 +641,30 @@ class Hoof(object):
             # Delete helper joint
             pm.delete(helperJnt)
 
+    def buildInverseMD(self, attr, target):
+        inverse = libUtilities.inverseMultiplyDivide()
+        inverseMeta = core.MetaRig(inverse.name(), nodeType="multiplyDivide")
+        inverseMeta.part = "{}{}".format(self.part, attr)
+        inverseMeta.rigType = "InverseMD"
+        inverseMeta.resetName()
+        self.mainIK.pynode.attr(attr) >> inverse.input1X
+        inverse.outputX >> target.pynode.attr("r{}".format(self.bendAxis.lower()))
+        self.RollSystem.addSupportNode(inverseMeta, "{}MD".format(attr))
+        return inverse
+
+
     def buildControl(self):
         # Create the roll system
         self.RollSystem = core.Network(part=self.part + "Roll", side=self.side)
 
         # Add the rolls attrs
         libUtilities.addDivAttr(self.mainIK.pynode, "Roll", "rollDiv")
+
         # Tip_Heel
         for attr in self.rollAttrs:
             libUtilities.addFloatAttr(self.mainIK.pynode, attr, 270, -270)
 
-            # Create the 2 rotate system
+        # Create the 2 rotate system
         tipToeRoll = core.MovableSystem(part=self.part, side=self.side, endSuffix="TipToeRoll")
         tipToeRoll.addParent(snap=False, endSuffix="TipToeRollPrnt")
         tipToeRoll.snap(self.jointSystem.joints[-2].mNode)
@@ -664,24 +677,18 @@ class Hoof(object):
         libUtilities.snap(heelRoll.prnt.mNode, self.jointSystem.joints[self.endJointNumber].mNode, translate=False)
 
         # Create a negative multiply divide for the heel
-        heelMd = libUtilities.inverseMultiplyDivide()
-        heelMdMeta = core.MetaRig(heelMd.name(), nodeType="multiplyDivide")
-        heelMdMeta.part = "%sHeel" % self.part
-        heelMdMeta.rigType = "InverseMD"
-        heelMdMeta.resetName()
-        self.RollSystem.addSupportNode(heelMdMeta, "heelMD")
 
+        self.buildInverseMD("Heel", heelRoll)
+
+        # Connect the Rolls
+        tipToeInverse = self.buildInverseMD("TipToe", tipToeRoll)
+        tipToeInverse.input2X.set(1)
         # Parent to the heel
         heelRoll.setParent(tipToeRoll)
 
         # Connect to the Roll System
         self.RollSystem.addSupportNode(tipToeRoll, "tipToeRoll")
         self.RollSystem.addSupportNode(heelRoll, "heelRoll")
-
-        # Connect the Rolls
-        self.mainIK.pynode.Heel >> heelMd.input1X
-        heelMd.outputX >> heelRoll.pynode.attr("r%s" % self.bendAxis.lower())
-        self.mainIK.pynode.TipToe >> tipToeRoll.pynode.attr("r%s" % self.bendAxis.lower())
 
         # Reparent the IK Handles
         self.ikHandle.setParent(heelRoll)
@@ -826,8 +833,9 @@ class Foot(Hoof):
             roll.setParent(self.RollSystem.getSupportNode("heelRoll"))
 
         # Connect to the attributes to the rolls
-        self.mainIK.pynode.Ball >> ballRoll.pynode.attr("r%s" % self.bendAxis.lower())
-        self.mainIK.pynode.Toe >> toeRoll.pynode.attr("r%s" % self.bendAxis.lower())
+        ballInverse = self.buildInverseMD("Ball", ballRoll)
+        self.buildInverseMD("Toe", toeRoll)
+        ballInverse.input2X.set(1)
 
     @property
     def toeIKHandle(self):
@@ -1214,16 +1222,19 @@ core.Red9_Meta.registerMClassNodeMapping(nodeTypes=['ikHandle',
 if __name__ == '__main__':
     pm.newFile(f=1)
     # mainSystem = parts.Blender(side="C", part="Core")
-    ikSystem = Hip(side="C", part="Core", hipIkSolver='RotatePlane', hipEndJointNumber=2)
+    # ikSystem = Hip(side="C", part="Core", hipIkSolver='RotatePlane', hipEndJointNumber=2)
+    ikSystem = HipFoot(side="C", part="Core")
+
     # ikSystem = BlendIK(side="C", part="Core", hipIkSolver='RotatePlane', hipEndJointNumber=2)
     # system = "IK"
     # mainSystem.addMetaSubSystem(ikSystem, system)
     # ikSystem.ikControlToWorld = True
 
-    jointSystem = joints.JointSystem(side="C", part="CoreJoints")
-    testJoints = utils.createTestJoint("BlendIK")
-    jointSystem.joints = libUtilities.stringList(testJoints)
-    jointSystem.convertJointsToMetaJoints()
+    # jointSystem = joints.JointSystem(side="C", part="CoreJoints")
+    # testJoints = utils.createTestJoint("BlendIK")
+    # jointSystem.joints = libUtilities.stringList(testJoints)
+    # jointSystem.convertJointsToMetaJoints()
+    jointSystem = None
     ikSystem.testBuild(buildMaster=False, jointSystem=jointSystem)
 
     # ikSystem.convertSystemToSubSystem(system)
