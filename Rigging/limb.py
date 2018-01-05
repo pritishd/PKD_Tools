@@ -642,16 +642,6 @@ class Foot(object):
             # Delete helper joint
             pm.delete(helperJnt)
 
-    def buildInverseMD(self, attr, target):
-        inverseMeta = core.MetaRig(part="{}{}".format(self.part, attr),
-                                   side = self.side,
-                                   endSuffix="InverseMD",
-                                   nodeType="multiplyDivide")
-        self.mainIK.pynode.attr(attr) >> inverseMeta.pynode.input1X
-        inverseMeta.pynode.outputX >> target.pynode.attr("r{}".format(self.bendAxis.lower()))
-        self.RollSystem.addSupportNode(inverseMeta, "{}MD".format(attr))
-        return inverseMeta
-
     def reparentJoints(self):
         self.jointSystem.joints[-1].setParent(
             self.jointSystem.joints[self.endJointNumber])
@@ -670,6 +660,21 @@ class Foot(object):
                                       -3,
                                       -2)
 
+    def buildRoll(self, attr, jointTarget):
+        rollName = "{}Roll".format(attr)
+        roll = core.MovableSystem(part=self.part, side=self.side, endSuffix=rollName)
+        roll.addParent(snap=False, endSuffix="{}Prnt".format(rollName))
+        roll.snap(self.jointSystem.joints[jointTarget].mNode)
+        self.RollSystem.addSupportNode(roll, rollName)
+        inverseMeta = core.MetaRig(part="{}{}".format(self.part, attr),
+                                   side=self.side,
+                                   endSuffix="InverseMD",
+                                   nodeType="multiplyDivide")
+        self.mainIK.pynode.attr(attr) >> inverseMeta.pynode.input1X
+        inverseMeta.pynode.outputX >> roll.pynode.attr("r{}".format(self.bendAxis.lower()))
+        self.RollSystem.addSupportNode(inverseMeta, "{}MD".format(attr))
+        return roll
+
     def buildControl(self):
         # Create the roll system
         self.RollSystem = core.Network(part=self.part + "Roll", side=self.side)
@@ -682,32 +687,12 @@ class Foot(object):
             libUtilities.addFloatAttr(self.mainIK.pynode, attr, 270, -270)
 
         # Create the 2 rotate system
-        tipToeRoll = core.MovableSystem(part=self.part, side=self.side, endSuffix="TipToeRoll")
-        tipToeRoll.addParent(snap=False, endSuffix="TipToeRollPrnt")
-        tipToeRoll.snap(self.jointSystem.joints[-2].mNode)
-        libUtilities.snap(tipToeRoll.prnt.mNode, self.jointSystem.joints[self.endJointNumber].mNode, translate=False)
+        tipToeRoll = self.buildRoll("TipToe", -2)
+        heelRoll = self.buildRoll("Heel", -1)
+        ballRoll = self.buildRoll("Ball", -3)
 
-        # self.toeRoll.setParent(self.jointSystem.Joints[-1])
-        heelRoll = core.MovableSystem(part=self.part, side=self.side, endSuffix="HeelRoll")
-        heelRoll.addParent(snap=False, endSuffix="HeelRollPrnt")
-        heelRoll.snap(self.jointSystem.joints[-1].mNode)
-        libUtilities.snap(heelRoll.prnt.mNode, self.jointSystem.joints[self.endJointNumber].mNode, translate=False)
-
-        # Create a negative multiply divide for the heel
-
-        self.buildInverseMD("Heel", heelRoll)
-
-        self.RollSystem.getSupportNode("HeelMD").input2X = -1
-
-
-        # Connect the Rolls
-        self.buildInverseMD("TipToe", tipToeRoll)
         # Parent to the heel
         heelRoll.setParent(tipToeRoll)
-
-        # Connect to the Roll System
-        self.RollSystem.addSupportNode(tipToeRoll, "tipToeRoll")
-        self.RollSystem.addSupportNode(heelRoll, "heelRoll")
 
         # Reparent the IK Handles
         self.ikHandle.setParent(heelRoll)
@@ -715,33 +700,14 @@ class Foot(object):
 
         # Reparent the Syste
         self.mainIK.addChild(tipToeRoll.prnt.mNode)
-
-        # Create reverse foot
-        ballRoll = core.MovableSystem(part=self.part, side=self.side, endSuffix="BallRoll")
-        ballRoll.addParent(snap=False, endSuffix="ballRollPrnt")
-        self.RollSystem.addSupportNode(ballRoll, "ballRoll")
-        # Snap to ball
-        ballRoll.snap(self.jointSystem.joints[-3].mNode)
-        libUtilities.snap(ballRoll.prnt.mNode, self.jointSystem.joints[self.endJointNumber].mNode, translate=False)
         # Parent main ik to reverse
         self.ikHandle.setParent(ballRoll)
-
-        # Connect to the attributes to the rolls
-        self.buildInverseMD("Ball", ballRoll)
 
         rolls = [ballRoll]
 
         # Create toe control
         if hasattr(self.mainIK, "Toe"):
-            toeRoll = core.MovableSystem(part=self.part, side=self.side, endSuffix="ToeRoll")
-            toeRoll.addParent(snap=False, endSuffix="toeRollPrnt")
-
-            self.RollSystem.addSupportNode(toeRoll, "toeRoll")
-            # Snap to toe
-            toeRoll.snap(self.jointSystem.joints[-3].mNode)
-            libUtilities.snap(toeRoll.prnt.mNode, self.jointSystem.joints[self.endJointNumber].mNode, translate=False)
-
-            self.buildInverseMD("Toe", toeRoll)
+            toeRoll = self.buildRoll("Toe", -3)
             rolls.append(toeRoll)
             self.toeIKHandle.setParent(toeRoll)
         else:
@@ -750,8 +716,7 @@ class Foot(object):
         # Parent the toe handle to to control
         # Parent reverse foot and toe to heel roll
         for roll in rolls:
-            roll.setParent(self.RollSystem.getSupportNode("heelRoll"))
-
+            roll.setParent(self.RollSystem.getSupportNode("HeelRoll"))
 
     @property
     def toeIKHandle(self):
@@ -909,7 +874,6 @@ class QuadHoof(Quad, Hoof):
 
 # noinspection PyUnresolvedReferences,PyArgumentList,PyStatementEffect,PyTypeChecker
 class Paw(Foot):
-
     def __init__(self, *args, **kwargs):
         super(Foot, self).__init__(*args, **kwargs)
         self.endJointNumber = -5
@@ -934,23 +898,15 @@ class Paw(Foot):
     def buildControl(self):
         super(Paw, self).buildControl()
         # Create toe control
-        ankleRoll = core.MovableSystem(part=self.part, side=self.side, endSuffix="AnkleRoll")
-        ankleRoll.addParent(snap=False, endSuffix="ankleRollPrnt")
 
-        self.RollSystem.addSupportNode(ankleRoll, "ankleRoll")
-        # Snap to toe
-        ankleRoll.snap(self.jointSystem.joints[self.absEndJointNumber + 1].mNode)
-        libUtilities.snap(ankleRoll.prnt.mNode, self.jointSystem.joints[self.absEndJointNumber].mNode, translate=False)
-
-        self.RollSystem.addSupportNode(ankleRoll, "ankleRoll")
-        ballRoll = self.RollSystem.getSupportNode("ballRoll")
+        ankleRoll = self.buildRoll("Ankle", self.absEndJointNumber + 1)
+        ballRoll = self.RollSystem.getSupportNode("BallRoll")
 
         # Reparent the heirachy
         self.ankleIKHandle.setParent(ballRoll)
         ankleRoll.setParent(ballRoll)
         self.ikHandle.setParent(ankleRoll)
 
-        self.buildInverseMD("Ankle", ankleRoll)
 
     @property
     def ankleIKHandle(self):
