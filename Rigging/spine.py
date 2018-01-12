@@ -557,12 +557,12 @@ class SubControlSpine(IkSpine):
     def connectToControl(self):
         self.connectToMainControl()
         self.connectTwist()
-        self.build_sub_controls()
+        self.buildSubControls()
 
     def connectTwist(self):
         pass
 
-    def build_sub_controls(self):
+    def buildSubControls(self):
         if self.devSpine:
             return
         subCtrls = []
@@ -579,7 +579,7 @@ class SubControlSpine(IkSpine):
             newGrpMeta.rotateOrder = self.rotateOrder
             self.addSupportNode(newGrpMeta, newGrp.capitalize())
             newGrpMeta.setParent(self.infoGrp)
-            exec ("%s = newGrpMeta" % newGrp)
+            exec ("{} = newGrpMeta".format(newGrp))
 
         # Iterate through all the control curve
         for i in range(self.ikDriveCurve.numCVs()):
@@ -589,47 +589,29 @@ class SubControlSpine(IkSpine):
             # Get the CV position
             joint = self.jointSystem.joints[i].pynode
             npc.inPosition.set(libUtilities.get_world_space_pos(joint))
+
             # Create a new control object
             subCtrl = self.createCtrlObj(SubPart, shape="Ball", createXtra=False, addGimbal=False)
             subCtrls.append(subCtrl)
             # Add a ctrl locator
             subCtrl.addSpaceLocator(parent=True)
             subCtrl.locator.v = False
-            # Create a helper space locator
+            subCtrl.addZeroPrnt()
 
-            rideOnloc = core.SpaceLocator(part=SubPart, side=self.side, endSuffix="RideOnLocGrp")
-            subCtrl.addSupportNode(rideOnloc, "RideOnLoc")
-            rideOnloc.setParent(rideOnLocGrp)
-            rideOnloc.v = False
+            # Create the point on curve node
+            poc = core.MetaRig(part=SubPart, side=self.side, endSuffix="POC", nodeType="pointOnCurveInfo")
+            subCtrl.addSupportNode(poc, "PointOnCurve")
+            poc.parameter = npc.parameter.get()
 
-            # Create the main motion path
-            mp = pm.PyNode(pm.pathAnimation(rideOnloc.pynode,
-                                            fractionMode=False,
-                                            follow=True,
-                                            curve=self.ikDriveCurve,
-                                            upAxis=self.rollAxis,
-                                            worldUpType="objectrotation",
-                                            worldUpVector=self.upVector,
-                                            worldUpObject=self.pynode
-                                            ))
+            self.ikDriveCurve.worldSpace >> poc.pynode.inputCurve
 
-            mpMeta = core.MetaRig(mp.name())
-            mpMeta.part = SubPart
-            subCtrl.addSupportNode(mpMeta, "MotionPath")
-            subCtrl.transferPropertiesToChild(mpMeta, "MotionPath")
-            mpMeta.resetName()
-
-            mp.uValue.set(npc.parameter.get())
-            pm.delete(mp.listConnections(type="animCurve"))
+            poc.pynode.position >> subCtrl.zeroPrnt.pynode.translate
 
             # Control to the CV
-            libUtilities.snap(rideOnloc.pynode, rideOnloc.pynode, rotate=False)
-
-            # Apply a cheap point constraint
-            libUtilities.cheap_point_constraint(rideOnloc.pynode, subCtrl.prnt.pynode)
-
-            # Get the rotation value
-            subCtrl.addConstraint(rideOnloc.pynode, "orient")
+            subCtrl.zeroPrnt.snap(self.jointSystem.joints[i], True, False)
+            subCtrl.prnt.snap(self.jointSystem.joints[i], False)
+            # # Apply a cheap point constraint
+            # libUtilities.cheap_point_constraint(rideOnloc.pynode, subCtrl.zeroPrnt.pynode)
 
             # Connect the space locator to the IK Curve
             libUtilities.snap(subCtrl.locator.pynode, ikCV, rotate=False)
@@ -639,15 +621,13 @@ class SubControlSpine(IkSpine):
             subCtrl.lockRotate()
             subCtrl.lockScale()
             # Add to parent
-            subCtrl.prnt.setParent(subCtrlGrp)
+            subCtrl.setParent(subCtrlGrp)
+
 
         # Delete the nearest point on curve
         pm.delete(npc)
         # Append the control
         self.subCtrls = subCtrls
-
-        # Disable the cycle check warning
-        pm.cycleCheck(e=False)
 
     def cleanUp(self):
         super(SubControlSpine, self).cleanUp()
@@ -1018,14 +998,16 @@ class ComplexSpine(SubControlSpine):
 
 
 core.Red9_Meta.registerMClassInheritanceMapping()
+core.Red9_Meta.registerMClassNodeMapping(nodeTypes=['pointOnCurveInfo'])
+
 
 if __name__ == '__main__':
     pm.newFile(f=1)
     # mainSystem = core.TransSubSystem(side="C", part="Core")
     # ikSystem = HumanSpine(side="L", part="Core", numHighLevelCtrls=5, fallOffMethod="Position")
-    ikSystem = SimpleSpine(side="L", part="Core")
+    ikSystem = HumanSpine(side="L", part="Core")
     ikSystem.ikControlToWorld = True
-    ikSystem.devSpine = True
+    #ikSystem.devSpine = True
     ikSystem.isStretchable = True
     ikSystem.testBuild()
     ikSystem.addStretch()
