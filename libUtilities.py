@@ -994,3 +994,20 @@ def connect_override(node, target):
     node.displayType.set(e=True, keyable=True)
     target.overrideEnabled.set(True)
     node.displayType >> target.overrideDisplayType
+
+
+def create_npc_node(curve):
+    """
+    Create a nearest point on curve.
+
+    Used to determine the nearest parameters for a position in world space
+
+    @param curve: The curve which is being evaluated
+    @return: (PyNode) The nearest point on curve node
+    """
+    # Create nearest point curve
+    npc = pm.createNode("nearestPointOnCurve")
+    # Connect the curve shape to input curve
+    curve.worldSpace[0] >> npc.inputCurve
+
+    return npc

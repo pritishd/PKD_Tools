@@ -566,13 +566,11 @@ class SubControlSpine(IkSpine):
         if self.devSpine:
             return
         subCtrls = []
-        # Create nearest point curve
-        npc = pm.createNode("nearestPointOnCurve")
-        # Connect the curve shape to input curve
-        self.ikDriveCurve.worldSpace[0] >> npc.inputCurve
+
+        npc = libUtilities.create_npc_node(self.ikDriveCurve)
 
         # Initialise the groups that will stay at the base and metaise them
-        subCtrlGrp = rideOnLocGrp = None
+        subCtrlGrp = None
 
         for newGrp in ["subCtrlGrp", "rideOnLocGrp"]:
             newGrpMeta = core.MovableSystem(side=self.side, part=self.part, endSuffix=newGrp.capitalize())
