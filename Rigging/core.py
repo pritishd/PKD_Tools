@@ -574,10 +574,56 @@ class MovableSystem(MetaRig):
         if parentPy:
             self.zeroPrntPy.setParent(parentPy)
 
+    def setupAimHelper(self, target, aimKwargs=None, part=None, constraint=False):
+        """
+        Setup a aim helper.
+
+        Aim helper don't play well with maintain offset. We will create a setup without a aim helper and then create a
+        offset node which we will
+
+        Hear we will use the following setup
+
+        AimHelperZero - Zero out the aim helper
+        AimHelper - This has the aim helper
+
+        @param constraint:
+        @param part: (str) The name of the aim helper part
+        @param target (metaRig/pynode) Tbe node that will aim constraint this metaRig
+        @param aimKwargs: Any aimp constraint kwargs that will be used by the aim constrain command
+        @return: The aim helper
+        """
+        aimKwargs = aimKwargs or {}
+        if aimKwargs.has_key("maintainOffset"):
+            aimKwargs["mo"] = aimKwargs["maintainOffset"]
+            del aimKwargs["maintainOffset"]
+        aimKwargs["mo"] = False
+
+        defaultAimKwargs = dict(worldUpType="scene",
+                                aimVector=(1, 0, 0),
+                                upVector=(0, 1, 0),
+                                weight=1,
+                                offset=(0, 0, 0))
+        aimKwargs.update(defaultAimKwargs)
+        part = part or "{}AimHelper".format(self.part)
+        part += "Offset"
+        aimClass = jointOrMovable(target)
+        newTarget = aimClass(part=part, side=self.mirSide)
+        newTarget.addParent()
+        newTarget.snap(self)
+        newTarget.setParent(self.pynode.getParent())
+        pm.delete(pm.aimConstraint(target.pynode, newTarget.prnt.pynode, **aimKwargs))
+
+        aimCon = newTarget.addConstraint(target, "aim", False, **aimKwargs)
+        self.constraintToMetaConstraint(pm.PyNode(aimCon), "{0}AimCon".format(self.rigType), "AimConstraint")
+        self.addSupportNode(newTarget, "AimHelper")
+        if constraint:
+            self.addConstraint(newTarget, "orient")
+        return newTarget
+
     def addConstraint(self, target, conType="parent", zeroOut=True, **kwargs):
         """
         Add constaint to the movable node and attach as support node
-        @param target (metaRig/pynode) The node that will contraint this metaRig
+        @param target (metaRig/pynode) The node that will constraint this metaRig
         @param conType (string) The constraint type eg rotate, parent, point etc
         @param zeroOut (bool) Whether to zero out the dag node before applying a constraint
         @param kwargs (dict) Any keywords arguments to pass on the default maya function
@@ -1676,16 +1722,16 @@ class DistanceMove(MeasureSystem):
 
 # Nodes to register
 # Force load the math plugin
-nodes =  ['transform',
-          'distanceBetween',
-          'camera',
-          'joint',
-          'reverse',
-          'plusMinusAverage',
-          'multiplyDivide',
-          'condition',
-          'clamp',
-          'addDoubleLinear']
+nodes = ['transform',
+         'distanceBetween',
+         'camera',
+         'joint',
+         'reverse',
+         'plusMinusAverage',
+         'multiplyDivide',
+         'condition',
+         'clamp',
+         'addDoubleLinear']
 try:
     pm.loadPlugin("asdkMathNode", quiet=True)
     nodes.append('asdkMathNode')
