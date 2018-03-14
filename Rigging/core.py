@@ -603,7 +603,7 @@ class MovableSystem(MetaRig):
                                 upVector=(0, 1, 0),
                                 weight=1,
                                 offset=(0, 0, 0))
-        aimKwargs.update(defaultAimKwargs)
+        defaultAimKwargs.update(aimKwargs)
         part = part or "{}AimHelper".format(self.part)
         part += "Offset"
         aimClass = jointOrMovable(target)
@@ -611,9 +611,9 @@ class MovableSystem(MetaRig):
         newTarget.addParent()
         newTarget.snap(self)
         newTarget.setParent(self.pynode.getParent())
-        pm.delete(pm.aimConstraint(target.pynode, newTarget.prnt.pynode, **aimKwargs))
+        pm.delete(pm.aimConstraint(target.pynode, newTarget.prnt.pynode, **defaultAimKwargs))
 
-        aimCon = newTarget.addConstraint(target, "aim", False, **aimKwargs)
+        aimCon = newTarget.addConstraint(target, "aim", False, **defaultAimKwargs)
         self.constraintToMetaConstraint(pm.PyNode(aimCon), "{0}AimCon".format(self.rigType), "AimConstraint")
         self.addSupportNode(newTarget, "AimHelper")
         if constraint:
